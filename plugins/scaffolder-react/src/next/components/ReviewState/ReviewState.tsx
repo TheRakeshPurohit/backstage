@@ -15,9 +15,10 @@
  */
 import React from 'react';
 import { StructuredMetadataTable } from '@backstage/core-components';
-import { JsonObject } from '@backstage/types';
+import { JsonObject, JsonValue } from '@backstage/types';
 import { Draft07 as JSONSchema } from 'json-schema-library';
 import { ParsedTemplateSchema } from '../../hooks/useTemplateSchema';
+import { isJsonObject, formatKey, findSchemaForKey } from './util';
 
 /**
  * The props for the {@link ReviewState} component.
@@ -28,39 +29,80 @@ export type ReviewStateProps = {
   formState: JsonObject;
 };
 
+function processSchema(
+  key: string,
+  value: JsonValue | undefined,
+  schema: ParsedTemplateSchema,
+  formState: JsonObject,
+): [string, JsonValue | undefined][] {
+  const parsedSchema = new JSONSchema(schema.mergedSchema);
+  const definitionInSchema = parsedSchema.getSchema({
+    pointer: `#/${key}`,
+    data: formState,
+  });
+
+  const name =
+    definitionInSchema?.['ui:backstage']?.review?.name ??
+    definitionInSchema?.title ??
+    key;
+
+  if (definitionInSchema) {
+    const backstageReviewOptions = definitionInSchema['ui:backstage']?.review;
+    if (backstageReviewOptions) {
+      if (backstageReviewOptions.mask) {
+        return [[name, backstageReviewOptions.mask]];
+      }
+      if (backstageReviewOptions.show === false) {
+        return [];
+      }
+    }
+
+    if (
+      definitionInSchema['ui:widget'] === 'password' ||
+      definitionInSchema['ui:field']?.toLocaleLowerCase('en-us') === 'secret'
+    ) {
+      return [[name, '******']];
+    }
+
+    if (definitionInSchema.enum && definitionInSchema.enumNames) {
+      return [
+        [
+          name,
+          definitionInSchema.enumNames[
+            definitionInSchema.enum.indexOf(value)
+          ] || value,
+        ],
+      ];
+    }
+
+    if (backstageReviewOptions?.explode !== false && isJsonObject(value)) {
+      // Recurse nested objects
+      return Object.entries(value).flatMap(([nestedKey, nestedValue]) =>
+        processSchema(`${key}/${nestedKey}`, nestedValue, schema, formState),
+      );
+    }
+  }
+
+  return [[name, value]];
+}
+
 /**
  * The component used by the {@link Stepper} to render the review step.
  * @alpha
  */
 export const ReviewState = (props: ReviewStateProps) => {
   const reviewData = Object.fromEntries(
-    Object.entries(props.formState).map(([key, value]) => {
-      for (const step of props.schemas) {
-        const parsedSchema = new JSONSchema(step.mergedSchema);
-        const definitionInSchema = parsedSchema.getSchema(
-          `#/${key}`,
-          props.formState,
-        );
-        if (definitionInSchema) {
-          const backstageReviewOptions =
-            definitionInSchema['ui:backstage']?.review;
-
-          if (backstageReviewOptions) {
-            if (backstageReviewOptions.mask) {
-              return [key, backstageReviewOptions.mask];
-            }
-            if (backstageReviewOptions.show === false) {
-              return [];
-            }
-          }
-
-          if (definitionInSchema['ui:widget'] === 'password') {
-            return [key, '******'];
-          }
-        }
-      }
-      return [key, value];
-    }),
+    Object.entries(props.formState)
+      .flatMap(([key, value]) => {
+        const schema = findSchemaForKey(key, props.schemas, props.formState);
+        return schema
+          ? processSchema(key, value, schema, props.formState)
+          : [[key, value]];
+      })
+      .filter(prop => prop.length > 0),
   );
-  return <StructuredMetadataTable metadata={reviewData} />;
+  const options = {
+    titleFormat: formatKey,
+  };
+  return <StructuredMetadataTable metadata={reviewData} options={options} />;
 };

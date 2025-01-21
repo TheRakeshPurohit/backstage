@@ -22,6 +22,8 @@ import {
 import { renderInTestApp, TestApiRegistry } from '@backstage/test-utils';
 import { ApiProvider } from '@backstage/core-app-api';
 import { rootRouteRef } from '../../routes';
+import { userEvent } from '@testing-library/user-event';
+import { permissionApiRef } from '@backstage/plugin-permission-react';
 
 const scaffolderApiMock: jest.Mocked<ScaffolderApi> = {
   scaffold: jest.fn(),
@@ -32,9 +34,14 @@ const scaffolderApiMock: jest.Mocked<ScaffolderApi> = {
   streamLogs: jest.fn(),
   listActions: jest.fn(),
   listTasks: jest.fn(),
+  autocomplete: jest.fn(),
 };
 
-const apis = TestApiRegistry.from([scaffolderApiRef, scaffolderApiMock]);
+const mockPermissionApi = { authorize: jest.fn() };
+const apis = TestApiRegistry.from(
+  [scaffolderApiRef, scaffolderApiMock],
+  [permissionApiRef, mockPermissionApi],
+);
 
 describe('TemplatePage', () => {
   beforeEach(() => jest.resetAllMocks());
@@ -261,7 +268,7 @@ describe('TemplatePage', () => {
     expect(rendered.queryByText('nested prop b')).not.toBeInTheDocument();
     expect(rendered.queryByText('number')).not.toBeInTheDocument();
 
-    objectChip.click();
+    await userEvent.click(objectChip);
 
     expect(rendered.queryByText('nested prop a')).toBeInTheDocument();
     expect(rendered.queryByText('string')).toBeInTheDocument();
@@ -323,7 +330,7 @@ describe('TemplatePage', () => {
     expect(rendered.queryByText('nested prop b')).not.toBeInTheDocument();
     expect(rendered.queryByText('nested object c')).not.toBeInTheDocument();
 
-    objectChip.click();
+    await userEvent.click(objectChip);
 
     expect(rendered.queryByText('nested object a')).toBeInTheDocument();
     expect(rendered.queryByText('nested prop b')).toBeInTheDocument();
@@ -331,7 +338,7 @@ describe('TemplatePage', () => {
 
     const allObjectChips = rendered.getAllByText('object');
     expect(allObjectChips.length).toBe(2);
-    allObjectChips[1].click();
+    await userEvent.click(allObjectChips[1]);
 
     expect(rendered.queryByText('nested object a')).toBeInTheDocument();
     expect(rendered.queryByText('nested prop b')).toBeInTheDocument();
@@ -374,7 +381,7 @@ describe('TemplatePage', () => {
 
     expect(rendered.queryByText('No schema defined')).not.toBeInTheDocument();
 
-    objectChip.click();
+    await userEvent.click(objectChip);
 
     expect(rendered.queryByText('No schema defined')).toBeInTheDocument();
   });
@@ -471,7 +478,7 @@ describe('TemplatePage', () => {
     expect(rendered.queryByText('nested object a')).not.toBeInTheDocument();
     expect(rendered.queryByText('nested prop b')).not.toBeInTheDocument();
 
-    objectChip.click();
+    await userEvent.click(objectChip);
 
     expect(rendered.queryByText('nested object a')).toBeInTheDocument();
     expect(rendered.queryByText('nested prop b')).toBeInTheDocument();
@@ -506,5 +513,82 @@ describe('TemplatePage', () => {
     );
 
     expect(rendered.getByText('array(unknown)')).toBeInTheDocument();
+  });
+
+  it('should filter an action', async () => {
+    scaffolderApiMock.listActions.mockResolvedValue([
+      {
+        id: 'githut:repo:create',
+        description: 'Create a new Github repository',
+        schema: {
+          input: {
+            type: 'object',
+            required: ['name'],
+            properties: {
+              name: {
+                title: 'Repository name',
+                type: 'string',
+              },
+            },
+          },
+        },
+      },
+      {
+        id: 'githut:repo:push',
+        description: 'Push to a Github repository',
+        schema: {
+          input: {
+            type: 'object',
+            required: ['url'],
+            properties: {
+              url: {
+                title: 'Repository url',
+                type: 'string',
+              },
+            },
+          },
+        },
+      },
+    ]);
+
+    const rendered = await renderInTestApp(
+      <ApiProvider apis={apis}>
+        <ActionsPage />
+      </ApiProvider>,
+      {
+        mountedRoutes: {
+          '/create/actions': rootRouteRef,
+        },
+      },
+    );
+
+    expect(
+      rendered.getByRole('heading', { name: 'githut:repo:create' }),
+    ).toBeInTheDocument();
+    expect(
+      rendered.getByRole('heading', { name: 'githut:repo:push' }),
+    ).toBeInTheDocument();
+
+    // should filter actions when searching
+    await userEvent.type(
+      rendered.getByPlaceholderText('Search for an action'),
+      'create',
+    );
+    await userEvent.keyboard('[ArrowDown][Enter]');
+    expect(
+      rendered.getByRole('heading', { name: 'githut:repo:create' }),
+    ).toBeInTheDocument();
+    expect(
+      rendered.queryByRole('heading', { name: 'githut:repo:push' }),
+    ).not.toBeInTheDocument();
+
+    // should show all actions when clearing the search
+    await userEvent.click(rendered.getByTitle('Clear'));
+    expect(
+      rendered.getByRole('heading', { name: 'githut:repo:create' }),
+    ).toBeInTheDocument();
+    expect(
+      rendered.getByRole('heading', { name: 'githut:repo:push' }),
+    ).toBeInTheDocument();
   });
 });

@@ -42,9 +42,7 @@ async function migrateUntilBefore(knex: Knex, target: string): Promise<void> {
 jest.setTimeout(60_000);
 
 describe('migrations', () => {
-  const databases = TestDatabases.create({
-    ids: ['MYSQL_8', 'POSTGRES_13', 'POSTGRES_9', 'SQLITE_3'],
-  });
+  const databases = TestDatabases.create();
 
   it.each(databases.eachSupportedId())(
     '20230428155633_sessions.js, %p',
@@ -66,6 +64,42 @@ describe('migrations', () => {
       await expect(knex('sessions').orderBy('sid', 'asc')).resolves.toEqual([
         { sid: 'abc', expired: expect.anything(), sess: data },
         { sid: 'def', expired: expect.anything(), sess: data },
+      ]);
+
+      await migrateDownOnce(knex);
+
+      await knex.destroy();
+    },
+  );
+
+  it.each(databases.eachSupportedId())(
+    '20240510120825_user_info.js, %p',
+    async databaseId => {
+      const knex = await databases.init(databaseId);
+
+      await migrateUntilBefore(knex, '20240510120825_user_info.js');
+      await migrateUpOnce(knex);
+
+      const user_info = JSON.stringify({
+        claims: {
+          ent: ['group:default/group1', 'group:default/group2'],
+        },
+      });
+
+      await knex
+        .insert({
+          user_entity_ref: 'user:default/backstage-user',
+          user_info,
+          exp: knex.fn.now(),
+        })
+        .into('user_info');
+
+      await expect(knex('user_info')).resolves.toEqual([
+        {
+          user_entity_ref: 'user:default/backstage-user',
+          user_info,
+          exp: expect.anything(),
+        },
       ]);
 
       await migrateDownOnce(knex);

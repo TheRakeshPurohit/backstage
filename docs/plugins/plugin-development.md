@@ -40,7 +40,7 @@ import { createRouteRef } from '@backstage/core-plugin-api';
 
 // Note: This route ref is for internal use only, don't export it from the plugin
 export const rootRouteRef = createRouteRef({
-  title: 'Example Page',
+  id: 'Example Page',
 });
 ```
 
@@ -79,5 +79,5 @@ This extension can then be imported and used in the app as follow, typically
 placed within the top-level `<FlatRoutes>`:
 
 ```tsx
-<Route route="/any-path" element={<ExamplePage />} />
+<Route path="/any-path" element={<ExamplePage />} />
 ```

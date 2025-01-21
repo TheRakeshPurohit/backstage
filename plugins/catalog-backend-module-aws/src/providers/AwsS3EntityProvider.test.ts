@@ -14,33 +14,33 @@
  * limitations under the License.
  */
 
-import { getVoidLogger } from '@backstage/backend-common';
 import {
-  PluginTaskScheduler,
-  TaskInvocationDefinition,
-  TaskRunner,
-} from '@backstage/backend-tasks';
+  SchedulerService,
+  SchedulerServiceTaskRunner,
+  SchedulerServiceTaskInvocationDefinition,
+} from '@backstage/backend-plugin-api';
 import { ConfigReader } from '@backstage/config';
 import { EntityProviderConnection } from '@backstage/plugin-catalog-node';
 import { AwsS3EntityProvider } from './AwsS3EntityProvider';
 import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import { ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3';
+import { mockServices } from '@backstage/backend-test-utils';
 
-class PersistingTaskRunner implements TaskRunner {
-  private tasks: TaskInvocationDefinition[] = [];
+class PersistingTaskRunner implements SchedulerServiceTaskRunner {
+  private tasks: SchedulerServiceTaskInvocationDefinition[] = [];
 
   getTasks() {
     return this.tasks;
   }
 
-  run(task: TaskInvocationDefinition): Promise<void> {
+  run(task: SchedulerServiceTaskInvocationDefinition): Promise<void> {
     this.tasks.push(task);
     return Promise.resolve(undefined);
   }
 }
 
-const logger = getVoidLogger();
+const logger = mockServices.logger.mock();
 
 describe('AwsS3EntityProvider', () => {
   const createObjectList = (keys: string[]) => {
@@ -79,7 +79,7 @@ describe('AwsS3EntityProvider', () => {
   });
 
   afterEach(() => {
-    jest.resetAllMocks();
+    jest.clearAllMocks();
     process.env.AWS_REGION = undefined;
   });
 
@@ -117,7 +117,7 @@ describe('AwsS3EntityProvider', () => {
     if (scheduleInConfig) {
       schedulingConfig.scheduler = {
         createScheduledTaskRunner: (_: any) => schedule,
-      } as unknown as PluginTaskScheduler;
+      } as unknown as SchedulerService;
     } else {
       schedulingConfig.schedule = schedule;
     }
@@ -392,7 +392,7 @@ describe('AwsS3EntityProvider', () => {
   it('fail with scheduler but no schedule config', () => {
     const scheduler = {
       createScheduledTaskRunner: (_: any) => jest.fn(),
-    } as unknown as PluginTaskScheduler;
+    } as unknown as SchedulerService;
     const config = new ConfigReader({
       catalog: {
         providers: {

@@ -14,33 +14,37 @@
  * limitations under the License.
  */
 
-import mockFs from 'mock-fs';
-import { resolve as resolvePath } from 'path';
-import fetch from 'node-fetch';
-import { mockServices, startTestBackend } from '@backstage/backend-test-utils';
+import {
+  createMockDirectory,
+  mockServices,
+  startTestBackend,
+} from '@backstage/backend-test-utils';
 import { appPlugin } from './appPlugin';
+import { overridePackagePathResolution } from '@backstage/backend-plugin-api/testUtils';
+
+const mockDir = createMockDirectory();
+overridePackagePathResolution({
+  packageName: 'app',
+  path: mockDir.path,
+});
 
 describe('appPlugin', () => {
-  beforeEach(() => {
-    mockFs({
-      [resolvePath(process.cwd(), 'node_modules/app')]: {
-        'package.json': '{}',
-        dist: {
-          static: {},
-          'index.html': 'winning',
-        },
-      },
-    });
-  });
-
   afterEach(() => {
-    mockFs.restore();
+    mockDir.clear();
   });
 
   it('boots', async () => {
+    mockDir.setContent({
+      'package.json': '{}',
+      dist: {
+        static: {},
+        'index.html': 'winning',
+      },
+    });
+
     const { server } = await startTestBackend({
       features: [
-        appPlugin(),
+        appPlugin,
         mockServices.rootConfig.factory({
           data: {
             app: {
@@ -59,5 +63,62 @@ describe('appPlugin', () => {
     await expect(
       fetch(`http://localhost:${server.port()}`).then(res => res.text()),
     ).resolves.toBe('winning');
+  });
+
+  it('injects config into index.html', async () => {
+    mockDir.setContent({
+      'package.json': '{}',
+      dist: {
+        static: {},
+        'index.html': '<html><head></head></html>',
+        'index.html.tmpl': '<html><head></head></html>',
+      },
+    });
+
+    const { server } = await startTestBackend({
+      features: [
+        appPlugin,
+        mockServices.rootConfig.factory({
+          data: {
+            app: {
+              disableStaticFallbackCache: true,
+            },
+          },
+        }),
+      ],
+    });
+
+    const baseUrl = `http://localhost:${server.port()}`;
+    const withInjectedConfig = `<html><head>
+<script type="backstage.io/config">
+[]
+</script>
+</head></html>`;
+
+    await expect(fetch(`${baseUrl}`).then(res => res.text())).resolves.toBe(
+      withInjectedConfig,
+    );
+
+    await expect(
+      fetch(`${baseUrl}?foo=bar`).then(res => res.text()),
+    ).resolves.toBe(withInjectedConfig);
+
+    await expect(
+      fetch(`${baseUrl}/index.html`).then(res => res.text()),
+    ).resolves.toBe(withInjectedConfig);
+
+    await expect(
+      fetch(`${baseUrl}/index.html?foo=bar`).then(res => res.text()),
+    ).resolves.toBe(withInjectedConfig);
+
+    await expect(
+      fetch(`${baseUrl}/api/app/some/html5/route`).then(res => res.text()),
+    ).resolves.toBe(withInjectedConfig);
+
+    await expect(
+      fetch(`${baseUrl}/api/app/some/html5/route?foo=bar`).then(res =>
+        res.text(),
+      ),
+    ).resolves.toBe(withInjectedConfig);
   });
 });

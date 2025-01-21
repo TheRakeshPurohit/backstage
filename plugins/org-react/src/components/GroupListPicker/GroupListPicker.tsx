@@ -21,7 +21,7 @@ import {
 } from '@backstage/plugin-catalog-react';
 import TextField from '@material-ui/core/TextField';
 import Autocomplete from '@material-ui/lab/Autocomplete';
-import useAsync from 'react-use/lib/useAsync';
+import useAsync from 'react-use/esm/useAsync';
 import Popover from '@material-ui/core/Popover';
 import { useApi } from '@backstage/core-plugin-api';
 import { ResponseErrorPanel } from '@backstage/core-components';
@@ -74,7 +74,7 @@ export const GroupListPicker = (props: GroupListPickerProps) => {
   }, [catalogApi, groupTypes]);
 
   const handleChange = useCallback(
-    (_, v: GroupEntity | null) => {
+    (_: unknown, v: GroupEntity | null) => {
       onChange(v ?? undefined);
       setAnchorEl(null);
     },

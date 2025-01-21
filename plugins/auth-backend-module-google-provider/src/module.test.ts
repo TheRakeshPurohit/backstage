@@ -15,7 +15,6 @@
  */
 
 import { mockServices, startTestBackend } from '@backstage/backend-test-utils';
-import { authPlugin } from '@backstage/plugin-auth-backend';
 import { authModuleGoogleProvider } from './module';
 import request from 'supertest';
 import { decodeOAuthState } from '@backstage/plugin-auth-node';
@@ -24,7 +23,7 @@ describe('authModuleGoogleProvider', () => {
   it('should start', async () => {
     const { server } = await startTestBackend({
       features: [
-        authPlugin,
+        import('@backstage/plugin-auth-backend'),
         authModuleGoogleProvider,
         mockServices.rootConfig.factory({
           data: {
@@ -68,8 +67,11 @@ describe('authModuleGoogleProvider', () => {
       prompt: 'consent',
       response_type: 'code',
       client_id: 'my-client-id',
+      include_granted_scopes: 'true',
       redirect_uri: `http://localhost:${server.port()}/api/auth/google/handler/frame`,
       state: expect.any(String),
+      scope:
+        'openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
     });
 
     expect(decodeOAuthState(startUrl.searchParams.get('state')!)).toEqual({

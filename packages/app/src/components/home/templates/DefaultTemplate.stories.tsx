@@ -29,6 +29,7 @@ import {
   entityRouteRef,
   catalogApiRef,
 } from '@backstage/plugin-catalog-react';
+import { catalogApiMock } from '@backstage/plugin-catalog-react/testUtils';
 import { configApiRef } from '@backstage/core-plugin-api';
 import { ConfigReader } from '@backstage/config';
 import { HomePageSearchBar, searchPlugin } from '@backstage/plugin-search';
@@ -36,8 +37,8 @@ import {
   searchApiRef,
   SearchContextProvider,
 } from '@backstage/plugin-search-react';
-import { stackOverflowApiRef, HomePageStackOverflowQuestions } from '@backstage/plugin-stack-overflow';
-import { Grid, makeStyles } from '@material-ui/core';
+import Grid from '@material-ui/core/Grid';
+import { makeStyles } from '@material-ui/core/styles';
 import React, { ComponentType, PropsWithChildren } from 'react';
 
 const entities = [
@@ -75,28 +76,7 @@ const entities = [
   },
 ];
 
-const mockCatalogApi = {
-  getEntities: async () => ({ items: entities }),
-};
-
-const mockStackOverflowApi = {
-  listQuestions: async () => [
-    {
-      title: 'Customizing Spotify backstage UI',
-      link: 'stackoverflow.question/1',
-      answer_count: 0,
-      tags: ['backstage'],
-      owner: { 'some owner': 'name' },
-    },
-    {
-      title: 'Customizing Spotify backstage UI',
-      link: 'stackoverflow.question/1',
-      answer_count: 0,
-      tags: ['backstage'],
-      owner: { 'some owner': 'name' },
-    },
-  ],
-};
+const catalogApi = catalogApiMock({ entities });
 
 const starredEntitiesApi = new MockStarredEntitiesApi();
 starredEntitiesApi.toggleStarred('component:default/example-starred-entity');
@@ -112,8 +92,7 @@ export default {
         <>
           <TestApiProvider
             apis={[
-              [stackOverflowApiRef, mockStackOverflowApi],
-              [catalogApiRef, mockCatalogApi],
+              [catalogApiRef, catalogApi],
               [starredEntitiesApiRef, starredEntitiesApi],
               [searchApiRef, { query: () => Promise.resolve({ results: [] }) }],
               [
@@ -148,8 +127,8 @@ const useStyles = makeStyles(theme => ({
     boxShadow: theme.shadows[1],
   },
   searchBarOutline: {
-    borderStyle: 'none'
-  }
+    borderStyle: 'none',
+  },
 }));
 
 const useLogoStyles = makeStyles(theme => ({
@@ -178,9 +157,14 @@ export const DefaultTemplate = () => {
               className={container}
               logo={<TemplateBackstageLogo classes={{ svg, path }} />}
             />
-            <Grid container item xs={12} justifyContent='center'>
+            <Grid container item xs={12} justifyContent="center">
               <HomePageSearchBar
-                InputProps={{ classes: { root: classes.searchBarInput, notchedOutline: classes.searchBarOutline }}}
+                InputProps={{
+                  classes: {
+                    root: classes.searchBarInput,
+                    notchedOutline: classes.searchBarOutline,
+                  },
+                }}
                 placeholder="Search"
               />
             </Grid>
@@ -202,15 +186,6 @@ export const DefaultTemplate = () => {
                   {/* placeholder for content */}
                   <div style={{ height: 370 }} />
                 </InfoCard>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <HomePageStackOverflowQuestions
-                  requestParams={{
-                    tagged: 'backstage',
-                    site: 'stackoverflow',
-                    pagesize: 5,
-                  }}
-                />
               </Grid>
             </Grid>
           </Grid>

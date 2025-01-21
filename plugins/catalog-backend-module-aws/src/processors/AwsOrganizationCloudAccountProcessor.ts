@@ -27,19 +27,22 @@ import {
   ListAccountsResponse,
   Organizations,
 } from '@aws-sdk/client-organizations';
-import { Logger } from 'winston';
 import { readAwsOrganizationConfig } from '../awsOrganization/config';
 import {
   AwsCredentialProvider,
   DefaultAwsCredentialsManager,
 } from '@backstage/integration-aws-node';
+import { LoggerService } from '@backstage/backend-plugin-api';
 
 const AWS_ORGANIZATION_REGION = 'us-east-1';
 const LOCATION_TYPE = 'aws-cloud-accounts';
 
 const ACCOUNTID_ANNOTATION = 'amazonaws.com/account-id';
+const ACCOUNT_EMAIL_ANNOTATION = 'amazonaws.com/account-email';
 const ARN_ANNOTATION = 'amazonaws.com/arn';
 const ORGANIZATION_ANNOTATION = 'amazonaws.com/organization-id';
+
+const ACCOUNT_STATUS_LABEL = 'amazonaws.com/account-status';
 
 /**
  * A processor for ingesting AWS Accounts from AWS Organizations.
@@ -51,15 +54,23 @@ const ORGANIZATION_ANNOTATION = 'amazonaws.com/organization-id';
  */
 export class AwsOrganizationCloudAccountProcessor implements CatalogProcessor {
   private readonly organizations: Organizations;
-  private readonly logger: Logger;
+  private readonly logger: LoggerService;
 
-  static async fromConfig(config: Config, options: { logger: Logger }) {
+  static async fromConfig(config: Config, options: { logger: LoggerService }) {
     const c = config.getOptionalConfig('catalog.processors.awsOrganization');
     const orgConfig = c ? readAwsOrganizationConfig(c) : undefined;
+
+    if (orgConfig?.roleArn) {
+      options.logger.warn(
+        'The roleArn configuration for AwsOrganizationCloudAccountProcessor ignores the role name, use accountId configuration instead',
+      );
+    }
+
     const awsCredentialsManager =
       DefaultAwsCredentialsManager.fromConfig(config);
     const credProvider = await awsCredentialsManager.getCredentialProvider({
       arn: orgConfig?.roleArn,
+      accountId: orgConfig?.accountId,
     });
     return new AwsOrganizationCloudAccountProcessor(
       credProvider,
@@ -69,7 +80,7 @@ export class AwsOrganizationCloudAccountProcessor implements CatalogProcessor {
 
   private constructor(
     private readonly credProvider: AwsCredentialProvider,
-    logger: Logger,
+    logger: LoggerService,
   ) {
     this.logger = logger?.child({
       target: this.getProcessorName(),
@@ -123,6 +134,10 @@ export class AwsOrganizationCloudAccountProcessor implements CatalogProcessor {
       .replace(/[^a-zA-Z0-9\-]/g, '-');
   }
 
+  private normalizeAccountStatus(name: string): string {
+    return name.toLocaleLowerCase('en-US');
+  }
+
   private extractInformationFromArn(arn: string): {
     accountId: string;
     organizationId: string;
@@ -164,8 +179,15 @@ export class AwsOrganizationCloudAccountProcessor implements CatalogProcessor {
           [ACCOUNTID_ANNOTATION]: accountId,
           [ARN_ANNOTATION]: account.Arn || '',
           [ORGANIZATION_ANNOTATION]: organizationId,
+          [ACCOUNT_EMAIL_ANNOTATION]: account.Email || '',
+        },
+        labels: {
+          [ACCOUNT_STATUS_LABEL]: this.normalizeAccountStatus(
+            account.Status || '',
+          ),
         },
         name: this.normalizeName(account.Name || ''),
+        title: account.Name || '',
         namespace: 'default',
       },
       spec: {

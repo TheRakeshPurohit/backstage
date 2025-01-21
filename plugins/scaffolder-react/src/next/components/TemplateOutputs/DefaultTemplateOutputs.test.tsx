@@ -25,16 +25,25 @@ describe('<DefaultTemplateOutputs />', () => {
   it('should render template output', async () => {
     const output = {
       links: [{ title: 'Link 1', url: 'https://backstage.io/' }],
-      text: [{ title: 'Text 1', content: 'Hello, **world**!' }],
+      text: [
+        { title: 'Text 1', content: 'Hello, **world**!' },
+        { title: 'Text 2', content: 'Hello, **mars**!' },
+      ],
     };
 
-    const { getByRole } = await renderInTestApp(
+    const { getByRole, queryByTestId } = await renderInTestApp(
       <DefaultTemplateOutputs output={output} />,
       {
         mountedRoutes: {
           '/catalog/:namespace/:kind/:name': entityRouteRef,
         },
       },
+    );
+    expect(queryByTestId('output-box')).not.toBeNull();
+    expect(queryByTestId('text-output-box')).not.toBeNull();
+    // first text output default visible
+    expect(getByRole('heading', { level: 2 }).innerHTML).toBe(
+      output.text[0].title,
     );
 
     // test link outputs
@@ -52,5 +61,21 @@ describe('<DefaultTemplateOutputs />', () => {
 
       expect(getByRole('heading', { level: 2 }).innerHTML).toBe(text.title);
     }
+  });
+  it('should not render anything when output is empty', async () => {
+    // This is the default case when no output field is present in the template
+    const output = {};
+    const { queryByTestId } = await renderInTestApp(
+      <DefaultTemplateOutputs output={output} />,
+      {
+        mountedRoutes: {
+          '/catalog/:namespace/:kind/:name': entityRouteRef,
+        },
+      },
+    );
+
+    // Ensure that nothing renders from this component
+    expect(queryByTestId('output-box')).toBeNull();
+    expect(queryByTestId('text-output-box')).toBeNull();
   });
 });

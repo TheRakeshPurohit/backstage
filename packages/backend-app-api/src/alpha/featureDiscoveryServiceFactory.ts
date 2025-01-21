@@ -15,115 +15,24 @@
  */
 
 import {
-  BackendFeature,
-  RootConfigService,
   coreServices,
   createServiceFactory,
 } from '@backstage/backend-plugin-api';
-import {
-  featureDiscoveryServiceRef,
-  FeatureDiscoveryService,
-} from '@backstage/backend-plugin-api/alpha';
-import { resolve as resolvePath, dirname } from 'path';
-import fs from 'fs-extra';
-import { BackstagePackageJson } from '@backstage/cli-node';
+import { featureDiscoveryServiceRef } from '@backstage/backend-plugin-api/alpha';
+// eslint-disable-next-line @backstage/no-relative-monorepo-imports
+import { PackageDiscoveryService } from '../../../backend-defaults/src/PackageDiscoveryService';
 
-const LOADED_PACKAGE_ROLES = ['backend-plugin', 'backend-module'];
-
-/** @internal */
-async function findClosestPackageDir(
-  searchDir: string,
-): Promise<string | undefined> {
-  let path = searchDir;
-
-  // Some confidence check to avoid infinite loop
-  for (let i = 0; i < 1000; i++) {
-    const packagePath = resolvePath(path, 'package.json');
-    const exists = await fs.pathExists(packagePath);
-    if (exists) {
-      return path;
-    }
-
-    const newPath = dirname(path);
-    if (newPath === path) {
-      return undefined;
-    }
-    path = newPath;
-  }
-
-  throw new Error(
-    `Iteration limit reached when searching for root package.json at ${searchDir}`,
-  );
-}
-
-/** @internal */
-class PackageDiscoveryService implements FeatureDiscoveryService {
-  constructor(private readonly config: RootConfigService) {}
-
-  async getBackendFeatures(): Promise<{ features: Array<BackendFeature> }> {
-    if (this.config.getOptionalString('backend.packages') !== 'all') {
-      return { features: [] };
-    }
-
-    const packageDir = await findClosestPackageDir(process.argv[1]);
-    if (!packageDir) {
-      throw new Error('Package discovery failed to find package.json');
-    }
-    const { dependencies } = require(resolvePath(
-      packageDir,
-      'package.json',
-    )) as BackstagePackageJson;
-    const dependencyNames = Object.keys(dependencies || {});
-
-    const features: BackendFeature[] = [];
-
-    for (const name of dependencyNames) {
-      const depPkg = require(require.resolve(`${name}/package.json`, {
-        paths: [packageDir],
-      })) as BackstagePackageJson;
-      if (!LOADED_PACKAGE_ROLES.includes(depPkg?.backstage?.role ?? '')) {
-        continue;
-      }
-      const depModule = require(require.resolve(name, { paths: [packageDir] }));
-      for (const exportValue of Object.values(depModule)) {
-        if (isBackendFeature(exportValue)) {
-          features.push(exportValue);
-        }
-        if (isBackendFeatureFactory(exportValue)) {
-          features.push(exportValue());
-        }
-      }
-    }
-
-    return { features };
-  }
-}
-
-/** @alpha */
+/**
+ * @alpha
+ * @deprecated The `featureDiscoveryServiceFactory` is deprecated in favor of using {@link @backstage/backend-defaults#discoveryFeatureLoader} instead.
+ */
 export const featureDiscoveryServiceFactory = createServiceFactory({
   service: featureDiscoveryServiceRef,
   deps: {
     config: coreServices.rootConfig,
+    logger: coreServices.rootLogger,
   },
-  factory({ config }) {
-    return new PackageDiscoveryService(config);
+  factory({ config, logger }) {
+    return new PackageDiscoveryService(config, logger);
   },
 });
-
-function isBackendFeature(value: unknown): value is BackendFeature {
-  return (
-    !!value &&
-    typeof value === 'object' &&
-    (value as BackendFeature).$$type === '@backstage/BackendFeature'
-  );
-}
-
-function isBackendFeatureFactory(
-  value: unknown,
-): value is () => BackendFeature {
-  return (
-    !!value &&
-    typeof value === 'function' &&
-    (value as any).$$type === '@backstage/BackendFeatureFactory'
-  );
-}

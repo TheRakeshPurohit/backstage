@@ -22,8 +22,8 @@ import React, {
   useEffect,
   useState,
 } from 'react';
-import useAsync, { AsyncState } from 'react-use/lib/useAsync';
-import usePrevious from 'react-use/lib/usePrevious';
+import useAsync, { AsyncState } from 'react-use/esm/useAsync';
+import usePrevious from 'react-use/esm/usePrevious';
 
 import {
   createVersionedContext,
@@ -34,6 +34,7 @@ import {
   AnalyticsContext,
   useApi,
   configApiRef,
+  useAnalytics,
 } from '@backstage/core-plugin-api';
 import { SearchResultSet } from '@backstage/plugin-search-common';
 
@@ -114,6 +115,7 @@ const useSearchContextValue = (
   initialValue: SearchContextState = defaultInitialSearchState,
 ) => {
   const searchApi = useApi(searchApiRef);
+  const analytics = useAnalytics();
 
   const [term, setTerm] = useState<string>(initialValue.term);
   const [types, setTypes] = useState<string[]>(initialValue.types);
@@ -128,17 +130,21 @@ const useSearchContextValue = (
   const prevTerm = usePrevious(term);
   const prevFilters = usePrevious(filters);
 
-  const result = useAsync(
-    () =>
-      searchApi.query({
-        term,
-        types,
-        filters,
-        pageLimit,
-        pageCursor,
-      }),
-    [term, types, filters, pageLimit, pageCursor],
-  );
+  const result = useAsync(async () => {
+    const resultSet = await searchApi.query({
+      term,
+      types,
+      filters,
+      pageLimit,
+      pageCursor,
+    });
+    if (term) {
+      analytics.captureEvent('search', term, {
+        value: result.value?.numberOfResults ?? undefined,
+      });
+    }
+    return resultSet;
+  }, [term, types, filters, pageLimit, pageCursor]);
 
   const hasNextPage =
     !result.loading && !result.error && result.value?.nextPageCursor;

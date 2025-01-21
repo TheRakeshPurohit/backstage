@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import React from 'react';
-import { fireEvent, render } from '@testing-library/react';
+import { fireEvent } from '@testing-library/react';
 import { CardHeader } from './CardHeader';
-import { ThemeProvider } from '@material-ui/core';
+import { ThemeProvider } from '@material-ui/core/styles';
 import { lightTheme } from '@backstage/theme';
 import {
-  MockStorageApi,
+  mockApis,
   renderInTestApp,
   TestApiProvider,
 } from '@backstage/test-utils';
@@ -30,7 +31,7 @@ import { stringifyEntityRef } from '@backstage/catalog-model';
 import { TemplateEntityV1beta3 } from '@backstage/plugin-scaffolder-common';
 
 describe('CardHeader', () => {
-  it('should select the correct theme from the theme provider from the header', () => {
+  it('should select the correct theme from the theme provider from the header', async () => {
     // Can't really test what we want here.
     // But we can check that we call the getPage theme with the right type of template at least.
     const mockTheme = {
@@ -38,13 +39,13 @@ describe('CardHeader', () => {
       getPageTheme: jest.fn(lightTheme.getPageTheme),
     };
 
-    render(
+    await renderInTestApp(
       <TestApiProvider
         apis={[
           [
             starredEntitiesApiRef,
             new DefaultStarredEntitiesApi({
-              storageApi: MockStorageApi.create(),
+              storageApi: mockApis.storage(),
             }),
           ],
         ]}
@@ -75,7 +76,7 @@ describe('CardHeader', () => {
           [
             starredEntitiesApiRef,
             new DefaultStarredEntitiesApi({
-              storageApi: MockStorageApi.create(),
+              storageApi: mockApis.storage(),
             }),
           ],
         ]}
@@ -119,7 +120,7 @@ describe('CardHeader', () => {
       </TestApiProvider>,
     );
 
-    const favorite = getByRole('button', { name: 'favorite' });
+    const favorite = getByRole('button', { name: 'Add to favorites' });
 
     await fireEvent.click(favorite);
 
@@ -135,7 +136,7 @@ describe('CardHeader', () => {
           [
             starredEntitiesApiRef,
             new DefaultStarredEntitiesApi({
-              storageApi: MockStorageApi.create(),
+              storageApi: mockApis.storage(),
             }),
           ],
         ]}
@@ -164,7 +165,7 @@ describe('CardHeader', () => {
           [
             starredEntitiesApiRef,
             new DefaultStarredEntitiesApi({
-              storageApi: MockStorageApi.create(),
+              storageApi: mockApis.storage(),
             }),
           ],
         ]}

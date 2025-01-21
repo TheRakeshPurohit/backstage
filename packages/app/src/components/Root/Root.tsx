@@ -15,7 +15,7 @@
  */
 
 import React, { PropsWithChildren } from 'react';
-import { makeStyles } from '@material-ui/core';
+import { makeStyles } from '@material-ui/core/styles';
 import HomeIcon from '@material-ui/icons/Home';
 import RuleIcon from '@material-ui/icons/AssignmentTurnedIn';
 import MapIcon from '@material-ui/icons/MyLocation';
@@ -27,14 +27,13 @@ import MenuIcon from '@material-ui/icons/Menu';
 import MoneyIcon from '@material-ui/icons/MonetizationOn';
 import LogoFull from './LogoFull';
 import LogoIcon from './LogoIcon';
-import { GraphiQLIcon } from '@backstage/plugin-graphiql';
 import {
   Settings as SidebarSettings,
   UserSettingsSignInAvatar,
 } from '@backstage/plugin-user-settings';
 import { SidebarSearchModal } from '@backstage/plugin-search';
-import { Shortcuts } from '@backstage/plugin-shortcuts';
 import {
+  Link,
   Sidebar,
   sidebarConfig,
   SidebarDivider,
@@ -43,16 +42,16 @@ import {
   SidebarPage,
   SidebarScrollWrapper,
   SidebarSpace,
-  Link,
-  useSidebarOpenState,
   SidebarSubmenu,
   SidebarSubmenuItem,
+  useSidebarOpenState,
 } from '@backstage/core-components';
 import { MyGroupsSidebarItem } from '@backstage/plugin-org';
 import { SearchModal } from '../search/SearchModal';
 import Score from '@material-ui/icons/Score';
 import { useApp } from '@backstage/core-plugin-api';
 import BuildIcon from '@material-ui/icons/Build';
+import { NotificationsSidebarItem } from '@backstage/plugin-notifications';
 
 const useSidebarLogoStyles = makeStyles({
   root: {
@@ -163,11 +162,11 @@ export const Root = ({ children }: PropsWithChildren<{}>) => (
             to="cost-insights"
             text="Cost Insights"
           />
-          <SidebarItem icon={GraphiQLIcon} to="graphiql" text="GraphiQL" />
           <SidebarItem icon={Score} to="score-board" text="Score board" />
         </SidebarScrollWrapper>
         <SidebarDivider />
-        <Shortcuts allowExternalLinks />
+        <SidebarDivider />
+        <NotificationsSidebarItem />
       </SidebarGroup>
       <SidebarSpace />
       <SidebarDivider />

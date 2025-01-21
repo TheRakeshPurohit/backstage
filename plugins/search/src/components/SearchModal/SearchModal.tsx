@@ -21,25 +21,24 @@ import {
   SearchResult,
   SearchResultPager,
 } from '@backstage/plugin-search-react';
-import {
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Divider,
-  Grid,
-  useTheme,
-} from '@material-ui/core';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import Divider from '@material-ui/core/Divider';
+import Grid from '@material-ui/core/Grid';
+import { useTheme } from '@material-ui/core/styles';
 import Box from '@material-ui/core/Box';
 import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
 import { makeStyles } from '@material-ui/core/styles';
 import ArrowForwardIcon from '@material-ui/icons/ArrowForward';
 import CloseIcon from '@material-ui/icons/Close';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { ReactNode, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { rootRouteRef } from '../../plugin';
+import { SearchResultSet } from '@backstage/plugin-search-common';
 
 /**
  * @public
@@ -49,6 +48,13 @@ export interface SearchModalChildrenProps {
    * A function that should be invoked when navigating away from the modal.
    */
   toggleModal: () => void;
+
+  /**
+   * Ability to provide custom components to render the result items
+   */
+  resultItemComponents?:
+    | ReactNode
+    | ((resultSet: SearchResultSet) => JSX.Element);
 }
 
 /**
@@ -76,6 +82,11 @@ export interface SearchModalProps {
    * place of the default.
    */
   children?: (props: SearchModalChildrenProps) => JSX.Element;
+
+  /**
+   * Optional ability to pass in result item component renderers.
+   */
+  resultItemComponents?: SearchModalChildrenProps['resultItemComponents'];
 }
 
 const useStyles = makeStyles(theme => ({
@@ -102,7 +113,10 @@ const useStyles = makeStyles(theme => ({
   viewResultsLink: { verticalAlign: '0.5em' },
 }));
 
-export const Modal = ({ toggleModal }: SearchModalChildrenProps) => {
+export const Modal = ({
+  toggleModal,
+  resultItemComponents,
+}: SearchModalChildrenProps) => {
   const classes = useStyles();
   const navigate = useNavigate();
   const { transitions } = useTheme();
@@ -165,7 +179,9 @@ export const Modal = ({ toggleModal }: SearchModalChildrenProps) => {
         <SearchResult
           onClick={handleSearchResultClick}
           onKeyDown={handleSearchResultClick}
-        />
+        >
+          {resultItemComponents}
+        </SearchResult>
       </DialogContent>
       <DialogActions className={classes.dialogActionsContainer}>
         <Grid container direction="row">
@@ -182,7 +198,13 @@ export const Modal = ({ toggleModal }: SearchModalChildrenProps) => {
  * @public
  */
 export const SearchModal = (props: SearchModalProps) => {
-  const { open = true, hidden, toggleModal, children } = props;
+  const {
+    open = true,
+    hidden,
+    toggleModal,
+    children,
+    resultItemComponents,
+  } = props;
 
   const classes = useStyles();
 
@@ -192,7 +214,8 @@ export const SearchModal = (props: SearchModalProps) => {
         paperFullWidth: classes.paperFullWidth,
       }}
       onClose={toggleModal}
-      aria-labelledby="search-modal-title"
+      aria-label="Search Modal"
+      aria-modal="true"
       fullWidth
       maxWidth="lg"
       open={open}
@@ -200,8 +223,15 @@ export const SearchModal = (props: SearchModalProps) => {
     >
       {open && (
         <SearchContextProvider inheritParentContextIfAvailable>
-          {(children && children({ toggleModal })) ?? (
-            <Modal toggleModal={toggleModal} />
+          {(children &&
+            children({
+              toggleModal,
+              resultItemComponents: resultItemComponents || [],
+            })) ?? (
+            <Modal
+              toggleModal={toggleModal}
+              resultItemComponents={resultItemComponents}
+            />
           )}
         </SearchContextProvider>
       )}

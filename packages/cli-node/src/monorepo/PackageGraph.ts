@@ -16,7 +16,7 @@
 
 import path from 'path';
 import { getPackages, Package } from '@manypkg/get-packages';
-import { paths } from '../paths';
+import { paths } from '../util';
 import { PackageRole } from '../roles';
 import { GitUtils } from '../git';
 import { Lockfile } from './Lockfile';
@@ -43,8 +43,35 @@ export interface BackstagePackageJson {
   // that the package bundles all of its dependencies in its build output.
   bundled?: boolean;
 
+  type?: 'module' | 'commonjs';
+
   backstage?: {
     role?: PackageRole;
+    moved?: string;
+
+    /**
+     * If set to `true`, the package will be treated as an internal package
+     * where any imports will be inlined into the consuming package.
+     *
+     * When set to `true`, the top-level `private` field must be set to `true`
+     * as well.
+     */
+    inline?: boolean;
+
+    /**
+     * The ID of the plugin if this is a plugin package. Must always be set for plugin and module packages, and may be set for library packages. A `null` value means that the package is explicitly not a plugin package.
+     */
+    pluginId?: string | null;
+
+    /**
+     * The parent plugin package of a module. Must always and only be set for module packages.
+     */
+    pluginPackage?: string;
+
+    /**
+     * All packages that are part of the plugin. Must always and only be set for plugin packages and plugin library packages.
+     */
+    pluginPackages?: string[];
   };
 
   exports?: JsonValue;
@@ -56,9 +83,15 @@ export interface BackstagePackageJson {
     access?: 'public' | 'restricted';
     directory?: string;
     registry?: string;
-    alphaTypes?: string;
-    betaTypes?: string;
   };
+
+  repository?:
+    | string
+    | {
+        type: string;
+        url: string;
+        directory: string;
+      };
 
   dependencies?: {
     [key: string]: string;
@@ -131,6 +164,7 @@ export class PackageGraph extends Map<string, PackageGraphNode> {
    */
   static async listTargetPackages(): Promise<BackstagePackage[]> {
     const { packages } = await getPackages(paths.targetDir);
+
     return packages as BackstagePackage[];
   }
 

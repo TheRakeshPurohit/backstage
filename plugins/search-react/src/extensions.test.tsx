@@ -18,13 +18,12 @@ import React from 'react';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { ListItemText } from '@material-ui/core';
+import ListItemText from '@material-ui/core/ListItemText';
 
 import {
-  wrapInTestApp,
-  renderWithEffects,
+  renderInTestApp,
   TestApiProvider,
-  MockAnalyticsApi,
+  mockApis,
 } from '@backstage/test-utils';
 import {
   createPlugin,
@@ -39,7 +38,7 @@ import {
   SearchResultListItemExtensionOptions,
 } from './extensions';
 
-const analyticsApiMock = new MockAnalyticsApi();
+const analyticsApiMock = mockApis.analytics();
 
 const results = [
   {
@@ -91,12 +90,10 @@ const createExtension = (
 
 describe('extensions', () => {
   it('renders without exploding', async () => {
-    await renderWithEffects(
-      wrapInTestApp(
-        <TestApiProvider apis={[[analyticsApiRef, analyticsApiMock]]}>
-          <SearchResultListItemExtensions results={results} />
-        </TestApiProvider>,
-      ),
+    await renderInTestApp(
+      <TestApiProvider apis={[[analyticsApiRef, analyticsApiMock]]}>
+        <SearchResultListItemExtensions results={results} />
+      </TestApiProvider>,
     );
 
     expect(screen.getByText('Search Result 1')).toBeInTheDocument();
@@ -111,19 +108,17 @@ describe('extensions', () => {
   });
 
   it('capture results discovery events', async () => {
-    await renderWithEffects(
-      wrapInTestApp(
-        <TestApiProvider apis={[[analyticsApiRef, analyticsApiMock]]}>
-          <SearchResultListItemExtensions results={results} />
-        </TestApiProvider>,
-      ),
+    await renderInTestApp(
+      <TestApiProvider apis={[[analyticsApiRef, analyticsApiMock]]}>
+        <SearchResultListItemExtensions results={results} />
+      </TestApiProvider>,
     );
 
     await userEvent.click(
       screen.getByRole('link', { name: /Search Result 1/ }),
     );
 
-    expect(analyticsApiMock.getEvents()[0]).toMatchObject({
+    expect(analyticsApiMock.captureEvent).toHaveBeenCalledWith({
       action: 'discover',
       subject: 'Search Result 1',
       context: { routeRef: 'unknown', pluginId: 'root', extension: 'App' },
@@ -135,12 +130,10 @@ describe('extensions', () => {
     const plugin = createPlugin({ id: 'plugin' });
     const DefaultSearchResultListItemExtension = createExtension(plugin);
 
-    await renderWithEffects(
-      wrapInTestApp(
-        <TestApiProvider apis={[[analyticsApiRef, analyticsApiMock]]}>
-          <DefaultSearchResultListItemExtension result={results[0].document} />
-        </TestApiProvider>,
-      ),
+    await renderInTestApp(
+      <TestApiProvider apis={[[analyticsApiRef, analyticsApiMock]]}>
+        <DefaultSearchResultListItemExtension result={results[0].document} />
+      </TestApiProvider>,
     );
 
     expect(screen.getByText('Default')).toBeInTheDocument();
@@ -148,7 +141,7 @@ describe('extensions', () => {
 
     await userEvent.click(screen.getByRole('listitem'));
 
-    expect(analyticsApiMock.getEvents()[0]).toMatchObject({
+    expect(analyticsApiMock.captureEvent).toHaveBeenCalledWith({
       action: 'discover',
       subject: 'Search Result 1',
       context: { routeRef: 'unknown', pluginId: 'root', extension: 'App' },
@@ -160,14 +153,12 @@ describe('extensions', () => {
     const plugin = createPlugin({ id: 'plugin' });
     const DefaultSearchResultListItemExtension = createExtension(plugin);
 
-    await renderWithEffects(
-      wrapInTestApp(
-        <TestApiProvider apis={[[analyticsApiRef, analyticsApiMock]]}>
-          <SearchResultListItemExtensions results={results}>
-            <DefaultSearchResultListItemExtension />
-          </SearchResultListItemExtensions>
-        </TestApiProvider>,
-      ),
+    await renderInTestApp(
+      <TestApiProvider apis={[[analyticsApiRef, analyticsApiMock]]}>
+        <SearchResultListItemExtensions results={results}>
+          <DefaultSearchResultListItemExtension />
+        </SearchResultListItemExtensions>
+      </TestApiProvider>,
     );
 
     expect(screen.getAllByText('Default')).toHaveLength(2);
@@ -188,15 +179,13 @@ describe('extensions', () => {
         ),
     });
 
-    await renderWithEffects(
-      wrapInTestApp(
-        <TestApiProvider apis={[[analyticsApiRef, analyticsApiMock]]}>
-          <SearchResultListItemExtensions results={results}>
-            <ExploreSearchResultListItemExtension />
-            <DefaultSearchResultListItemExtension />
-          </SearchResultListItemExtensions>
-        </TestApiProvider>,
-      ),
+    await renderInTestApp(
+      <TestApiProvider apis={[[analyticsApiRef, analyticsApiMock]]}>
+        <SearchResultListItemExtensions results={results}>
+          <ExploreSearchResultListItemExtension />
+          <DefaultSearchResultListItemExtension />
+        </SearchResultListItemExtensions>
+      </TestApiProvider>,
     );
 
     expect(screen.getAllByText('Default')).toHaveLength(1);

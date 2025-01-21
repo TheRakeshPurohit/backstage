@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MockEntityListContextProvider } from '../../testUtils/providers';
+import {
+  MockEntityListContextProvider,
+  catalogApiMock,
+} from '@backstage/plugin-catalog-react/testUtils';
 import { EntityLifecycleFilter } from '../../filters';
 import { EntityLifecyclePicker } from './EntityLifecyclePicker';
-import { TestApiProvider } from '@backstage/test-utils';
+import { TestApiProvider, renderInTestApp } from '@backstage/test-utils';
 import { catalogApiRef } from '../../api';
-import { CatalogApi } from '@backstage/catalog-client';
 
 describe('<EntityLifecyclePicker/>', () => {
-  const catalogApi = {
-    getEntityFacets: jest.fn(),
-  } as unknown as jest.Mocked<CatalogApi>;
+  const catalogApi = catalogApiMock.mock();
 
   beforeEach(() => {
     catalogApi.getEntityFacets.mockResolvedValue({
@@ -44,7 +44,7 @@ describe('<EntityLifecyclePicker/>', () => {
   });
 
   it('renders all lifecycles', async () => {
-    render(
+    await renderInTestApp(
       <TestApiProvider apis={[[catalogApiRef, catalogApi]]}>
         <MockEntityListContextProvider value={{}}>
           <EntityLifecyclePicker />
@@ -61,7 +61,7 @@ describe('<EntityLifecyclePicker/>', () => {
   it('respects the query parameter filter value', async () => {
     const updateFilters = jest.fn();
     const queryParameters = { lifecycles: ['experimental'] };
-    render(
+    await renderInTestApp(
       <TestApiProvider apis={[[catalogApiRef, catalogApi]]}>
         <MockEntityListContextProvider
           value={{
@@ -74,15 +74,16 @@ describe('<EntityLifecyclePicker/>', () => {
       </TestApiProvider>,
     );
 
-    await waitFor(() => expect(catalogApi.getEntityFacets).toHaveBeenCalled());
-    expect(updateFilters).toHaveBeenLastCalledWith({
-      lifecycles: new EntityLifecycleFilter(['experimental']),
+    await waitFor(() => {
+      expect(updateFilters).toHaveBeenLastCalledWith({
+        lifecycles: new EntityLifecycleFilter(['experimental']),
+      });
     });
   });
 
   it('adds lifecycles to filters', async () => {
     const updateFilters = jest.fn();
-    render(
+    await renderInTestApp(
       <TestApiProvider apis={[[catalogApiRef, catalogApi]]}>
         <MockEntityListContextProvider
           value={{
@@ -106,7 +107,7 @@ describe('<EntityLifecyclePicker/>', () => {
 
   it('removes lifecycles from filters', async () => {
     const updateFilters = jest.fn();
-    render(
+    await renderInTestApp(
       <TestApiProvider apis={[[catalogApiRef, catalogApi]]}>
         <MockEntityListContextProvider
           value={{
@@ -119,9 +120,10 @@ describe('<EntityLifecyclePicker/>', () => {
       </TestApiProvider>,
     );
 
-    await waitFor(() => expect(catalogApi.getEntityFacets).toHaveBeenCalled());
-    expect(updateFilters).toHaveBeenLastCalledWith({
-      lifecycles: new EntityLifecycleFilter(['production']),
+    await waitFor(() => {
+      expect(updateFilters).toHaveBeenLastCalledWith({
+        lifecycles: new EntityLifecycleFilter(['production']),
+      });
     });
     fireEvent.click(screen.getByTestId('lifecycles-picker-expand'));
     expect(screen.getByLabelText('production')).toBeChecked();
@@ -134,7 +136,7 @@ describe('<EntityLifecyclePicker/>', () => {
 
   it('responds to external queryParameters changes', async () => {
     const updateFilters = jest.fn();
-    const rendered = render(
+    const rendered = await renderInTestApp(
       <TestApiProvider apis={[[catalogApiRef, catalogApi]]}>
         <MockEntityListContextProvider
           value={{
@@ -147,9 +149,10 @@ describe('<EntityLifecyclePicker/>', () => {
       </TestApiProvider>,
     );
 
-    await waitFor(() => expect(catalogApi.getEntityFacets).toHaveBeenCalled());
-    expect(updateFilters).toHaveBeenLastCalledWith({
-      lifecycles: new EntityLifecycleFilter(['experimental']),
+    await waitFor(() => {
+      expect(updateFilters).toHaveBeenLastCalledWith({
+        lifecycles: new EntityLifecycleFilter(['experimental']),
+      });
     });
 
     rendered.rerender(
@@ -177,7 +180,7 @@ describe('<EntityLifecyclePicker/>', () => {
     });
 
     const updateFilters = jest.fn();
-    render(
+    await renderInTestApp(
       <TestApiProvider apis={[[catalogApiRef, catalogApi]]}>
         <MockEntityListContextProvider
           value={{
@@ -198,7 +201,7 @@ describe('<EntityLifecyclePicker/>', () => {
 
   it('responds to initialFilter prop', async () => {
     const updateFilters = jest.fn();
-    render(
+    await renderInTestApp(
       <TestApiProvider apis={[[catalogApiRef, catalogApi]]}>
         <MockEntityListContextProvider
           value={{
@@ -210,9 +213,10 @@ describe('<EntityLifecyclePicker/>', () => {
       </TestApiProvider>,
     );
 
-    await waitFor(() => expect(catalogApi.getEntityFacets).toHaveBeenCalled());
-    expect(updateFilters).toHaveBeenLastCalledWith({
-      lifecycles: new EntityLifecycleFilter(['production']),
+    await waitFor(() => {
+      expect(updateFilters).toHaveBeenLastCalledWith({
+        lifecycles: new EntityLifecycleFilter(['production']),
+      });
     });
   });
 });

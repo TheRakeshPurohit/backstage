@@ -40,7 +40,9 @@ describe('AwsOrganizationCloudAccountProcessor', () => {
         Accounts: [
           {
             Arn: 'arn:aws:organizations::192594491037:account/o-1vl18kc5a3/957140518395',
-            Name: 'testaccount',
+            Name: 'Test Account',
+            Email: 'aws-test-account@backstage.io',
+            Status: 'ACTIVE',
           },
         ],
         NextToken: undefined,
@@ -57,9 +59,14 @@ describe('AwsOrganizationCloudAccountProcessor', () => {
               'amazonaws.com/arn':
                 'arn:aws:organizations::192594491037:account/o-1vl18kc5a3/957140518395',
               'amazonaws.com/account-id': '957140518395',
+              'amazonaws.com/account-email': 'aws-test-account@backstage.io',
               'amazonaws.com/organization-id': 'o-1vl18kc5a3',
             },
-            name: 'testaccount',
+            labels: {
+              'amazonaws.com/account-status': 'active',
+            },
+            name: 'test-account',
+            title: 'Test Account',
             namespace: 'default',
           },
           spec: {
@@ -79,11 +86,11 @@ describe('AwsOrganizationCloudAccountProcessor', () => {
         Accounts: [
           {
             Arn: 'arn:aws:organizations::192594491037:account/o-1vl18kc5a3/957140518395',
-            Name: 'testaccount',
+            Name: 'Test Account',
           },
           {
             Arn: 'arn:aws:organizations::192594491037:account/o-zzzzzzzzz/957140518395',
-            Name: 'testaccount2',
+            Name: 'Test Account 2',
           },
         ],
         NextToken: undefined,
@@ -101,9 +108,14 @@ describe('AwsOrganizationCloudAccountProcessor', () => {
               'amazonaws.com/arn':
                 'arn:aws:organizations::192594491037:account/o-1vl18kc5a3/957140518395',
               'amazonaws.com/account-id': '957140518395',
+              'amazonaws.com/account-email': '',
               'amazonaws.com/organization-id': 'o-1vl18kc5a3',
             },
-            name: 'testaccount',
+            labels: {
+              'amazonaws.com/account-status': '',
+            },
+            name: 'test-account',
+            title: 'Test Account',
             namespace: 'default',
           },
           spec: {

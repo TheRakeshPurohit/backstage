@@ -15,18 +15,21 @@
  */
 
 import {
-  PluginEndpointDiscovery,
+  createLegacyAuthAdapters,
   TokenManager,
 } from '@backstage/backend-common';
+import {
+  AuthService,
+  DiscoveryService,
+  LoggerService,
+} from '@backstage/backend-plugin-api';
 import { Config } from '@backstage/config';
-import { ExploreTool } from '@backstage/plugin-explore-common';
+import { ExploreTool } from '@backstage-community/plugin-explore-common';
 import {
   DocumentCollatorFactory,
   IndexableDocument,
 } from '@backstage/plugin-search-common';
-import fetch from 'node-fetch';
 import { Readable } from 'stream';
-import { Logger } from 'winston';
 
 /**
  * Extended IndexableDocument with explore tool specific properties
@@ -36,32 +39,33 @@ import { Logger } from 'winston';
 export interface ToolDocument extends IndexableDocument, ExploreTool {}
 
 /**
- * The options for the {@link ToolDocumentCollatorFactory}.
- *
  * @public
+ * @deprecated This type is deprecated along with the {@link ToolDocumentCollatorFactory}.
  */
 export type ToolDocumentCollatorFactoryOptions = {
-  discovery: PluginEndpointDiscovery;
-  logger: Logger;
+  discovery: DiscoveryService;
+  logger: LoggerService;
   tokenManager?: TokenManager;
+  auth?: AuthService;
 };
 
 /**
  * Search collator responsible for collecting explore tools to index.
  *
  * @public
+ * @deprecated Migrate to the {@link https://backstage.io/docs/backend-system/building-backends/migrating | new backend system} and install this collator via module instead (see {@link https://github.com/backstage/backstage/blob/nbs10/search-deprecate-create-router/plugins/search-backend-module-explore/README.md#installation | here} for more installation details).
  */
 export class ToolDocumentCollatorFactory implements DocumentCollatorFactory {
   public readonly type: string = 'tools';
 
-  private readonly discovery: PluginEndpointDiscovery;
-  private readonly logger: Logger;
-  private readonly tokenManager?: TokenManager;
+  private readonly discovery: DiscoveryService;
+  private readonly logger: LoggerService;
+  private readonly auth: AuthService;
 
   private constructor(options: ToolDocumentCollatorFactoryOptions) {
     this.discovery = options.discovery;
     this.logger = options.logger;
-    this.tokenManager = options.tokenManager;
+    this.auth = createLegacyAuthAdapters(options).auth;
   }
 
   static fromConfig(
@@ -94,16 +98,13 @@ export class ToolDocumentCollatorFactory implements DocumentCollatorFactory {
   private async fetchTools() {
     const baseUrl = await this.discovery.getBaseUrl('explore');
 
-    let headers = {};
-
-    if (this.tokenManager) {
-      const { token } = await this.tokenManager.getToken();
-      headers = {
-        Authorization: `Bearer ${token}`,
-      };
-    }
-
-    const response = await fetch(`${baseUrl}/tools`, headers);
+    const { token } = await this.auth.getPluginRequestToken({
+      onBehalfOf: await this.auth.getOwnServiceCredentials(),
+      targetPluginId: 'explore',
+    });
+    const response = await fetch(`${baseUrl}/tools`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
     if (!response.ok) {
       throw new Error(

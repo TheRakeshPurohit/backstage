@@ -14,20 +14,8 @@
  * limitations under the License.
  */
 
-/** @internal */
-export interface SimpleDeferred<T> {
-  promise: Promise<T>;
-  resolve(value: T): void;
-}
-
-/** @internal */
-export function simpleDefer<T>(): SimpleDeferred<T> {
-  let resolve: (value: T) => void;
-  const promise = new Promise<T>(_resolve => {
-    resolve = _resolve;
-  });
-  return { promise, resolve: resolve! };
-}
+import { Parser } from './types';
+import yaml from 'yaml';
 
 /** @internal */
 export async function waitOrAbort<T>(
@@ -55,3 +43,9 @@ export async function waitOrAbort<T>(
     signals.forEach(s => s.addEventListener('abort', onAbort));
   });
 }
+
+/** @internal */
+export const parseYamlContent: Parser = async ({ contents }) => {
+  const parsed = yaml.parse(contents);
+  return { result: parsed === null ? undefined : parsed };
+};

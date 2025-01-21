@@ -19,11 +19,11 @@ import {
   createBackendModule,
   createExtensionPoint,
 } from '@backstage/backend-plugin-api';
-import { loggerToWinstonLogger } from '@backstage/backend-common';
 import { catalogProcessingExtensionPoint } from '@backstage/plugin-catalog-node/alpha';
 import {
   GroupTransformer,
   OrganizationTransformer,
+  ProviderConfigTransformer,
   UserTransformer,
 } from '@backstage/plugin-catalog-backend-module-msgraph';
 import { MicrosoftGraphOrgEntityProvider } from '../processors';
@@ -31,7 +31,7 @@ import { MicrosoftGraphOrgEntityProvider } from '../processors';
 /**
  * Interface for {@link microsoftGraphOrgEntityProviderTransformExtensionPoint}.
  *
- * @alpha
+ * @public
  */
 export interface MicrosoftGraphOrgEntityProviderTransformsExtensionPoint {
   /**
@@ -59,12 +59,24 @@ export interface MicrosoftGraphOrgEntityProviderTransformsExtensionPoint {
       | OrganizationTransformer
       | Record<string, OrganizationTransformer>,
   ): void;
+
+  /**
+   * Set the function that transforms provider config dynamically.
+   * Optionally, you can pass separate transformers per provider ID.
+   * Note: adjusting fields that are not used on each scheduled ingestion
+   *       (e.g., id, schedule) will have no effect.
+   */
+  setProviderConfigTransformer(
+    transformer:
+      | ProviderConfigTransformer
+      | Record<string, ProviderConfigTransformer>,
+  ): void;
 }
 
 /**
- * Extension point used to customize the transforms used by the {@link catalogModuleMicrosoftGraphOrgEntityProvider}.
+ * Extension point used to customize the transforms used by the module.
  *
- * @alpha
+ * @public
  */
 export const microsoftGraphOrgEntityProviderTransformExtensionPoint =
   createExtensionPoint<MicrosoftGraphOrgEntityProviderTransformsExtensionPoint>(
@@ -76,7 +88,7 @@ export const microsoftGraphOrgEntityProviderTransformExtensionPoint =
 /**
  * Registers the MicrosoftGraphOrgEntityProvider with the catalog processing extension point.
  *
- * @alpha
+ * @public
  */
 export const catalogModuleMicrosoftGraphOrgEntityProvider = createBackendModule(
   {
@@ -94,6 +106,10 @@ export const catalogModuleMicrosoftGraphOrgEntityProvider = createBackendModule(
       let organizationTransformer:
         | OrganizationTransformer
         | Record<string, OrganizationTransformer>
+        | undefined;
+      let providerConfigTransformer:
+        | ProviderConfigTransformer
+        | Record<string, ProviderConfigTransformer>
         | undefined;
 
       env.registerExtensionPoint(
@@ -117,6 +133,12 @@ export const catalogModuleMicrosoftGraphOrgEntityProvider = createBackendModule(
             }
             organizationTransformer = transformer;
           },
+          setProviderConfigTransformer(transformer) {
+            if (providerConfigTransformer) {
+              throw new Error('Provider transformer may only be set once');
+            }
+            providerConfigTransformer = transformer;
+          },
         },
       );
 
@@ -130,11 +152,12 @@ export const catalogModuleMicrosoftGraphOrgEntityProvider = createBackendModule(
         async init({ catalog, config, logger, scheduler }) {
           catalog.addEntityProvider(
             MicrosoftGraphOrgEntityProvider.fromConfig(config, {
-              logger: loggerToWinstonLogger(logger),
+              logger,
               scheduler,
               userTransformer: userTransformer,
               groupTransformer: groupTransformer,
               organizationTransformer: organizationTransformer,
+              providerConfigTransformer: providerConfigTransformer,
             }),
           );
         },

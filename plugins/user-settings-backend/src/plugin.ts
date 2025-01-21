@@ -15,27 +15,35 @@
  */
 
 import {
-  createBackendPlugin,
   coreServices,
+  createBackendPlugin,
 } from '@backstage/backend-plugin-api';
-import { createRouter } from './service/router';
+import { createRouterInternal } from './service/router';
+import { signalsServiceRef } from '@backstage/plugin-signals-node';
+import { DatabaseUserSettingsStore } from './database/DatabaseUserSettingsStore';
 
 /**
  * The user settings backend plugin.
  *
- * @alpha
+ * @public
  */
-export const userSettingsPlugin = createBackendPlugin({
-  pluginId: 'userSettings',
+export default createBackendPlugin({
+  pluginId: 'user-settings',
   register(env) {
     env.registerInit({
       deps: {
         database: coreServices.database,
-        identity: coreServices.identity,
+        httpAuth: coreServices.httpAuth,
         httpRouter: coreServices.httpRouter,
+        signals: signalsServiceRef,
       },
-      async init({ database, identity, httpRouter }) {
-        httpRouter.use(await createRouter({ database, identity }));
+      async init({ database, httpAuth, httpRouter, signals }) {
+        const userSettingsStore = await DatabaseUserSettingsStore.create({
+          database,
+        });
+        httpRouter.use(
+          await createRouterInternal({ userSettingsStore, httpAuth, signals }),
+        );
       },
     });
   },

@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-import { getVoidLogger } from '@backstage/backend-common';
 import { Hash } from 'crypto';
 import { DateTime } from 'luxon';
 import waitForExpect from 'wait-for-expect';
 import { DefaultProcessingDatabase } from '../database/DefaultProcessingDatabase';
 import { DefaultCatalogProcessingEngine } from './DefaultCatalogProcessingEngine';
 import { CatalogProcessingOrchestrator } from './types';
-import { Stitcher } from '../stitching/Stitcher';
+import { Stitcher } from '../stitching/types';
 import { ConfigReader } from '@backstage/config';
+import { mockServices } from '@backstage/backend-test-utils';
 
 describe('DefaultCatalogProcessingEngine', () => {
   const db = {
@@ -64,8 +64,9 @@ describe('DefaultCatalogProcessingEngine', () => {
     });
     const engine = new DefaultCatalogProcessingEngine({
       config: new ConfigReader({}),
-      logger: getVoidLogger(),
+      logger: mockServices.logger.mock(),
       processingDatabase: db,
+      knex: {} as any,
       orchestrator: orchestrator,
       stitcher: stitcher,
       createHash: () => hash,
@@ -91,7 +92,6 @@ describe('DefaultCatalogProcessingEngine', () => {
             resultHash: '',
             state: [] as any,
             nextUpdateAt: DateTime.now(),
-            lastDiscoveryAt: DateTime.now(),
           },
         ],
       });
@@ -131,8 +131,9 @@ describe('DefaultCatalogProcessingEngine', () => {
     });
     const engine = new DefaultCatalogProcessingEngine({
       config: new ConfigReader({}),
-      logger: getVoidLogger(),
+      logger: mockServices.logger.mock(),
       processingDatabase: db,
+      knex: {} as any,
       orchestrator: orchestrator,
       stitcher: stitcher,
       createHash: () => hash,
@@ -159,7 +160,6 @@ describe('DefaultCatalogProcessingEngine', () => {
             resultHash: '',
             state: { cache: { myProcessor: { myKey: 'myValue' } } },
             nextUpdateAt: DateTime.now(),
-            lastDiscoveryAt: DateTime.now(),
           },
         ],
       });
@@ -214,8 +214,9 @@ describe('DefaultCatalogProcessingEngine', () => {
 
     const engine = new DefaultCatalogProcessingEngine({
       config: new ConfigReader({}),
-      logger: getVoidLogger(),
+      logger: mockServices.logger.mock(),
       processingDatabase: db,
+      knex: {} as any,
       orchestrator: orchestrator,
       stitcher: stitcher,
       createHash: () => hash,
@@ -290,8 +291,9 @@ describe('DefaultCatalogProcessingEngine', () => {
 
     const engine = new DefaultCatalogProcessingEngine({
       config: new ConfigReader({}),
-      logger: getVoidLogger(),
+      logger: mockServices.logger.mock(),
       processingDatabase: db,
+      knex: {} as any,
       orchestrator: orchestrator,
       stitcher: stitcher,
       createHash: () => hash,
@@ -348,8 +350,9 @@ describe('DefaultCatalogProcessingEngine', () => {
   it('should stitch both the previous and new sources when relations change', async () => {
     const engine = new DefaultCatalogProcessingEngine({
       config: new ConfigReader({}),
-      logger: getVoidLogger(),
+      logger: mockServices.logger.mock(),
       processingDatabase: db,
+      knex: {} as any,
       orchestrator: orchestrator,
       stitcher: stitcher,
       createHash: () => hash,
@@ -450,11 +453,116 @@ describe('DefaultCatalogProcessingEngine', () => {
     await waitForExpect(() => {
       expect(stitcher.stitch).toHaveBeenCalledTimes(2);
     });
-    expect([...stitcher.stitch.mock.calls[0][0]]).toEqual(
+    expect([...stitcher.stitch.mock.calls[0][0].entityRefs!]).toEqual(
       expect.arrayContaining(['k:ns/me', 'k:ns/other1', 'k:ns/other2']),
     );
-    expect([...stitcher.stitch.mock.calls[1][0]]).toEqual(
+    expect([...stitcher.stitch.mock.calls[1][0].entityRefs!]).toEqual(
       expect.arrayContaining(['k:ns/me', 'k:ns/other1', 'k:ns/other3']),
+    );
+    await engine.stop();
+  });
+
+  it('should stitch both the previous and new sources when relation target changes', async () => {
+    const engine = new DefaultCatalogProcessingEngine({
+      config: new ConfigReader({}),
+      logger: mockServices.logger.mock(),
+      processingDatabase: db,
+      knex: {} as any,
+      orchestrator: orchestrator,
+      stitcher: stitcher,
+      createHash: () => hash,
+      pollingIntervalMs: 100,
+    });
+
+    db.transaction.mockImplementation(cb => cb((() => {}) as any));
+
+    const entity = {
+      apiVersion: '1',
+      kind: 'k',
+      metadata: { name: 'me', namespace: 'ns' },
+    };
+    const processableEntity = {
+      entityRef: 'foo',
+      id: '1',
+      unprocessedEntity: entity,
+      resultHash: '',
+      state: [] as any,
+      nextUpdateAt: DateTime.now(),
+      lastDiscoveryAt: DateTime.now(),
+    };
+
+    db.listParents.mockResolvedValue({ entityRefs: [] });
+    db.getProcessableEntities
+      .mockResolvedValueOnce({
+        items: [processableEntity],
+      })
+      .mockResolvedValueOnce({
+        items: [processableEntity],
+      });
+    db.updateProcessedEntity
+      .mockImplementationOnce(async () => ({
+        previous: { relations: [] },
+      }))
+      .mockImplementationOnce(async () => ({
+        previous: {
+          relations: [
+            {
+              originating_entity_id: '',
+              type: 't',
+              source_entity_ref: 'k:ns/other1',
+              target_entity_ref: 'k:ns/me',
+            },
+          ],
+        },
+      }));
+
+    orchestrator.process
+      .mockResolvedValueOnce({
+        ok: true,
+        completedEntity: entity,
+        relations: [
+          {
+            type: 't',
+            source: { kind: 'k', namespace: 'ns', name: 'other1' },
+            target: { kind: 'k', namespace: 'ns', name: 'me' },
+          },
+        ],
+        errors: [],
+        deferredEntities: [],
+        state: {},
+        refreshKeys: [],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        completedEntity: entity,
+        // change just the target of the relationship to a new entity,
+        // leaving the source and relation type the same.
+        // see: https://github.com/backstage/backstage/issues/27325
+        relations: [
+          {
+            type: 't',
+            source: { kind: 'k', namespace: 'ns', name: 'other1' },
+            target: { kind: 'k', namespace: 'ns', name: 'newtarget' },
+          },
+        ],
+        errors: [],
+        deferredEntities: [],
+        state: {},
+        refreshKeys: [],
+      });
+
+    await engine.start();
+    await waitForExpect(() => {
+      expect(stitcher.stitch).toHaveBeenCalledTimes(2);
+    });
+    expect([...stitcher.stitch.mock.calls[0][0].entityRefs!]).toEqual(
+      expect.arrayContaining(['k:ns/me', 'k:ns/other1']),
+    );
+    // As a result of switching the relationship for source other1 to
+    // a new target entity, the other1 relationship source must be
+    // restitched.
+    expect([...stitcher.stitch.mock.calls[1][0].entityRefs!]).toEqual(
+      expect.arrayContaining(['k:ns/me', 'k:ns/other1']),
     );
     await engine.stop();
   });
@@ -462,8 +570,9 @@ describe('DefaultCatalogProcessingEngine', () => {
   it('should not stitch sources entities when relations are the same', async () => {
     const engine = new DefaultCatalogProcessingEngine({
       config: new ConfigReader({}),
-      logger: getVoidLogger(),
+      logger: mockServices.logger.mock(),
       processingDatabase: db,
+      knex: {} as any,
       orchestrator: orchestrator,
       stitcher: stitcher,
       createHash: () => hash,
@@ -535,7 +644,7 @@ describe('DefaultCatalogProcessingEngine', () => {
     await waitForExpect(() => {
       expect(stitcher.stitch).toHaveBeenCalledTimes(1);
     });
-    expect([...stitcher.stitch.mock.calls[0][0]]).toEqual(
+    expect([...stitcher.stitch.mock.calls[0][0].entityRefs!]).toEqual(
       expect.arrayContaining(['k:ns/me']),
     );
     await engine.stop();
@@ -544,8 +653,9 @@ describe('DefaultCatalogProcessingEngine', () => {
   it('should stitch sources entities when new relation of different type added', async () => {
     const engine = new DefaultCatalogProcessingEngine({
       config: new ConfigReader({}),
-      logger: getVoidLogger(),
+      logger: mockServices.logger.mock(),
       processingDatabase: db,
+      knex: {} as any,
       orchestrator: orchestrator,
       stitcher: stitcher,
       createHash: () => hash,
@@ -622,7 +732,7 @@ describe('DefaultCatalogProcessingEngine', () => {
     await waitForExpect(() => {
       expect(stitcher.stitch).toHaveBeenCalledTimes(1);
     });
-    expect([...stitcher.stitch.mock.calls[0][0]]).toEqual(
+    expect([...stitcher.stitch.mock.calls[0][0].entityRefs!]).toEqual(
       expect.arrayContaining(['k:ns/me', 'k:ns/other2']),
     );
     await engine.stop();
@@ -631,8 +741,9 @@ describe('DefaultCatalogProcessingEngine', () => {
   it('should stitch sources entities when relation is removed', async () => {
     const engine = new DefaultCatalogProcessingEngine({
       config: new ConfigReader({}),
-      logger: getVoidLogger(),
+      logger: mockServices.logger.mock(),
       processingDatabase: db,
+      knex: {} as any,
       orchestrator: orchestrator,
       stitcher: stitcher,
       createHash: () => hash,
@@ -699,7 +810,7 @@ describe('DefaultCatalogProcessingEngine', () => {
     await waitForExpect(() => {
       expect(stitcher.stitch).toHaveBeenCalledTimes(1);
     });
-    expect([...stitcher.stitch.mock.calls[0][0]]).toEqual(
+    expect([...stitcher.stitch.mock.calls[0][0].entityRefs!]).toEqual(
       expect.arrayContaining(['k:ns/me', 'k:ns/other2']),
     );
     await engine.stop();

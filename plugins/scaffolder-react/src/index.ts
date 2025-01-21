@@ -15,8 +15,10 @@
  */
 
 export * from './extensions';
+export * from './components';
 export * from './types';
 export * from './secrets';
 export * from './api';
 export * from './hooks';
 export * from './layouts';
+export * from './utils';

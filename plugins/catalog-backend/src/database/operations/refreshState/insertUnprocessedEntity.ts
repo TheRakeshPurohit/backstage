@@ -18,19 +18,21 @@ import { Entity, stringifyEntityRef } from '@backstage/catalog-model';
 import { Knex } from 'knex';
 import { DbRefreshStateRow } from '../../tables';
 import { v4 as uuid } from 'uuid';
-import type { Logger } from 'winston';
-import { isDatabaseConflictError } from '@backstage/backend-common';
+import {
+  LoggerService,
+  isDatabaseConflictError,
+} from '@backstage/backend-plugin-api';
 
 /**
  * Attempts to insert a new refresh state row for the given entity, returning
  * true if successful and false if there was a conflict.
  */
 export async function insertUnprocessedEntity(options: {
-  tx: Knex.Transaction;
+  tx: Knex | Knex.Transaction;
   entity: Entity;
   hash: string;
   locationKey?: string;
-  logger: Logger;
+  logger: LoggerService;
 }): Promise<boolean> {
   const { tx, entity, hash, logger, locationKey } = options;
 

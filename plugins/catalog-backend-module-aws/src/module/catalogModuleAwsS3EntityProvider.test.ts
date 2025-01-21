@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-import { TaskScheduleDefinition } from '@backstage/backend-tasks';
+import { SchedulerServiceTaskScheduleDefinition } from '@backstage/backend-plugin-api';
 import { mockServices, startTestBackend } from '@backstage/backend-test-utils';
 import { catalogProcessingExtensionPoint } from '@backstage/plugin-catalog-node/alpha';
-import { Duration } from 'luxon';
 import { catalogModuleAwsS3EntityProvider } from './catalogModuleAwsS3EntityProvider';
 import { AwsS3EntityProvider } from '../providers';
 
 describe('catalogModuleAwsS3EntityProvider', () => {
   it('should register provider at the catalog extension point', async () => {
     let addedProviders: Array<AwsS3EntityProvider> | undefined;
-    let usedSchedule: TaskScheduleDefinition | undefined;
+    let usedSchedule: SchedulerServiceTaskScheduleDefinition | undefined;
 
     const extensionPoint = {
       addEntityProvider: (providers: any) => {
@@ -56,14 +55,14 @@ describe('catalogModuleAwsS3EntityProvider', () => {
     await startTestBackend({
       extensionPoints: [[catalogProcessingExtensionPoint, extensionPoint]],
       features: [
-        catalogModuleAwsS3EntityProvider(),
+        catalogModuleAwsS3EntityProvider,
         mockServices.rootConfig.factory({ data: config }),
         scheduler.factory,
       ],
     });
 
-    expect(usedSchedule?.frequency).toEqual(Duration.fromISO('P1M'));
-    expect(usedSchedule?.timeout).toEqual(Duration.fromISO('PT3M'));
+    expect(usedSchedule?.frequency).toEqual({ months: 1 });
+    expect(usedSchedule?.timeout).toEqual({ minutes: 3 });
     expect(addedProviders?.length).toEqual(1);
     expect(addedProviders?.pop()?.getProviderName()).toEqual(
       'awsS3-provider:default',

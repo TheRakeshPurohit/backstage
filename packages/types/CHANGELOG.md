@@ -1,5 +1,35 @@
 # @backstage/types
 
+## 1.2.1
+
+### Patch Changes
+
+- b40eb41: Move `Expand` and `ExpandRecursive` to `@backstage/types`
+
+## 1.2.1-next.0
+
+### Patch Changes
+
+- b40eb41: Move `Expand` and `ExpandRecursive` to `@backstage/types`
+
+## 1.2.0
+
+### Minor Changes
+
+- c5e39e7: Introduce `createDeferred` and `DeferredPromise`.
+
+## 1.1.1
+
+### Patch Changes
+
+- 406b786a2a2c: Mark package as being free of side effects, allowing more optimized Webpack builds.
+
+## 1.1.1-next.0
+
+### Patch Changes
+
+- 406b786a2a2c: Mark package as being free of side effects, allowing more optimized Webpack builds.
+
 ## 1.1.0
 
 ### Minor Changes

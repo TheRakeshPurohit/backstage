@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-import { getVoidLogger } from '@backstage/backend-common';
-import mockFs from 'mock-fs';
 import { createWaitAction } from './wait';
 import { Writable } from 'stream';
-import os from 'os';
+import { createMockActionContext } from '@backstage/plugin-scaffolder-node-test-utils';
 
 describe('debug:wait', () => {
   const action = createWaitAction();
@@ -27,23 +25,12 @@ describe('debug:wait', () => {
     write: jest.fn(),
   } as jest.Mocked<Partial<Writable>> as jest.Mocked<Writable>;
 
-  const mockTmpDir = os.tmpdir();
-  const mockContext = {
-    input: {},
-    baseUrl: 'somebase',
-    workspacePath: mockTmpDir,
-    logger: getVoidLogger(),
+  const mockContext = createMockActionContext({
     logStream,
-    output: jest.fn(),
-    createTemporaryDirectory: jest.fn().mockResolvedValue(mockTmpDir),
-  };
+  });
 
   beforeEach(() => {
     jest.resetAllMocks();
-  });
-
-  afterEach(() => {
-    mockFs.restore();
   });
 
   it('should wait for specified period of time', async () => {
@@ -70,7 +57,7 @@ describe('debug:wait', () => {
     await expect(async () => {
       await action.handler(context);
     }).rejects.toThrow(
-      'Waiting duration is longer than the maximum threshold of 0 hours, 0 minutes, 30 seconds',
+      'Waiting duration is longer than the maximum threshold of 0 hours, 10 minutes, 0 seconds',
     );
   });
 });

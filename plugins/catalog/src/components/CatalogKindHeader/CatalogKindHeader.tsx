@@ -15,14 +15,10 @@
  */
 
 import React, { useEffect, useState, useMemo } from 'react';
-import {
-  createStyles,
-  InputBase,
-  makeStyles,
-  MenuItem,
-  Select,
-  Theme,
-} from '@material-ui/core';
+import InputBase from '@material-ui/core/InputBase';
+import MenuItem from '@material-ui/core/MenuItem';
+import Select from '@material-ui/core/Select';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import {
   EntityKindFilter,
   useEntityList,
@@ -95,11 +91,16 @@ export function CatalogKindHeader(props: CatalogKindHeaderProps) {
     }
   }, [filters.kind]);
 
+  const selectedKindLabel =
+    allKinds.get(selectedKind.toLocaleLowerCase('en-US')) || selectedKind;
+
   useEffect(() => {
     updateFilters({
-      kind: selectedKind ? new EntityKindFilter(selectedKind) : undefined,
+      kind: selectedKind
+        ? new EntityKindFilter(selectedKind, selectedKindLabel)
+        : undefined,
     });
-  }, [selectedKind, updateFilters]);
+  }, [selectedKind, selectedKindLabel, updateFilters]);
 
   const options = filterKinds(allKinds, allowedKinds, selectedKind);
 
@@ -110,9 +111,9 @@ export function CatalogKindHeader(props: CatalogKindHeaderProps) {
       onChange={e => setSelectedKind(e.target.value as string)}
       classes={classes}
     >
-      {Object.keys(options).map(kind => (
+      {[...options.keys()].map(kind => (
         <MenuItem value={kind} key={kind}>
-          {`${pluralize(options[kind])}`}
+          {`${pluralize(options.get(kind) || kind)}`}
         </MenuItem>
       ))}
     </Select>

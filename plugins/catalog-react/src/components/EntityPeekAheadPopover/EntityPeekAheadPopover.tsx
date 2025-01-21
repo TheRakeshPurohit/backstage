@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import useAsyncFn from 'react-use/lib/useAsyncFn';
+import useAsyncFn from 'react-use/esm/useAsyncFn';
 import { catalogApiRef } from '../../api';
 import React, { PropsWithChildren, useEffect, useMemo, useState } from 'react';
 import HoverPopover from 'material-ui-popup-state/HoverPopover';
@@ -23,16 +23,14 @@ import {
   bindPopover,
   usePopupState,
 } from 'material-ui-popup-state/hooks';
-import {
-  Box,
-  Card,
-  CardActions,
-  CardContent,
-  Chip,
-  makeStyles,
-  Tooltip,
-  Typography,
-} from '@material-ui/core';
+import Box from '@material-ui/core/Box';
+import Card from '@material-ui/core/Card';
+import CardActions from '@material-ui/core/CardActions';
+import CardContent from '@material-ui/core/CardContent';
+import Chip from '@material-ui/core/Chip';
+import Tooltip from '@material-ui/core/Tooltip';
+import Typography from '@material-ui/core/Typography';
+import { makeStyles } from '@material-ui/core/styles';
 import { useApiHolder } from '@backstage/core-plugin-api';
 import { isGroupEntity, isUserEntity } from '@backstage/catalog-model';
 import { Progress, ResponseErrorPanel } from '@backstage/core-components';
@@ -42,6 +40,8 @@ import {
   GroupCardActions,
 } from './CardActionComponents';
 import { debounce } from 'lodash';
+import { catalogReactTranslationRef } from '../../translation';
+import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 
 /**
  * Properties for an entity popover on hover of a component.
@@ -77,7 +77,7 @@ const maxTagChips = 4;
  */
 export const EntityPeekAheadPopover = (props: EntityPeekAheadPopoverProps) => {
   const { entityRef, children, delayTime = 500 } = props;
-
+  const { t } = useTranslationRef(catalogReactTranslationRef);
   const classes = useStyles();
   const apiHolder = useApiHolder();
   const popupState = usePopupState({
@@ -164,7 +164,7 @@ export const EntityPeekAheadPopover = (props: EntityPeekAheadPopoverProps) => {
                       {entity.metadata.description}
                     </Typography>
                   )}
-                  <Typography>{entity.spec?.type}</Typography>
+                  <Typography>{entity.spec?.type?.toString()}</Typography>
                   <Box marginTop="0.5em">
                     {(entity.metadata.tags || [])
                       .slice(0, maxTagChips)
@@ -173,7 +173,7 @@ export const EntityPeekAheadPopover = (props: EntityPeekAheadPopoverProps) => {
                       })}
                     {entity.metadata.tags?.length &&
                       entity.metadata.tags?.length > maxTagChips && (
-                        <Tooltip title="Drill into the entity to see all of the tags.">
+                        <Tooltip title={t('entityPeekAheadPopover.title')}>
                           <Chip key="other-tags" size="small" label="..." />
                         </Tooltip>
                       )}

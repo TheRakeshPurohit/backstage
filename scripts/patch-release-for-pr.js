@@ -149,6 +149,9 @@ async function main(args) {
     );
   }
 
+  console.log('Running "yarn install" ...');
+  await run('yarn', 'install');
+
   console.log('Running "yarn release" ...');
   await run('yarn', 'release');
 
@@ -169,9 +172,11 @@ async function main(args) {
     body: 'This release fixes an issue where',
     title: `Patch release of ${prNumbers.map(nr => `#${nr}`).join(', ')}`,
   });
-  console.log(
-    `https://github.com/backstage/backstage/compare/${patchBranch}...${branchName}?${params}`,
-  );
+
+  const url = `https://github.com/backstage/backstage/compare/${patchBranch}...${branchName}?${params}`;
+  console.log(`Opening ${url} ...`);
+
+  await run('open', url);
 }
 
 main(process.argv.slice(2)).catch(error => {

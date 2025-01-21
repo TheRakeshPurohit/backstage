@@ -14,4 +14,8 @@
  * limitations under the License.
  */
 
-export { permissionPlugin, permissionModuleAllowAllPolicy } from './plugin';
+import { permissionPlugin as feature } from './plugin';
+
+/** @alpha */
+const _feature = feature;
+export default _feature;

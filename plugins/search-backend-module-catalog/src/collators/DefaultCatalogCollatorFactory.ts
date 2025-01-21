@@ -14,19 +14,13 @@
  * limitations under the License.
  */
 
-import {
-  PluginEndpointDiscovery,
-  TokenManager,
-} from '@backstage/backend-common';
-import {
-  CatalogApi,
-  CatalogClient,
-  GetEntitiesRequest,
-} from '@backstage/catalog-client';
+import { AuthService } from '@backstage/backend-plugin-api';
+import { QueryEntitiesInitialRequest } from '@backstage/catalog-client';
 import { stringifyEntityRef } from '@backstage/catalog-model';
 import { Config } from '@backstage/config';
 import { CatalogEntityDocument } from '@backstage/plugin-catalog-common';
 import { catalogEntityReadPermission } from '@backstage/plugin-catalog-common/alpha';
+import { CatalogService } from '@backstage/plugin-catalog-node';
 import { Permission } from '@backstage/plugin-permission-common';
 import { DocumentCollatorFactory } from '@backstage/plugin-search-common';
 import { Readable } from 'stream';
@@ -34,24 +28,10 @@ import { CatalogCollatorEntityTransformer } from './CatalogCollatorEntityTransfo
 import { readCollatorConfigOptions } from './config';
 import { defaultCatalogCollatorEntityTransformer } from './defaultCatalogCollatorEntityTransformer';
 
-/** @public */
 export type DefaultCatalogCollatorFactoryOptions = {
-  discovery: PluginEndpointDiscovery;
-  tokenManager: TokenManager;
-  /**
-   * @deprecated Use the config key `search.collators.catalog.locationTemplate` instead.
-   */
-  locationTemplate?: string;
-  /**
-   * @deprecated Use the config key `search.collators.catalog.filter` instead.
-   */
-  filter?: GetEntitiesRequest['filter'];
-  /**
-   * @deprecated Use the config key `search.collators.catalog.batchSize` instead.
-   */
-  batchSize?: number;
-  catalogClient?: CatalogApi;
-  /**
+  auth: AuthService;
+  catalog: CatalogService;
+  /*
    * Allows you to customize how entities are shaped into documents.
    */
   entityTransformer?: CatalogCollatorEntityTransformer;
@@ -59,8 +39,6 @@ export type DefaultCatalogCollatorFactoryOptions = {
 
 /**
  * Collates entities from the Catalog into documents for the search backend.
- *
- * @public
  */
 export class DefaultCatalogCollatorFactory implements DocumentCollatorFactory {
   public readonly type = 'software-catalog';
@@ -68,11 +46,11 @@ export class DefaultCatalogCollatorFactory implements DocumentCollatorFactory {
     catalogEntityReadPermission;
 
   private locationTemplate: string;
-  private filter?: GetEntitiesRequest['filter'];
+  private filter?: QueryEntitiesInitialRequest['filter'];
   private batchSize: number;
-  private readonly catalogClient: CatalogApi;
-  private tokenManager: TokenManager;
+  private readonly catalog: CatalogService;
   private entityTransformer: CatalogCollatorEntityTransformer;
+  private auth: AuthService;
 
   static fromConfig(
     configRoot: Config,
@@ -80,44 +58,39 @@ export class DefaultCatalogCollatorFactory implements DocumentCollatorFactory {
   ) {
     const configOptions = readCollatorConfigOptions(configRoot);
     return new DefaultCatalogCollatorFactory({
-      locationTemplate:
-        options.locationTemplate ?? configOptions.locationTemplate,
-      filter: options.filter ?? configOptions.filter,
-      batchSize: options.batchSize ?? configOptions.batchSize,
+      locationTemplate: configOptions.locationTemplate,
+      filter: configOptions.filter,
+      batchSize: configOptions.batchSize,
       entityTransformer: options.entityTransformer,
-      discovery: options.discovery,
-      tokenManager: options.tokenManager,
-      catalogClient: options.catalogClient,
+      auth: options.auth,
+      catalog: options.catalog,
     });
   }
 
   private constructor(options: {
     locationTemplate: string;
-    filter: GetEntitiesRequest['filter'];
+    filter: QueryEntitiesInitialRequest['filter'];
     batchSize: number;
     entityTransformer?: CatalogCollatorEntityTransformer;
-    discovery: PluginEndpointDiscovery;
-    tokenManager: TokenManager;
-    catalogClient?: CatalogApi;
+    auth: AuthService;
+    catalog: CatalogService;
   }) {
     const {
+      auth,
       batchSize,
-      discovery,
       locationTemplate,
       filter,
-      catalogClient,
-      tokenManager,
+      catalog,
       entityTransformer,
     } = options;
 
     this.locationTemplate = locationTemplate;
     this.filter = filter;
     this.batchSize = batchSize;
-    this.catalogClient =
-      catalogClient || new CatalogClient({ discoveryApi: discovery });
-    this.tokenManager = tokenManager;
+    this.catalog = catalog;
     this.entityTransformer =
       entityTransformer ?? defaultCatalogCollatorEntityTransformer;
+    this.auth = auth;
   }
 
   async getCollator(): Promise<Readable> {
@@ -125,43 +98,37 @@ export class DefaultCatalogCollatorFactory implements DocumentCollatorFactory {
   }
 
   private async *execute(): AsyncGenerator<CatalogEntityDocument> {
-    const { token } = await this.tokenManager.getToken();
     let entitiesRetrieved = 0;
-    let moreEntitiesToGet = true;
+    let cursor: string | undefined = undefined;
 
-    // Offset/limit pagination is used on the Catalog Client in order to
-    // limit (and allow some control over) memory used by the search backend
-    // at index-time.
-    while (moreEntitiesToGet) {
-      const entities = (
-        await this.catalogClient.getEntities(
-          {
-            filter: this.filter,
-            limit: this.batchSize,
-            offset: entitiesRetrieved,
-          },
-          { token },
-        )
-      ).items;
+    do {
+      const response = await this.catalog.queryEntities(
+        {
+          filter: this.filter,
+          limit: this.batchSize,
+          ...(cursor ? { cursor } : {}),
+        },
+        { credentials: await this.auth.getOwnServiceCredentials() },
+      );
+      cursor = response.pageInfo.nextCursor;
+      entitiesRetrieved += response.items.length;
 
-      // Control looping through entity batches.
-      moreEntitiesToGet = entities.length === this.batchSize;
-      entitiesRetrieved += entities.length;
-
-      for (const entity of entities) {
+      for (const entity of response.items) {
         yield {
           ...this.entityTransformer(entity),
           authorization: {
             resourceRef: stringifyEntityRef(entity),
           },
           location: this.applyArgsToFormat(this.locationTemplate, {
-            namespace: entity.metadata.namespace || 'default',
-            kind: entity.kind,
-            name: entity.metadata.name,
+            namespace: encodeURIComponent(
+              entity.metadata.namespace || 'default',
+            ),
+            kind: encodeURIComponent(entity.kind),
+            name: encodeURIComponent(entity.metadata.name),
           }),
         };
       }
-    }
+    } while (cursor);
   }
 
   private applyArgsToFormat(

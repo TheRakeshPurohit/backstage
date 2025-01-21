@@ -12,13 +12,24 @@ code, template in some variables, and then publish the template to some
 locations like GitHub or GitLab.
 
 <video width="100%" height="100%" controls>
-  <source src="https://backstage.io/blog/assets/2020-08-05/feature.mp4" type="video/mp4" />
+  <source src="/video/software-templates.mp4" type="video/mp4" />
 </video>
 
 ## Getting Started
 
 > Be sure to have covered
 > [Getting Started with Backstage](../../getting-started) before proceeding.
+
+:::note Note
+
+If you're running Backstage with Node 20 or later, you'll need to pass the flag `--no-node-snapshot` to Node in order to
+use the templates feature.
+One way to do this is to specify the `NODE_OPTIONS` environment variable before starting Backstage:
+`export NODE_OPTIONS="${NODE_OPTIONS:-} --no-node-snapshot"`
+
+> It's important to append to the existing `NODE_OPTIONS` value, if it's already set, rather than overwriting it, since some NodeJS Debugging tools may rely on this environment variable to work properly.
+
+:::
 
 The Software Templates are available under `/create`. For local development you
 should be able to reach them at `http://localhost:3000/create`.
@@ -82,19 +93,43 @@ There could be situations where you would like to disable the
 
 ![Disable Button](../../assets/software-templates/disable-register-existing-component-button.png)
 
-To do so, you will un-register / remove the `catalogImportPlugin.routes.importPage`
-from `backstage/packages/app/src/App.tsx`:
+To do so, you need to explicitly disable the default route binding from the `scaffolderPlugin.registerComponent` to the Catalog Import page.
+
+This can be done in `backstage/packages/app/src/App.tsx`:
 
 ```diff
  const app = createApp({
    apis,
    bindRoutes({ bind }) {
--    bind(scaffolderPlugin.externalRoutes, {
+     bind(scaffolderPlugin.externalRoutes, {
++      registerComponent: false,
 -      registerComponent: catalogImportPlugin.routes.importPage,
--    });
-     bind(orgPlugin.externalRoutes, {
-       catalogIndex: catalogPlugin.routes.catalogIndex,
+       viewTechDoc: techdocsPlugin.routes.docRoot,
      });
+})
+```
+
+OR in `app-config.yaml`:
+
+```yaml
+app:
+  routes:
+    bindings:
+      scaffolder.registerComponent: false
 ```
 
 After the change, you should no longer see the button.
+
+## Previewing and Executing Previous Template Tasks
+
+Each execution of a template is treated as a unique task, identifiable by its own unique ID. To view a list of previously executed template tasks, navigate to the "Create" page and access the "Task List" from the context menu (represented by the vertical ellipsis, or 'kebab menu', icon in the upper right corner).
+
+![Template Task List](../../assets/software-templates/template-task-list.png)
+
+If you wish to re-run a previously executed template, navigate to the template tasks page. Locate the desired task and select the "Start Over" option from the context menu.
+
+![Template Start Over](../../assets/software-templates/template-start-over.png)
+
+This action will initiate a new execution of the selected template, pre-populated with the same parameters as the previous run, but these parameters can be edited before re-execution.
+
+In the event of a failed template execution, the "Start Over" option can be used to re-execute the template. The parameters from the original run will be pre-filled, but they can be adjusted as needed before retrying the template.

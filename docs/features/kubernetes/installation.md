@@ -15,9 +15,8 @@ If you haven't setup Backstage already, read the
 The first step is to add the Kubernetes frontend plugin to your Backstage
 application.
 
-```bash
-# From your Backstage root directory
-yarn add --cwd packages/app @backstage/plugin-kubernetes
+```bash title="From your Backstage root directory"
+yarn --cwd packages/app add @backstage/plugin-kubernetes
 ```
 
 Once the package has been installed, you need to import the plugin in your app
@@ -53,9 +52,8 @@ work.
 Navigate to `packages/backend` of your Backstage app, and install the
 `@backstage/plugin-kubernetes-backend` package.
 
-```bash
-# From your Backstage root directory
-yarn add --cwd packages/backend @backstage/plugin-kubernetes-backend
+```bash title="From your Backstage root directory"
+yarn --cwd packages/backend add @backstage/plugin-kubernetes-backend
 ```
 
 Create a file called `kubernetes.ts` inside `packages/backend/src/plugins/` and
@@ -75,6 +73,7 @@ export default async function createPlugin(
     logger: env.logger,
     config: env.config,
     catalogApi,
+    discovery: env.discovery,
     permissions: env.permissions,
   }).build();
   return router;
@@ -97,10 +96,35 @@ async function main() {
   // ...
   /* highlight-add-next-line */
   apiRouter.use('/kubernetes', await kubernetes(kubernetesEnv));
+}
 ```
 
 That's it! The Kubernetes frontend and backend have now been added to your
 Backstage app.
+
+### New Backend System
+
+To get the Kubernetes plugin install using the New Backend System you will need to do the following:
+
+Run this command to add the package:
+
+```bash title="From your Backstage root directory"
+yarn --cwd packages/backend add @backstage/plugin-kubernetes-backend
+```
+
+Then add it to your backend `index.ts` file:
+
+```ts title="packages/backend/src/index.ts"
+const backend = createBackend();
+
+// Other plugins...
+
+/* highlight-add-start */
+backend.add(import('@backstage/plugin-kubernetes-backend'));
+/* highlight-add-end */
+
+backend.start();
+```
 
 ### Custom cluster discovery
 
@@ -130,7 +154,7 @@ export class CustomClustersSupplier implements KubernetesClustersSupplier {
 
   static create(refreshInterval: Duration) {
     const clusterSupplier = new CustomClustersSupplier();
-    // setup refresh, e.g. using a copy of https://github.com/backstage/backstage/blob/master/plugins/search-backend-node/src/runPeriodically.ts
+    // setup refresh, e.g. using a copy of https://github.com/backstage/backstage/blob/master/plugins/kubernetes-backend/src/service/runPeriodically.ts
     runPeriodically(
       () => clusterSupplier.refreshClusters(),
       refreshInterval.toMillis(),
@@ -172,6 +196,49 @@ export default async function createPlugin(
   return router;
 }
 ```
+
+### New Backend System Custom cluster discovery
+
+To use Custom cluster discovery with the New Backend System you'll need to create a module and add it to your backend. Here's a very simplified example:
+
+```ts title="packages/backend/src/index.ts"
+import { createBackend } from '@backstage/backend-defaults';
+import { createBackendModule } from '@backstage/backend-plugin-api';
+import { Duration } from 'luxon';
+import { kubernetesClusterSupplierExtensionPoint } from '@backstage/plugin-kubernetes-node';
+import { CustomClustersSupplier } from './path/to/class';
+
+const backend = createBackend();
+
+export const kubernetesModuleCustomClusterDiscovery = createBackendModule({
+  pluginId: 'kubernetes',
+  moduleId: 'custom-cluster-discovery',
+  register(env) {
+    env.registerInit({
+      deps: {
+        kubernetes: kubernetesClusterSupplierExtensionPoint,
+      },
+      async init({ kubernetes }) {
+        kubernetes.addClusterSupplier(
+          CustomClustersSupplier.create(Duration.fromObject({ minutes: 60 })),
+        );
+      },
+    });
+  },
+});
+
+// Other plugins...
+backend.add(import('@backstage/plugin-kubernetes-backend'));
+backend.add(kubernetesModuleCustomClusterDiscovery);
+
+backend.start();
+```
+
+:::note Note
+
+This example assumes the `CustomClustersSupplier` class is the same from the [previous example](#custom-cluster-discovery)
+
+:::
 
 ## Configuration
 

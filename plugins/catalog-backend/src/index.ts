@@ -20,48 +20,11 @@
  * @packageDocumentation
  */
 
-export * from './catalog';
-export * from './ingestion';
-export * from './modules';
+export { catalogPlugin as default } from './service/CatalogPlugin';
+export * from './processors';
 export * from './processing';
 export * from './search';
 export * from './service';
 export * from './deprecated';
 export * from './constants';
-
-import {
-  DefaultCatalogCollatorFactory as _DefaultCatalogCollatorFactory,
-  defaultCatalogCollatorEntityTransformer as _defaultCatalogCollatorEntityTransformer,
-} from '@backstage/plugin-search-backend-module-catalog';
-
-/**
- * @public
- * @deprecated import from `@backstage/plugin-search-backend-module-catalog` instead
- */
-export const DefaultCatalogCollatorFactory = _DefaultCatalogCollatorFactory;
-
-/**
- * @public
- * @deprecated import from `@backstage/plugin-search-backend-module-catalog` instead
- */
-export const defaultCatalogCollatorEntityTransformer =
-  _defaultCatalogCollatorEntityTransformer;
-
-import type {
-  DefaultCatalogCollatorFactoryOptions as _DefaultCatalogCollatorFactoryOptions,
-  CatalogCollatorEntityTransformer as _CatalogCollatorEntityTransformer,
-} from '@backstage/plugin-search-backend-module-catalog';
-
-/**
- * @public
- * @deprecated import from `@backstage/plugin-search-backend-module-catalog` instead
- */
-export type DefaultCatalogCollatorFactoryOptions =
-  _DefaultCatalogCollatorFactoryOptions;
-
-/**
- * @public
- * @deprecated import from `@backstage/plugin-search-backend-module-catalog` instead
- */
-export type CatalogCollatorEntityTransformer =
-  _CatalogCollatorEntityTransformer;
+export * from './util';

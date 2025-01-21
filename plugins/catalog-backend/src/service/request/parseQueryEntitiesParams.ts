@@ -23,17 +23,16 @@ import { decodeCursor } from '../util';
 import { parseEntityFilterParams } from './parseEntityFilterParams';
 import { parseEntityOrderFieldParams } from './parseEntityOrderFieldParams';
 import { parseEntityTransformParams } from './parseEntityTransformParams';
-import { spec } from '../../schema/openapi.generated';
-import { internal } from '@backstage/backend-openapi-utils';
+import { GetEntitiesByQuery } from '../../schema/openapi';
 
 export function parseQueryEntitiesParams(
-  params: internal.QuerySchema<typeof spec, '/entities/by-query', 'get'>,
-): Omit<QueryEntitiesRequest, 'authorizationToken' | 'limit'> {
+  params: GetEntitiesByQuery['query'],
+): Omit<QueryEntitiesRequest, 'credentials' | 'limit'> {
   const fields = parseEntityTransformParams(params);
 
   if (params.cursor) {
     const decodedCursor = decodeCursor(params.cursor);
-    const response: Omit<QueryEntitiesCursorRequest, 'authorizationToken'> = {
+    const response: Omit<QueryEntitiesCursorRequest, 'credentials'> = {
       cursor: decodedCursor,
       fields,
     };
@@ -43,7 +42,7 @@ export function parseQueryEntitiesParams(
   const filter = parseEntityFilterParams(params);
   const orderFields = parseEntityOrderFieldParams(params);
 
-  const response: Omit<QueryEntitiesInitialRequest, 'authorizationToken'> = {
+  const response: Omit<QueryEntitiesInitialRequest, 'credentials'> = {
     fields,
     filter,
     orderFields,

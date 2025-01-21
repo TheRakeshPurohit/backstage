@@ -14,15 +14,22 @@
  * limitations under the License.
  */
 
-import { TaskContext, TaskBroker, WorkflowRunner } from './types';
+import { AuditorService } from '@backstage/backend-plugin-api';
+import { assertError, stringifyError } from '@backstage/errors';
+import { ScmIntegrations } from '@backstage/integration';
+import { PermissionEvaluator } from '@backstage/plugin-permission-common';
+import {
+  TaskBroker,
+  TaskContext,
+  TemplateFilter,
+  TemplateGlobal,
+} from '@backstage/plugin-scaffolder-node';
 import PQueue from 'p-queue';
-import { NunjucksWorkflowRunner } from './NunjucksWorkflowRunner';
 import { Logger } from 'winston';
 import { TemplateActionRegistry } from '../actions';
-import { ScmIntegrations } from '@backstage/integration';
-import { assertError } from '@backstage/errors';
-import { TemplateFilter, TemplateGlobal } from '../../lib';
-import { PermissionEvaluator } from '@backstage/plugin-permission-common';
+import { NunjucksWorkflowRunner } from './NunjucksWorkflowRunner';
+import { WorkflowRunner } from './types';
+
 /**
  * TaskWorkerOptions
  *
@@ -35,6 +42,8 @@ export type TaskWorkerOptions = {
   };
   concurrentTasksLimit: number;
   permissions?: PermissionEvaluator;
+  logger?: Logger;
+  auditor?: AuditorService;
 };
 
 /**
@@ -48,6 +57,7 @@ export type CreateWorkerOptions = {
   integrations: ScmIntegrations;
   workingDirectory: string;
   logger: Logger;
+  auditor?: AuditorService;
   additionalTemplateFilters?: Record<string, TemplateFilter>;
   /**
    * The number of tasks that can be executed at the same time by the worker
@@ -73,8 +83,14 @@ export type CreateWorkerOptions = {
  */
 export class TaskWorker {
   private taskQueue: PQueue;
+  private logger: Logger | undefined;
+  private auditor: AuditorService | undefined;
+  private stopWorkers: boolean;
 
   private constructor(private readonly options: TaskWorkerOptions) {
+    this.stopWorkers = false;
+    this.logger = options.logger;
+    this.auditor = options.auditor;
     this.taskQueue = new PQueue({
       concurrency: options.concurrentTasksLimit,
     });
@@ -84,6 +100,7 @@ export class TaskWorker {
     const {
       taskBroker,
       logger,
+      auditor,
       actionRegistry,
       integrations,
       workingDirectory,
@@ -97,6 +114,7 @@ export class TaskWorker {
       actionRegistry,
       integrations,
       logger,
+      auditor,
       workingDirectory,
       additionalTemplateFilters,
       additionalTemplateGlobals,
@@ -108,17 +126,38 @@ export class TaskWorker {
       runners: { workflowRunner },
       concurrentTasksLimit,
       permissions,
+      auditor,
     });
+  }
+
+  async recoverTasks() {
+    try {
+      await this.options.taskBroker.recoverTasks?.();
+    } catch (err) {
+      this.logger?.error(stringifyError(err));
+    }
   }
 
   start() {
     (async () => {
-      for (;;) {
-        await this.onReadyToClaimTask();
-        const task = await this.options.taskBroker.claim();
-        this.taskQueue.add(() => this.runOneTask(task));
+      while (!this.stopWorkers) {
+        await new Promise(resolve => setTimeout(resolve, 10000));
+        await this.recoverTasks();
       }
     })();
+    (async () => {
+      while (!this.stopWorkers) {
+        await this.onReadyToClaimTask();
+        if (!this.stopWorkers) {
+          const task = await this.options.taskBroker.claim();
+          void this.taskQueue.add(() => this.runOneTask(task));
+        }
+      }
+    })();
+  }
+
+  stop() {
+    this.stopWorkers = true;
   }
 
   protected onReadyToClaimTask(): Promise<void> {
@@ -135,6 +174,17 @@ export class TaskWorker {
   }
 
   async runOneTask(task: TaskContext) {
+    const auditorEvent = await this.auditor?.createEvent({
+      eventId: 'task',
+      severityLevel: 'medium',
+      meta: {
+        actionType: 'execution',
+        taskId: task.taskId,
+        taskParameters: task.spec.parameters,
+        templateRef: task.spec.templateInfo?.entityRef,
+      },
+    });
+
     try {
       if (task.spec.apiVersion !== 'scaffolder.backstage.io/v1beta3') {
         throw new Error(
@@ -147,8 +197,12 @@ export class TaskWorker {
       );
 
       await task.complete('completed', { output });
+      await auditorEvent?.success();
     } catch (error) {
       assertError(error);
+      await auditorEvent?.fail({
+        error,
+      });
       await task.complete('failed', {
         error: { name: error.name, message: error.message },
       });

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { BackstagePackageJson } from '@backstage/cli-node';
+import { BackstagePackage, BackstagePackageJson } from '@backstage/cli-node';
 
 export enum Output {
   esm,
@@ -28,5 +28,5 @@ export type BuildOptions = {
   packageJson?: BackstagePackageJson;
   outputs: Set<Output>;
   minify?: boolean;
-  useApiExtractor?: boolean;
+  workspacePackages: BackstagePackage[];
 };

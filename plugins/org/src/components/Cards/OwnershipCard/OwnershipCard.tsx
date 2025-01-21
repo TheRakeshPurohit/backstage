@@ -16,20 +16,26 @@
 
 import { InfoCard, InfoCardVariants } from '@backstage/core-components';
 import { useEntity } from '@backstage/plugin-catalog-react';
-import {
-  List,
-  ListItem,
-  ListItemSecondaryAction,
-  ListItemText,
-  makeStyles,
-  Switch,
-  Tooltip,
-} from '@material-ui/core';
-import React, { useState } from 'react';
+import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
+import ListItemText from '@material-ui/core/ListItemText';
+import Switch from '@material-ui/core/Switch';
+import Tooltip from '@material-ui/core/Tooltip';
+import { makeStyles } from '@material-ui/core/styles';
+import React, { useEffect, useState } from 'react';
 import { ComponentsGrid } from './ComponentsGrid';
-import { EntityRelationAggregation } from './types';
+import { EntityRelationAggregation } from '../types';
 
 const useStyles = makeStyles(theme => ({
+  card: {
+    maxHeight: '100%',
+  },
+  cardContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+  },
   list: {
     [theme.breakpoints.down('xs')]: {
       padding: `0 0 12px`,
@@ -50,6 +56,10 @@ const useStyles = makeStyles(theme => ({
       transform: 'unset',
     },
   },
+  grid: {
+    overflowY: 'auto',
+    marginTop: 0,
+  },
 }));
 
 /** @public */
@@ -57,26 +67,42 @@ export const OwnershipCard = (props: {
   variant?: InfoCardVariants;
   entityFilterKind?: string[];
   hideRelationsToggle?: boolean;
+  /** @deprecated Please use relationAggregation instead */
   relationsType?: EntityRelationAggregation;
+  relationAggregation?: EntityRelationAggregation;
   entityLimit?: number;
 }) => {
   const {
     variant,
     entityFilterKind,
     hideRelationsToggle,
-    relationsType,
     entityLimit = 6,
   } = props;
+  const relationAggregation = props.relationAggregation ?? props.relationsType;
   const relationsToggle =
     hideRelationsToggle === undefined ? false : hideRelationsToggle;
   const classes = useStyles();
   const { entity } = useEntity();
-  const [getRelationsType, setRelationsType] = useState(
-    relationsType || 'direct',
+
+  const defaultRelationAggregation =
+    entity.kind === 'User' ? 'aggregated' : 'direct';
+  const [getRelationAggregation, setRelationAggregation] = useState(
+    relationAggregation ?? defaultRelationAggregation,
   );
 
+  useEffect(() => {
+    if (!relationAggregation) {
+      setRelationAggregation(defaultRelationAggregation);
+    }
+  }, [setRelationAggregation, defaultRelationAggregation, relationAggregation]);
+
   return (
-    <InfoCard title="Ownership" variant={variant}>
+    <InfoCard
+      title="Ownership"
+      variant={variant}
+      className={classes.card}
+      cardClassName={classes.cardContent}
+    >
       {!relationsToggle && (
         <List dense>
           <ListItem className={classes.list}>
@@ -89,17 +115,19 @@ export const OwnershipCard = (props: {
                 placement="top"
                 arrow
                 title={`${
-                  getRelationsType === 'direct' ? 'Direct' : 'Aggregated'
+                  getRelationAggregation === 'direct' ? 'Direct' : 'Aggregated'
                 } Relations`}
               >
                 <Switch
                   color="primary"
-                  checked={getRelationsType !== 'direct'}
-                  onChange={() =>
-                    getRelationsType === 'direct'
-                      ? setRelationsType('aggregated')
-                      : setRelationsType('direct')
-                  }
+                  checked={getRelationAggregation !== 'direct'}
+                  onChange={() => {
+                    const updatedRelationAggregation =
+                      getRelationAggregation === 'direct'
+                        ? 'aggregated'
+                        : 'direct';
+                    setRelationAggregation(updatedRelationAggregation);
+                  }}
                   name="pin"
                   inputProps={{ 'aria-label': 'Ownership Type Switch' }}
                 />
@@ -110,9 +138,10 @@ export const OwnershipCard = (props: {
         </List>
       )}
       <ComponentsGrid
+        className={classes.grid}
         entity={entity}
         entityLimit={entityLimit}
-        relationsType={getRelationsType}
+        relationAggregation={getRelationAggregation}
         entityFilterKind={entityFilterKind}
       />
     </InfoCard>

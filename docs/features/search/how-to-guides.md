@@ -45,87 +45,18 @@ to do that in two steps.
    });
    ```
 
-## How to index TechDocs documents
+## How to customize fields in the Software Catalog or TechDocs index
 
-The TechDocs plugin has supported integrations to Search, meaning that it
-provides a default collator factory ready to be used.
-
-The purpose of this guide is to walk you through how to register the
-[DefaultTechDocsCollatorFactory](https://github.com/backstage/backstage/blob/1adc2c7/plugins/search-backend-module-techdocs/src/collators/DefaultTechDocsCollatorFactory.ts)
-in your App, so that you can get TechDocs documents indexed.
-
-If you have been through the
-[Getting Started with Search guide](https://backstage.io/docs/features/search/getting-started),
-you should have the `packages/backend/src/plugins/search.ts` file available. If
-so, you can go ahead and follow this guide - if not, start by going through the
-getting started guide.
-
-1. Import the `DefaultTechDocsCollatorFactory` from
-   `@backstage/plugin-search-backend-module-techdocs`.
-
-   ```typescript
-   import { DefaultTechDocsCollatorFactory } from '@backstage/plugin-search-backend-module-techdocs';
-   ```
-
-2. If there isn't an existing schedule you'd like to run the collator on, be
-   sure to create it first. Something like...
-
-   ```typescript
-   import { Duration } from 'luxon';
-
-   const every10MinutesSchedule = env.scheduler.createScheduledTaskRunner({
-     frequency: Duration.fromObject({ seconds: 600 }),
-     timeout: Duration.fromObject({ seconds: 900 }),
-     initialDelay: Duration.fromObject({ seconds: 3 }),
-   });
-   ```
-
-3. Register the `DefaultTechDocsCollatorFactory` with the IndexBuilder.
-
-   ```typescript
-   indexBuilder.addCollator({
-     schedule: every10MinutesSchedule,
-     factory: DefaultTechDocsCollatorFactory.fromConfig(env.config, {
-       discovery: env.discovery,
-       logger: env.logger,
-       tokenManager: env.tokenManager,
-     }),
-   });
-   ```
-
-You should now have your TechDocs documents indexed to your search engine of
-choice!
-
-If you want your users to be able to filter down to the techdocs type when
-searching, you can update your `SearchPage.tsx` file in
-`packages/app/src/components/search` by adding `techdocs` to the list of values
-of the `SearchType` component.
-
-```tsx title="packages/app/src/components/search/SearchPage.tsx"
-<Paper className={classes.filters}>
-  <SearchType
-    values={['techdocs', 'software-catalog']}
-    name="type"
-    defaultValue="software-catalog"
-  />
-  {/* ... */}
-</Paper>
-```
-
-> Check out the documentation around [integrating search into plugins](../../plugins/integrating-search-into-plugins.md#create-a-collator) for how to create your own collator.
-
-## How to customize fields in the Software Catalog index
-
-Sometimes you will might want to have ability to control
-which data passes to search index in catalog collator, or to customize data for specific kind.
-You can easily do that by passing `entityTransformer` callback to `DefaultCatalogCollatorFactory`.
-You can either just simply amend default behaviour, or even to write completely new document
-(which should follow some required basic structure though).
+Sometimes, you might want to have the ability to control which data passes into the search index
+in the catalog collator or customize data for a specific kind. You can easily achieve this
+by passing an `entityTransformer` callback to the `DefaultCatalogCollatorFactory`. This behavior
+is also possible for the `DefaultTechDocsCollatorFactory`. You can either simply amend the default behavior
+or even write an entirely new document (which should still follow some required basic structure).
 
 > `authorization` and `location` cannot be modified via a `entityTransformer`, `location` can be modified only through `locationTemplate`.
 
 ```ts title="packages/backend/src/plugins/search.ts"
-const entityTransformer: CatalogCollatorEntityTransformer = (
+const catalogEntityTransformer: CatalogCollatorEntityTransformer = (
   entity: Entity,
 ) => {
   if (entity.kind === 'SomeKind') {
@@ -146,7 +77,36 @@ indexBuilder.addCollator({
     discovery: env.discovery,
     tokenManager: env.tokenManager,
     /* highlight-add-next-line */
-    entityTransformer,
+    entityTransformer: catalogEntityTransformer,
+  }),
+});
+
+const techDocsEntityTransformer: TechDocsCollatorEntityTransformer = (
+  entity: Entity,
+) => {
+  return {
+    // add more fields to the index
+    tags: entity.metadata.tags,
+  };
+};
+
+const techDocsDocumentTransformer: TechDocsCollatorDocumentTransformer = (
+  doc: MkSearchIndexDoc,
+) => {
+  return {
+    // add more fields to the index
+    bost: doc.boost,
+  };
+};
+
+indexBuilder.addCollator({
+  collator: DefaultTechDocsCollatorFactory.fromConfig(env.config, {
+    discovery: env.discovery,
+    tokenManager: env.tokenManager,
+    /* highlight-add-next-line */
+    entityTransformer: techDocsEntityTransformer,
+    /* highlight-add-next-line */
+    documentTransformer: techDocsDocumentTransformer,
   }),
 });
 ```
@@ -193,28 +153,64 @@ how highlighted terms look you can follow Backstage's guide on how to
 [Customize the look-and-feel of your App](https://backstage.io/docs/getting-started/app-custom-theme)
 to create an override with your preferred styling.
 
-For example, the following will result in highlighted terms to be bold & underlined:
+For example, using the new MUI V4+V5 unified theming method, the following will result
+in highlighted words to be bold & underlined:
 
-```tsx
-const highlightOverride = {
-  BackstageHighlightedSearchResultText: {
-    highlight: {
-      color: 'inherit',
-      backgroundColor: 'inherit',
-      fontWeight: 'bold',
-      textDecoration: 'underline',
+```typescript jsx title=packages/app/src/theme/theme.ts
+import {
+  createBaseThemeOptions,
+  createUnifiedTheme,
+  palettes,
+  UnifiedTheme,
+} from '@backstage/theme';
+
+export const myLightTheme: UnifiedTheme = createUnifiedTheme({
+  ...createBaseThemeOptions({
+    palette: palettes.light,
+  }),
+  defaultPageTheme: 'home',
+  components: {
+    /** @ts-ignore This is temporarily necessary until MUI V5 transition is completed. */
+    BackstageHighlightedSearchResultText: {
+      styleOverrides: {
+        highlight: {
+          color: 'inherit',
+          backgroundColor: 'inherit',
+          fontWeight: 'bold',
+          textDecoration: 'underline',
+        },
+      },
     },
   },
-};
+});
 ```
+
+```typescript jsx title= packages/app/src/App.tsx
+
+const app : BackstageApp = createApp({
+  ...
+  themes: [{
+    id: 'my-light-theme',
+    title: 'Light Theme',
+    variant: 'light',
+    icon: <LightIcon />,
+    Provider: ({ children }) => (<UnifiedThemeProvider theme={myLightTheme} children={children } />)
+  }]
+});
+```
+
+Obviously if you wanted a dark theme, you would need to provide that as well.
 
 ## How to render search results using extensions
 
-Extensions for search results let you customize components used to render search result items, It is possible to provide your own search result item extensions or use the ones provided by plugin packages:
+Extensions for search results let you customize components used to render search result items, It is possible to provide your own search result item extensions or use the ones provided by plugin packages.
 
 ### 1. Providing an extension in your plugin package
 
-Using the example below, you can provide an extension to be used as a default result item:
+> Note: You must use the `plugin.provide()` function to make a search item renderer available. Unlike rendering a list in a standard MUI Table or similar, you cannot simply provide
+> a rendering function to the `<SearchResult />` component.
+
+Using the example below, you can provide an extension to be used as a search result item:
 
 ```tsx title="plugins/your-plugin/src/plugin.ts"
 import { createPlugin } from '@backstage/core-plugin-api';
@@ -264,7 +260,7 @@ export const YourSearchResultListItemExtension = plugin.provide(
 );
 ```
 
-Remember to export your new extension:
+Remember to export your new extension via your plugin's `index.ts` so that it is available from within your app:
 
 ```tsx title="plugins/your-plugin/src/index.ts"
 export { YourSearchResultListItem } from './plugin.ts';
@@ -272,9 +268,12 @@ export { YourSearchResultListItem } from './plugin.ts';
 
 For more details, see the [createSearchResultListItemExtension](https://backstage.io/docs/reference/plugin-search-react.createsearchresultlistitemextension) API reference.
 
-### 2. Using an extension in your Backstage app
+### 2. Custom search result extension in the SearchPage
 
-Now that you know how a search result item is provided, let's finally see how they can be used, for example, to compose a page in your application:
+Once you have exposed your item renderer via the `plugin.provide()` function, you can now override the default search item renderers and tell the `<SearchResult>` component
+which renderers to use. Note that the order of the renderers matters! The first one that matches via its predicate function will be used.
+
+Here is an example of customizing your `SearchPage`:
 
 ```tsx title="packages/app/src/components/searchPage.tsx"
 import React from 'react';
@@ -326,9 +325,38 @@ const SearchPage = () => (
 export const searchPage = <SearchPage />;
 ```
 
-> **Important**: A default result item extension should be placed as the last child, so it can be used only when no other extensions match the result being rendered. If a non-default extension is specified, the `DefaultResultListItem` component will be used.
+> **Important**: A default result item extension (one that does not have a predicate) should be placed as the last child, so it can be used only when no other extensions match the result being rendered.
+> If a non-default extension is specified, the `DefaultResultListItem` component will be used.
 
-As another example, here's a search modal that renders results with extensions:
+### 2. Custom search result extension in the SidebarSearchModal
+
+You may be using the SidebarSearchModal component. In this case, you can customize the search items in this component as follows:
+
+```tsx title="packages/app/src/components/Root/Root.tsx"
+import { SidebarSearchModal } from '@backstage/plugin-search';
+...
+export const Root = ({ children }: PropsWithChildren<{}>) => {
+  const styles = useStyles();
+
+  return <SidebarPage>
+    <Sidebar>
+      ...
+      <SidebarSearchModal resultItemComponents={[
+        /* Provide a custom Extension search item renderer */
+        <CustomSearchResultListItem icon={<CatalogIcon />} />,
+        /* Provide an existing search item renderer */
+        <TechDocsSearchResultListItem icon={<DocsIcon />} />
+      ]} />
+      ...
+    </Sidebar>
+    {children}
+  </SidebarPage>;
+};
+```
+
+### 3. Custom search result extension in a custom SearchModal
+
+Assuming you have completely customized your SearchModal, here's an example that renders results with extensions:
 
 ```tsx title="packages/app/src/components/searchModal.tsx"
 import React from 'react';
@@ -369,44 +397,3 @@ export const SearchModal = ({ toggleModal }: { toggleModal: () => void }) => (
 ```
 
 There are other more specific search results layout components that also accept result item extensions, check their documentation: [SearchResultList](https://backstage.io/storybook/?path=/story/plugins-search-searchresultlist--with-result-item-extensions) and [SearchResultGroup](https://backstage.io/storybook/?path=/story/plugins-search-searchresultgroup--with-result-item-extensions).
-
-## How to migrate your backend installation to use Search together with the new backend system
-
-> DISCLAIMER: The new backend system is in alpha, and so are the search backend support for the new backend system. We don't recommend you to migrate your backend installations to the new system yet. But if you want to experiment, this is the guide for you!
-
-Recently, the Backstage maintainers [announced the new Backend System](https://backstage.io/blog/2023/02/15/backend-system-alpha). The search plugins are now migrated to support the new backend system. In this guide you will learn how to update your backend set up.
-
-In "packages/backend-next/index.ts", install the search plugin [1], the search engine [2], and the search collators/decorators modules [3]:
-
-```ts
-import { searchPlugin } from '@backstage/plugin-search-backend/alpha';
-import { searchModuleElasticsearchEngine } from '@backstage/plugin-search-backend-module-elasticsearch/alpha';
-import { searchModuleCatalogCollator } from '@backstage/plugin-search-backend-module-catalog/alpha';
-import { searchModuleTechDocsCollator } from '@backstage/plugin-search-backend-module-techdocs/alpha';
-import { searchModuleExploreCollator } from '@backstage/plugin-search-backend-module-explore/alpha';
-
-const backend = createBackend();
-// [1] adding the search plugin to the backend
-backend.add(searchPlugin());
-// [2] (optional) the default search engine is Lunr, if you want to extend the search backend with another search engine.
-backend.add(searchModuleElasticsearchEngine());
-// [3] extending search with collator modules to start index documents, take in optional schedule parameters.
-backend.add(searchModuleCatalogCollator());
-backend.add(searchModuleTechDocsCollator());
-backend.add(searchModuleExploreCollator());
-
-backend.start();
-```
-
-To create your own collators/decorators modules, please use the [searchModuleCatalogCollator](https://github.com/backstage/backstage/blob/d7f955f300893f50c4882ea8f5c09aa42dfaacfd/plugins/search-backend-module-catalog/src/alpha.ts#L49) as an example, we recommend that modules are separated by plugin packages (e.g. `search-backend-module-<plugin-id>`). You can also find the available search engines and collator/decorator modules documentation in the Alpha API reports:
-
-**Search engine modules**
-
-- Postgres [module](https://github.com/backstage/backstage/blob/d7f955f300893f50c4882ea8f5c09aa42dfaacfd/plugins/search-backend-module-pg/alpha-api-report.md);
-- Elasticsearch [module](https://github.com/backstage/backstage/blob/d7f955f300893f50c4882ea8f5c09aa42dfaacfd/plugins/search-backend-module-elasticsearch/alpha-api-report.md).
-
-**Search collator/decorator modules**
-
-- Catalog [module](https://github.com/backstage/backstage/blob/d7f955f300893f50c4882ea8f5c09aa42dfaacfd/plugins/search-backend-module-catalog/alpha-api-report.md);
-- Explore [module](https://github.com/backstage/backstage/blob/d7f955f300893f50c4882ea8f5c09aa42dfaacfd/plugins/search-backend-module-explore/alpha-api-report.md);
-- TechDocs [module](https://github.com/backstage/backstage/blob/d7f955f300893f50c4882ea8f5c09aa42dfaacfd/plugins/search-backend-module-techdocs/alpha-api-report.md).

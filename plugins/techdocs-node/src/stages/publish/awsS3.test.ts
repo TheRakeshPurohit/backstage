@@ -24,7 +24,6 @@ import {
   S3Client,
   UploadPartCommand,
 } from '@aws-sdk/client-s3';
-import { getVoidLogger } from '@backstage/backend-common';
 import { Entity, DEFAULT_NAMESPACE } from '@backstage/catalog-model';
 import { ConfigReader } from '@backstage/config';
 import {
@@ -35,15 +34,19 @@ import {
 import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
 import express from 'express';
 import request from 'supertest';
-import mockFs from 'mock-fs';
 import path from 'path';
 import fs from 'fs-extra';
 import { AwsS3Publish } from './awsS3';
-import { storageRootDir } from '../../testUtils/StorageFilesMock';
 import { Readable } from 'stream';
+import {
+  createMockDirectory,
+  mockServices,
+} from '@backstage/backend-test-utils';
 
 const env = process.env;
 let s3Mock: AwsClientStub<S3Client>;
+
+const mockDir = createMockDirectory();
 
 function getMockCredentialProvider(): Promise<AwsCredentialProvider> {
   return Promise.resolve({
@@ -66,7 +69,7 @@ const getEntityRootDir = (entity: Entity) => {
     metadata: { namespace, name },
   } = entity;
 
-  return path.join(storageRootDir, namespace || DEFAULT_NAMESPACE, kind, name);
+  return mockDir.resolve(namespace || DEFAULT_NAMESPACE, kind, name);
 };
 
 class ErrorReadable extends Readable {
@@ -86,7 +89,7 @@ class ErrorReadable extends Readable {
   }
 }
 
-const logger = getVoidLogger();
+const logger = mockServices.logger.mock();
 const loggerInfoSpy = jest.spyOn(logger, 'info');
 const loggerErrorSpy = jest.spyOn(logger, 'error');
 
@@ -182,27 +185,23 @@ describe('AwsS3Publish', () => {
       getMockCredentialProvider(),
     );
 
-    mockFs({
+    mockDir.setContent({
       [directory]: files,
     });
-
-    const { StorageFilesMock } = require('../../testUtils/StorageFilesMock');
-    const storage = new StorageFilesMock();
-    storage.emptyFiles();
 
     s3Mock = mockClient(S3Client);
 
     s3Mock.on(HeadObjectCommand).callsFake(input => {
-      if (!storage.fileExists(input.Key)) {
+      if (!fs.pathExistsSync(mockDir.resolve(input.Key))) {
         throw new Error('File does not exist');
       }
       return {};
     });
 
     s3Mock.on(GetObjectCommand).callsFake(input => {
-      if (storage.fileExists(input.Key)) {
+      if (fs.pathExistsSync(mockDir.resolve(input.Key))) {
         return {
-          Body: Readable.from(storage.readFile(input.Key)),
+          Body: Readable.from(fs.readFileSync(mockDir.resolve(input.Key))),
         };
       }
 
@@ -237,12 +236,11 @@ describe('AwsS3Publish', () => {
 
     s3Mock.on(UploadPartCommand).rejects();
     s3Mock.on(PutObjectCommand).callsFake(input => {
-      storage.writeFile(input.Key, input.Body);
+      mockDir.addContent({ [input.Key]: input.Body });
     });
   });
 
   afterEach(() => {
-    mockFs.restore();
     process.env = env;
   });
 
@@ -378,8 +376,7 @@ describe('AwsS3Publish', () => {
     });
 
     it('should fail to publish a directory', async () => {
-      const wrongPathToGeneratedDirectory = path.join(
-        storageRootDir,
+      const wrongPathToGeneratedDirectory = mockDir.resolve(
         'wrong',
         'path',
         'to',
@@ -393,11 +390,9 @@ describe('AwsS3Publish', () => {
         directory: wrongPathToGeneratedDirectory,
       });
 
-      await expect(fails).rejects.toMatchObject({
-        message: expect.stringContaining(
-          'Unable to upload file(s) to AWS S3. Error: Failed to read template directory: ENOENT, no such file or directory',
-        ),
-      });
+      await expect(fails).rejects.toThrow(
+        `Unable to upload file(s) to AWS S3. Error: Failed to read template directory: ENOENT: no such file or directory, scandir '${wrongPathToGeneratedDirectory}'`,
+      );
 
       await expect(fails).rejects.toMatchObject({
         message: expect.stringContaining(wrongPathToGeneratedDirectory),

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The Backstage Authors
+ * Copyright 2024 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,68 +14,8 @@
  * limitations under the License.
  */
 
-/**
- * @packageDocumentation
- * A module for the search backend that exports Explore modules.
- */
+import { default as feature } from './module';
 
-import {
-  coreServices,
-  createBackendModule,
-} from '@backstage/backend-plugin-api';
-import { loggerToWinstonLogger } from '@backstage/backend-common';
-import { searchIndexRegistryExtensionPoint } from '@backstage/plugin-search-backend-node/alpha';
-
-import { ToolDocumentCollatorFactory } from '@backstage/plugin-search-backend-module-explore';
-import { readTaskScheduleDefinitionFromConfig } from '@backstage/backend-tasks';
-
-/**
- * Search backend module for the Explore index.
- *
- * @alpha
- */
-export const searchModuleExploreCollator = createBackendModule({
-  moduleId: 'exploreCollator',
-  pluginId: 'search',
-  register(env) {
-    env.registerInit({
-      deps: {
-        config: coreServices.rootConfig,
-        logger: coreServices.logger,
-        discovery: coreServices.discovery,
-        scheduler: coreServices.scheduler,
-        tokenManager: coreServices.tokenManager,
-        indexRegistry: searchIndexRegistryExtensionPoint,
-      },
-      async init({
-        config,
-        logger,
-        discovery,
-        scheduler,
-        indexRegistry,
-        tokenManager,
-      }) {
-        const defaultSchedule = {
-          frequency: { minutes: 10 },
-          timeout: { minutes: 15 },
-          initialDelay: { seconds: 3 },
-        };
-
-        const schedule = config.has('search.collators.explore.schedule')
-          ? readTaskScheduleDefinitionFromConfig(
-              config.getConfig('search.collators.explore.schedule'),
-            )
-          : defaultSchedule;
-
-        indexRegistry.addCollator({
-          schedule: scheduler.createScheduledTaskRunner(schedule),
-          factory: ToolDocumentCollatorFactory.fromConfig(config, {
-            discovery,
-            logger: loggerToWinstonLogger(logger),
-            tokenManager,
-          }),
-        });
-      },
-    });
-  },
-});
+/** @alpha */
+const _feature = feature;
+export default _feature;

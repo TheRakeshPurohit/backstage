@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 import React, { useCallback, useState } from 'react';
-import useInterval from 'react-use/lib/useInterval';
+import useInterval from 'react-use/esm/useInterval';
 import { DateTime, Interval } from 'luxon';
 import humanizeDuration from 'humanize-duration';
-import { Typography } from '@material-ui/core';
+import Typography from '@material-ui/core/Typography';
 import { useMountEffect } from '@react-hookz/web';
 
 export const StepTime = (props: {
@@ -30,6 +30,16 @@ export const StepTime = (props: {
 }) => {
   const [time, setTime] = useState('');
   const { step } = props;
+
+  const getDelay = () => {
+    if (step.startedAt && step.endedAt && time) {
+      return null;
+    }
+    if (step.startedAt && step.endedAt) {
+      return 1;
+    }
+    return 1000;
+  };
 
   const calculate = useCallback(() => {
     if (!step.startedAt) {
@@ -49,9 +59,8 @@ export const StepTime = (props: {
     setTime(humanizeDuration(formatted, { round: true }));
   }, [step.endedAt, step.startedAt]);
 
-  useMountEffect(() => calculate());
-
-  useInterval(() => !step.endedAt && calculate(), 1000);
+  useMountEffect(calculate);
+  useInterval(calculate, getDelay());
 
   return <Typography variant="caption">{time}</Typography>;
 };

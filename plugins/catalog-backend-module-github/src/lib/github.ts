@@ -24,10 +24,12 @@ import {
   TransformerContext,
   UserTransformer,
 } from './defaultTransformers';
-import { withLocations } from '../providers/GithubOrgEntityProvider';
+import { withLocations } from './withLocations';
 
 import { DeferredEntity } from '@backstage/plugin-catalog-node';
-
+import { Octokit } from '@octokit/core';
+import { LoggerService } from '@backstage/backend-plugin-api';
+import { throttling } from '@octokit/plugin-throttling';
 // Graphql types
 
 export type QueryResponse = {
@@ -38,6 +40,7 @@ export type QueryResponse = {
 
 type RepositoryOwnerResponse = {
   repositories?: Connection<RepositoryResponse>;
+  repository?: RepositoryResponse;
 };
 
 export type OrganizationResponse = {
@@ -193,7 +196,7 @@ export async function getOrganizationTeams(
   const query = `
     query teams($org: String!, $cursor: String) {
       organization(login: $org) {
-        teams(first: 100, after: $cursor) {
+        teams(first: 50, after: $cursor) {
           pageInfo { hasNextPage, endCursor }
           nodes {
             slug
@@ -462,7 +465,7 @@ export async function getOrganizationRepositories(
     query repositories($org: String!, $catalogPathRef: String!, $cursor: String) {
       repositoryOwner(login: $org) {
         login
-        repositories(first: 100, after: $cursor) {
+        repositories(first: 50, after: $cursor) {
           nodes {
             name
             catalogInfoFile: object(expression: $catalogPathRef) {
@@ -507,6 +510,61 @@ export async function getOrganizationRepositories(
   );
 
   return { repositories };
+}
+
+export async function getOrganizationRepository(
+  client: typeof graphql,
+  org: string,
+  repoName: string,
+  catalogPath: string,
+): Promise<RepositoryResponse | null> {
+  let relativeCatalogPathRef: string;
+  // We must strip the leading slash or the query for objects does not work
+  if (catalogPath.startsWith('/')) {
+    relativeCatalogPathRef = catalogPath.substring(1);
+  } else {
+    relativeCatalogPathRef = catalogPath;
+  }
+  const catalogPathRef = `HEAD:${relativeCatalogPathRef}`;
+  const query = `
+    query repository($org: String!, $repoName: String!, $catalogPathRef: String!) {
+      repositoryOwner(login: $org) {
+        repository(name: $repoName) {
+          name
+          catalogInfoFile: object(expression: $catalogPathRef) {
+            __typename
+            ... on Blob {
+              id
+              text
+            }
+          }
+          url
+          isArchived
+          isFork
+          visibility
+          repositoryTopics(first: 100) {
+            nodes {
+              ... on RepositoryTopic {
+                topic {
+                  name
+                }
+              }
+            }
+          }
+          defaultBranchRef {
+            name
+          }
+        }
+      }
+    }`;
+
+  const response: QueryResponse = await client(query, {
+    org,
+    repoName,
+    catalogPathRef,
+  });
+
+  return response.repositoryOwner?.repository || null;
 }
 
 /**
@@ -654,3 +712,58 @@ export const createReplaceEntitiesOperation =
       added: entitiesToReplace,
     };
   };
+
+/**
+ * Creates a GraphQL Client with Throttling
+ */
+export const createGraphqlClient = (args: {
+  headers:
+    | {
+        [name: string]: string;
+      }
+    | undefined;
+  baseUrl: string;
+  logger: LoggerService;
+}): typeof graphql => {
+  const { headers, baseUrl, logger } = args;
+  const ThrottledOctokit = Octokit.plugin(throttling);
+  const octokit = new ThrottledOctokit({
+    throttle: {
+      onRateLimit: (retryAfter, rateLimitData, _, retryCount) => {
+        logger.warn(
+          `Request quota exhausted for request ${rateLimitData?.method} ${rateLimitData?.url}`,
+        );
+
+        if (retryCount < 2) {
+          logger.warn(
+            `Retrying after ${retryAfter} seconds for the ${retryCount} time due to Rate Limit!`,
+          );
+          return true;
+        }
+
+        return false;
+      },
+      onSecondaryRateLimit: (retryAfter, rateLimitData, _, retryCount) => {
+        logger.warn(
+          `Secondary Rate Limit Exhausted for request ${rateLimitData?.method} ${rateLimitData?.url}`,
+        );
+
+        if (retryCount < 2) {
+          logger.warn(
+            `Retrying after ${retryAfter} seconds for the ${retryCount} time due to Secondary Rate Limit!`,
+          );
+          return true;
+        }
+
+        return false;
+      },
+    },
+  });
+
+  const client = octokit.graphql.defaults({
+    headers,
+    baseUrl,
+  });
+
+  return client;
+};

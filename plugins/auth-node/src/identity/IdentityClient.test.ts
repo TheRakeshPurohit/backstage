@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-import { PluginEndpointDiscovery } from '@backstage/backend-common';
-import { setupRequestMockHandlers } from '@backstage/backend-test-utils';
+import { registerMswTestHooks } from '@backstage/backend-test-utils';
 import {
   decodeProtectedHeader,
   exportJWK,
@@ -28,6 +27,7 @@ import { setupServer } from 'msw/node';
 import { v4 as uuid } from 'uuid';
 
 import { IdentityClient } from './IdentityClient';
+import { DiscoveryService } from '@backstage/backend-plugin-api';
 
 interface AnyJWK extends Record<string, string> {
   use: 'sig';
@@ -88,7 +88,7 @@ function jwtKid(jwt: string): string {
 
 const server = setupServer();
 const mockBaseUrl = 'http://backstage:9191/i-am-a-mock-base';
-const discovery: PluginEndpointDiscovery = {
+const discovery: DiscoveryService = {
   async getBaseUrl() {
     return mockBaseUrl;
   },
@@ -102,7 +102,7 @@ describe('IdentityClient', () => {
   let factory: FakeTokenFactory;
   const keyDurationSeconds = 5;
 
-  setupRequestMockHandlers(server);
+  registerMswTestHooks(server);
 
   beforeEach(() => {
     client = IdentityClient.create({ discovery, issuer: mockBaseUrl });

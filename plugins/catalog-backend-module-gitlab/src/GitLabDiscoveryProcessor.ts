@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-import {
-  CacheClient,
-  CacheManager,
-  PluginCacheManager,
-} from '@backstage/backend-common';
 import { Config } from '@backstage/config';
 import {
   ScmIntegrationRegistry,
@@ -30,8 +25,9 @@ import {
   LocationSpec,
   processingResult,
 } from '@backstage/plugin-catalog-node';
-import { Logger } from 'winston';
 import { GitLabClient, GitLabProject, paginated } from './lib';
+import { CacheService, LoggerService } from '@backstage/backend-plugin-api';
+import { CacheManager } from '@backstage/backend-defaults/cache';
 
 /**
  * Extracts repositories out of an GitLab instance.
@@ -39,17 +35,19 @@ import { GitLabClient, GitLabProject, paginated } from './lib';
  */
 export class GitLabDiscoveryProcessor implements CatalogProcessor {
   private readonly integrations: ScmIntegrationRegistry;
-  private readonly logger: Logger;
-  private readonly cache: CacheClient;
+  private readonly logger: LoggerService;
+  private readonly cache: CacheService;
   private readonly skipReposWithoutExactFileMatch: boolean;
   private readonly skipForkedRepos: boolean;
+  private readonly includeArchivedRepos: boolean;
 
   static fromConfig(
     config: Config,
     options: {
-      logger: Logger;
+      logger: LoggerService;
       skipReposWithoutExactFileMatch?: boolean;
       skipForkedRepos?: boolean;
+      includeArchivedRepos?: boolean;
     },
   ): GitLabDiscoveryProcessor {
     const integrations = ScmIntegrations.fromConfig(config);
@@ -65,17 +63,19 @@ export class GitLabDiscoveryProcessor implements CatalogProcessor {
 
   private constructor(options: {
     integrations: ScmIntegrationRegistry;
-    pluginCache: PluginCacheManager;
-    logger: Logger;
+    pluginCache: CacheService;
+    logger: LoggerService;
     skipReposWithoutExactFileMatch?: boolean;
     skipForkedRepos?: boolean;
+    includeArchivedRepos?: boolean;
   }) {
     this.integrations = options.integrations;
-    this.cache = options.pluginCache.getClient();
+    this.cache = options.pluginCache;
     this.logger = options.logger;
     this.skipReposWithoutExactFileMatch =
       options.skipReposWithoutExactFileMatch || false;
     this.skipForkedRepos = options.skipForkedRepos || false;
+    this.includeArchivedRepos = options.includeArchivedRepos || false;
   }
 
   getProcessorName(): string {
@@ -109,12 +109,12 @@ export class GitLabDiscoveryProcessor implements CatalogProcessor {
 
     const lastActivity = (await this.cache.get(this.getCacheKey())) as string;
     const opts = {
-      archived: false,
       group,
       page: 1,
       // We check for the existence of lastActivity and only set it if it's present to ensure
       // that the options doesn't include the key so that the API doesn't receive an empty query parameter.
       ...(lastActivity && { last_activity_after: lastActivity }),
+      ...(!this.includeArchivedRepos && { archived: false }),
     };
 
     const projects = paginated(options => client.listProjects(options), opts);

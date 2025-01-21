@@ -7,6 +7,9 @@ on:
     types:
       - created
 
+permissions:
+  contents: read
+
 jobs:
   trigger:
     runs-on: ubuntu-latest
@@ -16,13 +19,19 @@ jobs:
     if: github.repository == 'backstage/backstage' && github.event.comment.user.id == github.event.pull_request.user.id
 
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@c95a14d0e5bab51a9f56296a4eb0e416910cd350 # v2.10.3
+        with:
+          egress-policy: audit
+
       - name: Save PR number
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           mkdir -p ./pr
           echo $PR_NUMBER > ./pr/pr_number
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
         with:
           name: pr_number-${{ github.event.pull_request.number }}
           path: pr/
+          overwrite: true

@@ -15,38 +15,32 @@
  */
 
 import { createFilesystemDeleteAction } from './delete';
-import { getVoidLogger } from '@backstage/backend-common';
-import { PassThrough } from 'stream';
+import { createMockActionContext } from '@backstage/plugin-scaffolder-node-test-utils';
 import { resolve as resolvePath } from 'path';
-import * as os from 'os';
-import mockFs from 'mock-fs';
 import fs from 'fs-extra';
 import yaml from 'yaml';
 import { examples } from './delete.examples';
-
-const root = os.platform() === 'win32' ? 'C:\\rootDir' : '/rootDir';
-const workspacePath = resolvePath(root, 'my-workspace');
+import { createMockDirectory } from '@backstage/backend-test-utils';
 
 describe('fs:delete examples', () => {
   const action = createFilesystemDeleteAction();
 
+  const mockDir = createMockDirectory();
+  const workspacePath = resolvePath(mockDir.path, 'workspace');
+
   const files: string[] = yaml.parse(examples[0].example).steps[0].input.files;
 
-  const mockContext = {
+  const mockContext = createMockActionContext({
     input: {
       files: files,
     },
     workspacePath,
-    logger: getVoidLogger(),
-    logStream: new PassThrough(),
-    output: jest.fn(),
-    createTemporaryDirectory: jest.fn(),
-  };
+  });
 
   beforeEach(() => {
     jest.restoreAllMocks();
 
-    mockFs({
+    mockDir.setContent({
       [workspacePath]: {
         [files[0]]: 'hello',
         [files[1]]: 'world',
@@ -55,10 +49,6 @@ describe('fs:delete examples', () => {
         },
       },
     });
-  });
-
-  afterEach(() => {
-    mockFs.restore();
   });
 
   it('should call fs.rm with the correct values', async () => {

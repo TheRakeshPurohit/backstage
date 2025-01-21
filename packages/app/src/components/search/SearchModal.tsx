@@ -19,7 +19,6 @@ import {
   CATALOG_FILTER_EXISTS,
   catalogApiRef,
 } from '@backstage/plugin-catalog-react';
-import { ToolSearchResultListItem } from '@backstage/plugin-explore';
 import { searchPlugin, SearchType } from '@backstage/plugin-search';
 import {
   SearchBar,
@@ -29,19 +28,16 @@ import {
   useSearch,
 } from '@backstage/plugin-search-react';
 import { TechDocsSearchResultListItem } from '@backstage/plugin-techdocs';
-import { CatalogSearchResultListItem } from '@internal/plugin-catalog-customized';
-import {
-  Box,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Grid,
-  makeStyles,
-} from '@material-ui/core';
+import { CatalogSearchResultListItem } from '@backstage/plugin-catalog';
+import Box from '@material-ui/core/Box';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import Grid from '@material-ui/core/Grid';
+import { makeStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
 import ArrowForwardIcon from '@material-ui/icons/ArrowForward';
-import BuildIcon from '@material-ui/icons/Build';
 import CloseIcon from '@material-ui/icons/Close';
 import React, { useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -207,7 +203,6 @@ export const SearchModal = ({ toggleModal }: { toggleModal: () => void }) => {
             <SearchResult>
               <CatalogSearchResultListItem icon={<CatalogIcon />} />
               <TechDocsSearchResultListItem icon={<DocsIcon />} />
-              <ToolSearchResultListItem icon={<BuildIcon />} />
             </SearchResult>
           </Grid>
         </Grid>

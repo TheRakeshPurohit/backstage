@@ -15,13 +15,22 @@
  */
 
 import {
-  readTaskScheduleDefinitionFromConfig,
-  TaskScheduleDefinition,
-} from '@backstage/backend-tasks';
+  SchedulerServiceTaskScheduleDefinition,
+  readSchedulerServiceTaskScheduleDefinitionFromConfig,
+} from '@backstage/backend-plugin-api';
 import { Config } from '@backstage/config';
 
 const DEFAULT_CATALOG_PATH = '/catalog-info.yaml';
 const DEFAULT_PROVIDER_ID = 'default';
+
+export const DEFAULT_GITHUB_ENTITY_PROVIDER_CONFIG_SCHEDULE = {
+  frequency: {
+    hours: 3,
+  },
+  timeout: {
+    hours: 1,
+  },
+};
 
 export type GithubEntityProviderConfig = {
   id: string;
@@ -36,7 +45,7 @@ export type GithubEntityProviderConfig = {
     visibility?: string[];
   };
   validateLocationsExist: boolean;
-  schedule?: TaskScheduleDefinition;
+  schedule?: SchedulerServiceTaskScheduleDefinition;
 };
 
 export type GithubTopicFilters = {
@@ -96,8 +105,10 @@ function readProviderConfig(
   }
 
   const schedule = config.has('schedule')
-    ? readTaskScheduleDefinitionFromConfig(config.getConfig('schedule'))
-    : undefined;
+    ? readSchedulerServiceTaskScheduleDefinitionFromConfig(
+        config.getConfig('schedule'),
+      )
+    : DEFAULT_GITHUB_ENTITY_PROVIDER_CONFIG_SCHEDULE;
 
   return {
     id,

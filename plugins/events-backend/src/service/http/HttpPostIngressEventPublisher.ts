@@ -14,18 +14,36 @@
  * limitations under the License.
  */
 
-import { errorHandler } from '@backstage/backend-common';
+import { LoggerService } from '@backstage/backend-plugin-api';
 import { Config } from '@backstage/config';
+import { CustomErrorBase } from '@backstage/errors';
 import {
-  EventBroker,
-  EventPublisher,
+  EventsService,
   HttpPostIngressOptions,
   RequestValidator,
 } from '@backstage/plugin-events-node';
+import contentType from 'content-type';
 import express from 'express';
 import Router from 'express-promise-router';
-import { Logger } from 'winston';
 import { RequestValidationContextImpl } from './validation';
+
+class UnsupportedCharsetError extends CustomErrorBase {
+  name = 'UnsupportedCharsetError' as const;
+  statusCode = 415 as const;
+
+  constructor(charset: string) {
+    super(`Unsupported charset: ${charset}`);
+  }
+}
+
+class UnsupportedMediaTypeError extends CustomErrorBase {
+  name = 'UnsupportedMediaTypeError' as const;
+  statusCode = 415 as const;
+
+  constructor(mediaType?: string) {
+    super(`Unsupported media type: ${mediaType ?? 'unknown'}`);
+  }
+}
 
 /**
  * Publishes events received from their origin (e.g., webhook events from an SCM system)
@@ -34,13 +52,12 @@ import { RequestValidationContextImpl } from './validation';
  * @public
  */
 // TODO(pjungermann): add prom metrics? (see plugins/catalog-backend/src/util/metrics.ts, etc.)
-export class HttpPostIngressEventPublisher implements EventPublisher {
-  private eventBroker?: EventBroker;
-
+export class HttpPostIngressEventPublisher {
   static fromConfig(env: {
     config: Config;
+    events: EventsService;
     ingresses?: { [topic: string]: Omit<HttpPostIngressOptions, 'topic'> };
-    logger: Logger;
+    logger: LoggerService;
   }): HttpPostIngressEventPublisher {
     const topics =
       env.config.getOptionalStringArray('events.http.topics') ?? [];
@@ -54,11 +71,12 @@ export class HttpPostIngressEventPublisher implements EventPublisher {
       }
     });
 
-    return new HttpPostIngressEventPublisher(env.logger, ingresses);
+    return new HttpPostIngressEventPublisher(env.events, env.logger, ingresses);
   }
 
   private constructor(
-    private readonly logger: Logger,
+    private readonly events: EventsService,
+    private readonly logger: LoggerService,
     private readonly ingresses: {
       [topic: string]: Omit<HttpPostIngressOptions, 'topic'>;
     },
@@ -68,21 +86,16 @@ export class HttpPostIngressEventPublisher implements EventPublisher {
     router.use('/http', this.createRouter(this.ingresses));
   }
 
-  async setEventBroker(eventBroker: EventBroker): Promise<void> {
-    this.eventBroker = eventBroker;
-  }
-
   private createRouter(ingresses: {
     [topic: string]: Omit<HttpPostIngressOptions, 'topic'>;
   }): express.Router {
     const router = Router();
-    router.use(express.json());
+    router.use(express.raw({ type: '*/*' }));
 
     Object.keys(ingresses).forEach(topic =>
       this.addRouteForTopic(router, topic, ingresses[topic].validator),
     );
 
-    router.use(errorHandler());
     return router;
   }
 
@@ -92,25 +105,60 @@ export class HttpPostIngressEventPublisher implements EventPublisher {
     validator?: RequestValidator,
   ): void {
     const path = `/${topic}`;
+    const logger = this.logger;
 
     router.post(path, async (request, response) => {
-      const requestDetails = {
-        body: request.body,
-        headers: request.headers,
-      };
-      const context = new RequestValidationContextImpl();
-      await validator?.(requestDetails, context);
-      if (context.wasRejected()) {
-        response
-          .status(context.rejectionDetails!.status)
-          .json(context.rejectionDetails!.payload);
-        return;
+      const requestBody = request.body;
+      if (!Buffer.isBuffer(requestBody)) {
+        throw new Error(
+          `Failed to retrieve raw body from incoming event for topic ${topic}; not a buffer: ${typeof requestBody}`,
+        );
       }
 
-      const eventPayload = request.body;
-      await this.eventBroker!.publish({
+      const bodyBuffer: Buffer = requestBody;
+      const parsedContentType = contentType.parse(request);
+      if (
+        !parsedContentType.type ||
+        parsedContentType.type !== 'application/json'
+      ) {
+        throw new UnsupportedMediaTypeError(parsedContentType.type);
+      }
+
+      const encoding = parsedContentType.parameters.charset ?? 'utf-8';
+      if (!Buffer.isEncoding(encoding)) {
+        throw new UnsupportedCharsetError(encoding);
+      }
+
+      const bodyString = bodyBuffer.toString(encoding);
+      const bodyParsed =
+        parsedContentType.type === 'application/json'
+          ? JSON.parse(bodyString)
+          : bodyString;
+
+      if (validator) {
+        const requestDetails = {
+          body: bodyParsed,
+          headers: request.headers,
+          raw: {
+            body: bodyBuffer,
+            encoding: encoding as BufferEncoding,
+          },
+        };
+
+        const context = new RequestValidationContextImpl();
+        await validator(requestDetails, context);
+
+        if (context.wasRejected()) {
+          response
+            .status(context.rejectionDetails!.status)
+            .json(context.rejectionDetails!.payload);
+          return;
+        }
+      }
+
+      await this.events.publish({
         topic,
-        eventPayload,
+        eventPayload: bodyParsed,
         metadata: request.headers,
       });
 
@@ -119,6 +167,6 @@ export class HttpPostIngressEventPublisher implements EventPublisher {
 
     // TODO(pjungermann): We don't really know the externally defined path prefix here,
     //  however it is more useful for users to have it. Is there a better way?
-    this.logger.info(`Registered /api/events/http${path} to receive events`);
+    logger.info(`Registered /api/events/http${path} to receive events`);
   }
 }

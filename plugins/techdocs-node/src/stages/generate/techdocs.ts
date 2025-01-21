@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-import { ContainerRunner } from '@backstage/backend-common';
 import { Config } from '@backstage/config';
 import path from 'path';
-import { Logger } from 'winston';
 import {
   ScmIntegrationRegistry,
   ScmIntegrations,
@@ -43,6 +41,9 @@ import {
   GeneratorRunOptions,
 } from './types';
 import { ForwardedError } from '@backstage/errors';
+import { DockerContainerRunner } from './DockerContainerRunner';
+import { LoggerService } from '@backstage/backend-plugin-api';
+import { TechDocsContainerRunner } from './types';
 
 /**
  * Generates documentation files
@@ -53,9 +54,9 @@ export class TechdocsGenerator implements GeneratorBase {
    * The default docker image (and version) used to generate content. Public
    * and static so that techdocs-node consumers can use the same version.
    */
-  public static readonly defaultDockerImage = 'spotify/techdocs:v1.2.1';
-  private readonly logger: Logger;
-  private readonly containerRunner?: ContainerRunner;
+  public static readonly defaultDockerImage = 'spotify/techdocs:v1.2.4';
+  private readonly logger: LoggerService;
+  private readonly containerRunner?: TechDocsContainerRunner;
   private readonly options: GeneratorConfig;
   private readonly scmIntegrations: ScmIntegrationRegistry;
 
@@ -76,8 +77,8 @@ export class TechdocsGenerator implements GeneratorBase {
   }
 
   constructor(options: {
-    logger: Logger;
-    containerRunner?: ContainerRunner;
+    logger: LoggerService;
+    containerRunner?: TechDocsContainerRunner;
     config: Config;
     scmIntegrations: ScmIntegrationRegistry;
   }) {
@@ -97,6 +98,7 @@ export class TechdocsGenerator implements GeneratorBase {
       logger: childLogger,
       logStream,
       siteOptions,
+      runAsDefaultUser,
     } = options;
 
     // Do some updates to mkdocs.yml before generating docs e.g. adding repo_url
@@ -154,13 +156,10 @@ export class TechdocsGenerator implements GeneratorBase {
             `Successfully generated docs from ${inputDir} into ${outputDir} using local mkdocs`,
           );
           break;
-        case 'docker':
-          if (this.containerRunner === undefined) {
-            throw new Error(
-              "Invalid state: containerRunner cannot be undefined when runIn is 'docker'",
-            );
-          }
-          await this.containerRunner.runContainer({
+        case 'docker': {
+          const containerRunner =
+            this.containerRunner || new DockerContainerRunner();
+          await containerRunner.runContainer({
             imageName:
               this.options.dockerImage ?? TechdocsGenerator.defaultDockerImage,
             args: ['build', '-d', '/output'],
@@ -171,11 +170,13 @@ export class TechdocsGenerator implements GeneratorBase {
             // write to, otherwise they will just fail trying to write to /
             envVars: { HOME: '/tmp' },
             pullImage: this.options.pullImage,
+            defaultUser: runAsDefaultUser,
           });
           childLogger.info(
             `Successfully generated docs from ${inputDir} into ${outputDir} using techdocs-container`,
           );
           break;
+        }
         default:
           throw new Error(
             `Invalid config value "${this.options.runIn}" provided in 'techdocs.generators.techdocs'.`,
@@ -215,7 +216,7 @@ export class TechdocsGenerator implements GeneratorBase {
 
 export function readGeneratorConfig(
   config: Config,
-  logger: Logger,
+  logger: LoggerService,
 ): GeneratorConfig {
   const legacyGeneratorType = config.getOptionalString(
     'techdocs.generators.techdocs',

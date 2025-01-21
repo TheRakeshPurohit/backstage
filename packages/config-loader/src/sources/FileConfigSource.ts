@@ -17,16 +17,17 @@
 import chokidar, { FSWatcher } from 'chokidar';
 import fs from 'fs-extra';
 import { basename, dirname, isAbsolute, resolve as resolvePath } from 'path';
-import yaml from 'yaml';
 import {
   AsyncConfigSourceGenerator,
   ConfigSource,
   ConfigSourceData,
   SubstitutionFunc,
+  Parser,
   ReadConfigDataOptions,
 } from './types';
 import { createConfigTransformer } from './transform';
 import { NotFoundError } from '@backstage/errors';
+import { parseYamlContent } from './utils';
 
 /**
  * Options for {@link FileConfigSource.create}.
@@ -40,14 +41,32 @@ export interface FileConfigSourceOptions {
   path: string;
 
   /**
+   * Set to `false` to disable file watching, defaults to `true`.
+   */
+  watch?: boolean;
+
+  /**
    * A substitution function to use instead of the default environment substitution.
    */
   substitutionFunc?: SubstitutionFunc;
+
+  /**
+   * A content parsing function to transform string content to configuration values.
+   */
+  parser?: Parser;
 }
 
 async function readFile(path: string): Promise<string | undefined> {
   try {
-    return await fs.readFile(path, 'utf8');
+    const content = await fs.readFile(path, 'utf8');
+    // During watching we may sometimes read files too early before the file content has been written.
+    // We never expect the writing to take a long time, but if we encounter an empty file then check
+    // again after a short delay for safety.
+    if (content === '') {
+      await new Promise(resolve => setTimeout(resolve, 10));
+      return await fs.readFile(path, 'utf8');
+    }
+    return content;
   } catch (error) {
     if (error.code === 'ENOENT') {
       return undefined;
@@ -81,10 +100,14 @@ export class FileConfigSource implements ConfigSource {
 
   readonly #path: string;
   readonly #substitutionFunc?: SubstitutionFunc;
+  readonly #watch?: boolean;
+  readonly #parser: Parser;
 
   private constructor(options: FileConfigSourceOptions) {
     this.#path = options.path;
     this.#substitutionFunc = options.substitutionFunc;
+    this.#watch = options.watch ?? true;
+    this.#parser = options.parser ?? parseYamlContent;
   }
 
   // Work is duplicated across each read, in practice that should not
@@ -96,20 +119,27 @@ export class FileConfigSource implements ConfigSource {
     const signal = options?.signal;
     const configFileName = basename(this.#path);
 
-    // Keep track of watched paths, since this is simpler than resetting the watcher
-    const watchedPaths = new Array<string>();
-    const watcher = chokidar.watch(this.#path, {
-      usePolling: process.env.NODE_ENV === 'test',
-    });
+    let watchedPaths: Array<string> | null = null;
+    let watcher: FSWatcher | null = null;
+
+    if (this.#watch) {
+      // Keep track of watched paths, since this is simpler than resetting the watcher
+      watchedPaths = new Array<string>();
+      watcher = chokidar.watch(this.#path, {
+        usePolling: process.env.NODE_ENV === 'test',
+      });
+    }
 
     const dir = dirname(this.#path);
     const transformer = createConfigTransformer({
       substitutionFunc: this.#substitutionFunc,
       readFile: async path => {
         const fullPath = resolvePath(dir, path);
-        // Any files discovered while reading this config should be watched too
-        watcher.add(fullPath);
-        watchedPaths.push(fullPath);
+        if (watcher && watchedPaths) {
+          // Any files discovered while reading this config should be watched too
+          watcher.add(fullPath);
+          watchedPaths.push(fullPath);
+        }
 
         const data = await readFile(fullPath);
         if (data === undefined) {
@@ -123,18 +153,21 @@ export class FileConfigSource implements ConfigSource {
 
     // This is the entry point for reading the file, called initially and on change
     const readConfigFile = async (): Promise<ConfigSourceData[]> => {
-      // We clear the watched files every time we initiate a new read
-      watcher.unwatch(watchedPaths);
-      watchedPaths.length = 0;
+      if (watcher && watchedPaths) {
+        // We clear the watched files every time we initiate a new read
+        watcher.unwatch(watchedPaths);
+        watchedPaths.length = 0;
 
-      watcher.add(this.#path);
-      watchedPaths.push(this.#path);
-      const content = await readFile(this.#path);
-      if (content === undefined) {
+        watcher.add(this.#path);
+        watchedPaths.push(this.#path);
+      }
+
+      const contents = await readFile(this.#path);
+      if (contents === undefined) {
         throw new NotFoundError(`Config file "${this.#path}" does not exist`);
       }
-      const parsed = yaml.parse(content);
-      if (parsed === null) {
+      const { result: parsed } = await this.#parser({ contents });
+      if (parsed === undefined) {
         return [];
       }
       try {
@@ -149,18 +182,20 @@ export class FileConfigSource implements ConfigSource {
 
     const onAbort = () => {
       signal?.removeEventListener('abort', onAbort);
-      watcher.close();
+      if (watcher) watcher.close();
     };
     signal?.addEventListener('abort', onAbort);
 
     yield { configs: await readConfigFile() };
 
-    for (;;) {
-      const event = await this.#waitForEvent(watcher, signal);
-      if (event === 'abort') {
-        return;
+    if (watcher) {
+      for (;;) {
+        const event = await this.#waitForEvent(watcher, signal);
+        if (event === 'abort') {
+          return;
+        }
+        yield { configs: await readConfigFile() };
       }
-      yield { configs: await readConfigFile() };
     }
   }
 

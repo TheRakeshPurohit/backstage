@@ -14,23 +14,27 @@
  * limitations under the License.
  */
 
-import { ModuleOptions, WebpackPluginInstance } from 'webpack';
+import { RuleSetRule, WebpackPluginInstance } from 'webpack';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { svgrTemplate } from '../svgrTemplate';
-import ReactRefreshPlugin from '@pmmmwh/react-refresh-webpack-plugin';
 
 type Transforms = {
-  loaders: ModuleOptions['rules'];
+  loaders: RuleSetRule[];
   plugins: WebpackPluginInstance[];
 };
 
 type TransformOptions = {
   isDev: boolean;
   isBackend?: boolean;
+  rspack?: typeof import('@rspack/core').rspack;
 };
 
 export const transforms = (options: TransformOptions): Transforms => {
-  const { isDev, isBackend } = options;
+  const { isDev, isBackend, rspack } = options;
+
+  const CssExtractRspackPlugin: typeof MiniCssExtractPlugin = rspack
+    ? (rspack.CssExtractRspackPlugin as unknown as typeof MiniCssExtractPlugin)
+    : MiniCssExtractPlugin;
 
   // This ensures that styles inserted from the style-loader and any
   // async style chunks are always given lower priority than JSS styles.
@@ -55,10 +59,10 @@ export const transforms = (options: TransformOptions): Transforms => {
       exclude: /node_modules/,
       use: [
         {
-          loader: require.resolve('swc-loader'),
+          loader: rspack ? 'builtin:swc-loader' : require.resolve('swc-loader'),
           options: {
             jsc: {
-              target: 'es2019',
+              target: 'es2022',
               externalHelpers: !isBackend,
               parser: {
                 syntax: 'typescript',
@@ -83,10 +87,10 @@ export const transforms = (options: TransformOptions): Transforms => {
       exclude: /node_modules/,
       use: [
         {
-          loader: require.resolve('swc-loader'),
+          loader: rspack ? 'builtin:swc-loader' : require.resolve('swc-loader'),
           options: {
             jsc: {
-              target: 'es2019',
+              target: 'es2022',
               externalHelpers: !isBackend,
               parser: {
                 syntax: 'ecmascript',
@@ -116,10 +120,10 @@ export const transforms = (options: TransformOptions): Transforms => {
       test: [/\.icon\.svg$/],
       use: [
         {
-          loader: require.resolve('swc-loader'),
+          loader: rspack ? 'builtin:swc-loader' : require.resolve('swc-loader'),
           options: {
             jsc: {
-              target: 'es2019',
+              target: 'es2022',
               externalHelpers: !isBackend,
               parser: {
                 syntax: 'ecmascript',
@@ -145,6 +149,8 @@ export const transforms = (options: TransformOptions): Transforms => {
         /\.vert$/,
         { and: [/\.svg$/, { not: [/\.icon\.svg$/] }] },
         /\.xml$/,
+        /\.ico$/,
+        /\.webp$/,
       ],
       type: 'asset/resource',
       generator: {
@@ -179,7 +185,7 @@ export const transforms = (options: TransformOptions): Transforms => {
                 insert: insertBeforeJssStyles,
               },
             }
-          : MiniCssExtractPlugin.loader,
+          : CssExtractRspackPlugin.loader,
         {
           loader: require.resolve('css-loader'),
           options: {
@@ -192,17 +198,9 @@ export const transforms = (options: TransformOptions): Transforms => {
 
   const plugins = new Array<WebpackPluginInstance>();
 
-  if (isDev) {
-    if (!isBackend) {
-      plugins.push(
-        new ReactRefreshPlugin({
-          overlay: { sockProtocol: 'ws' },
-        }),
-      );
-    }
-  } else {
+  if (!isDev) {
     plugins.push(
-      new MiniCssExtractPlugin({
+      new CssExtractRspackPlugin({
         filename: 'static/[name].[contenthash:8].css',
         chunkFilename: 'static/[name].[id].[contenthash:8].css',
         insert: insertBeforeJssStyles, // Only applies to async chunks

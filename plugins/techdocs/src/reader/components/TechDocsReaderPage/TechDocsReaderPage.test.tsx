@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import React from 'react';
-import { act } from '@testing-library/react';
 import { scmIntegrationsApiRef } from '@backstage/integration-react';
 
 import { entityRouteRef } from '@backstage/plugin-catalog-react';
 import {
-  MockConfigApi,
+  mockApis,
   renderInTestApp,
   TestApiProvider,
 } from '@backstage/test-utils';
@@ -35,7 +35,11 @@ import { ReportIssue } from '@backstage/plugin-techdocs-module-addons-contrib';
 import { FlatRoutes } from '@backstage/core-app-api';
 
 import { Page } from '@backstage/core-components';
-import { configApiRef } from '@backstage/core-plugin-api';
+import {
+  configApiRef,
+  discoveryApiRef,
+  fetchApiRef,
+} from '@backstage/core-plugin-api';
 
 const mockEntityMetadata = {
   locationMetadata: {
@@ -60,10 +64,12 @@ const mockTechDocsMetadata = {
 
 const getEntityMetadata = jest.fn();
 const getTechDocsMetadata = jest.fn();
+const getCookie = jest.fn();
 
 const techdocsApiMock = {
   getEntityMetadata,
   getTechDocsMetadata,
+  getCookie,
 };
 
 const techdocsStorageApiMock: jest.Mocked<typeof techdocsStorageApiRef.T> = {
@@ -73,6 +79,16 @@ const techdocsStorageApiMock: jest.Mocked<typeof techdocsStorageApiRef.T> = {
   getEntityDocs: jest.fn(),
   getStorageUrl: jest.fn(),
   syncEntityDocs: jest.fn(),
+};
+
+const fetchApiMock = {
+  fetch: jest.fn().mockResolvedValue({
+    ok: true,
+    json: jest.fn().mockResolvedValue({
+      // Expires in 10 minutes
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    }),
+  }),
 };
 
 const PageMock = () => {
@@ -85,16 +101,16 @@ jest.mock('@backstage/core-components', () => ({
   Page: jest.fn(),
 }));
 
-const configApi = new MockConfigApi({
-  app: {
-    baseUrl: 'http://localhost:3000',
-  },
+const configApi = mockApis.config({
+  data: { app: { baseUrl: 'http://localhost:3000' } },
 });
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => {
   return (
     <TestApiProvider
       apis={[
+        [fetchApiRef, fetchApiMock],
+        [discoveryApiRef, mockApis.discovery()],
         [scmIntegrationsApiRef, {}],
         [configApiRef, configApi],
         [techdocsApiRef, techdocsApiMock],
@@ -116,10 +132,14 @@ describe('<TechDocsReaderPage />', () => {
   beforeEach(() => {
     getEntityMetadata.mockResolvedValue(mockEntityMetadata);
     getTechDocsMetadata.mockResolvedValue(mockTechDocsMetadata);
+    getCookie.mockResolvedValue({
+      // Expires in 10 minutes
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    });
   });
 
   afterEach(() => {
-    jest.resetAllMocks();
+    jest.clearAllMocks();
   });
 
   beforeEach(() => {
@@ -150,31 +170,25 @@ describe('<TechDocsReaderPage />', () => {
   });
 
   it('should render a techdocs reader page with children', async () => {
-    await act(async () => {
-      const rendered = await renderInTestApp(
-        <Wrapper>
-          <TechDocsReaderPage
-            entityRef={{
-              name: 'test-name',
-              namespace: 'test-namespace',
-              kind: 'test',
-            }}
-          >
-            techdocs reader page
-          </TechDocsReaderPage>
-        </Wrapper>,
-        {
-          mountedRoutes,
-        },
-      );
-      expect(
-        rendered.container.querySelector('header'),
-      ).not.toBeInTheDocument();
-      expect(
-        rendered.container.querySelector('article'),
-      ).not.toBeInTheDocument();
-      expect(rendered.getByText('techdocs reader page')).toBeInTheDocument();
-    });
+    const rendered = await renderInTestApp(
+      <Wrapper>
+        <TechDocsReaderPage
+          entityRef={{
+            name: 'test-name',
+            namespace: 'test-namespace',
+            kind: 'test',
+          }}
+        >
+          techdocs reader page
+        </TechDocsReaderPage>
+      </Wrapper>,
+      {
+        mountedRoutes,
+      },
+    );
+    expect(rendered.container.querySelector('header')).not.toBeInTheDocument();
+    expect(rendered.container.querySelector('article')).not.toBeInTheDocument();
+    expect(rendered.getByText('techdocs reader page')).toBeInTheDocument();
   });
 
   it('should render techdocs reader page with addons', async () => {
@@ -183,56 +197,78 @@ describe('<TechDocsReaderPage />', () => {
     const namespace = 'test-namespace';
     const kind = 'test';
 
-    await act(async () => {
-      const rendered = await renderInTestApp(
-        <Wrapper>
-          <FlatRoutes>
-            <Route
-              path="/docs/:namespace/:kind/:name/*"
-              element={<TechDocsReaderPage />}
-            >
-              <TechDocsAddons>
-                <ReportIssue />
-              </TechDocsAddons>
-            </Route>
-          </FlatRoutes>
-        </Wrapper>,
-        {
-          mountedRoutes,
-          routeEntries: ['/docs/test-namespace/test/test-name'],
-        },
-      );
+    const rendered = await renderInTestApp(
+      <Wrapper>
+        <FlatRoutes>
+          <Route
+            path="/docs/:namespace/:kind/:name/*"
+            element={<TechDocsReaderPage />}
+          >
+            <TechDocsAddons>
+              <ReportIssue />
+            </TechDocsAddons>
+          </Route>
+        </FlatRoutes>
+      </Wrapper>,
+      {
+        mountedRoutes,
+        routeEntries: ['/docs/test-namespace/test/test-name'],
+      },
+    );
 
-      expect(
-        rendered.getByText(`PageMock: ${namespace}#${kind}#${name}`),
-      ).toBeInTheDocument();
-    });
+    expect(
+      rendered.getByText(`PageMock: ${namespace}#${kind}#${name}`),
+    ).toBeInTheDocument();
   });
 
   it('should render techdocs reader page with addons and page', async () => {
     (Page as jest.Mock).mockImplementation(PageMock);
-    await act(async () => {
-      const rendered = await renderInTestApp(
-        <Wrapper>
-          <FlatRoutes>
-            <Route
-              path="/docs/:namespace/:kind/:name/*"
-              element={<TechDocsReaderPage />}
-            >
-              <p>the page</p>
-              <TechDocsAddons>
-                <ReportIssue />
-              </TechDocsAddons>
-            </Route>
-          </FlatRoutes>
-        </Wrapper>,
-        {
-          mountedRoutes,
-          routeEntries: ['/docs/test-namespace/test/test-name'],
-        },
-      );
+    const rendered = await renderInTestApp(
+      <Wrapper>
+        <FlatRoutes>
+          <Route
+            path="/docs/:namespace/:kind/:name/*"
+            element={<TechDocsReaderPage />}
+          >
+            <p>the page</p>
+            <TechDocsAddons>
+              <ReportIssue />
+            </TechDocsAddons>
+          </Route>
+        </FlatRoutes>
+      </Wrapper>,
+      {
+        mountedRoutes,
+        routeEntries: ['/docs/test-namespace/test/test-name'],
+      },
+    );
 
-      expect(rendered.getByText('the page')).toBeInTheDocument();
-    });
+    expect(rendered.getByText('the page')).toBeInTheDocument();
+  });
+
+  it('should apply overrideThemeOptions', async () => {
+    const overrideThemeOptions = {
+      typography: { fontFamily: 'Comic Sans MS' },
+    };
+
+    const rendered = await renderInTestApp(
+      <Wrapper>
+        <TechDocsReaderPage
+          entityRef={{
+            name: 'test-name',
+            namespace: 'test-namespace',
+            kind: 'test',
+          }}
+          overrideThemeOptions={overrideThemeOptions}
+        />
+      </Wrapper>,
+      {
+        mountedRoutes,
+      },
+    );
+
+    const text = rendered.getAllByText(mockTechDocsMetadata.site_name)[0];
+
+    expect(text).toHaveStyle('fontFamily: Comic Sans MS');
   });
 });

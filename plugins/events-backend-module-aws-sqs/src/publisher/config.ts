@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { Config } from '@backstage/config';
-import { HumanDuration, JsonObject } from '@backstage/types';
+import { Config, readDurationFromConfig } from '@backstage/config';
+import { HumanDuration } from '@backstage/types';
 import { Duration } from 'luxon';
 
 const CONFIG_PREFIX_MODULE = 'events.modules.awsSqs.';
@@ -34,12 +34,12 @@ export interface AwsSqsEventSourceConfig {
   endpoint?: string;
 }
 
-// TODO(pjungermann): validation could be improved similar to `convertToHumanDuration` at @backstage/backend-tasks
+// TODO(pjungermann): validation could be improved similar to `convertToHumanDuration` at @backstage/backend-plugin-api
 function readOptionalHumanDuration(
   config: Config,
   key: string,
 ): HumanDuration | undefined {
-  return config.getOptional<JsonObject>(key) as HumanDuration;
+  return config.has(key) ? readDurationFromConfig(config, { key }) : undefined;
 }
 
 function readOptionalDuration(

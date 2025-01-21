@@ -15,7 +15,8 @@
  */
 import React from 'react';
 import { RepoUrlPicker } from './RepoUrlPicker';
-import Form from '@rjsf/core';
+import { Form } from '@backstage/plugin-scaffolder-react/alpha';
+import validator from '@rjsf/validator-ajv8';
 import { renderInTestApp, TestApiProvider } from '@backstage/test-utils';
 import {
   scmIntegrationsApiRef,
@@ -29,8 +30,10 @@ import {
   scaffolderApiRef,
   ScaffolderApi,
   useTemplateSecrets,
+  ScaffolderRJSFField,
 } from '@backstage/plugin-scaffolder-react';
 import { act, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 describe('RepoUrlPicker', () => {
   const mockScaffolderApi: Partial<ScaffolderApi> = {
@@ -56,9 +59,17 @@ describe('RepoUrlPicker', () => {
     byHost: () => ({ type: 'github' }),
   };
 
-  const mockScmAuthApi: Partial<ScmAuthApi> = {
-    getCredentials: jest.fn().mockResolvedValue({ token: 'abc123' }),
+  const mockIntegrationsApiAzure: Partial<ScmIntegrationsApi> = {
+    byHost: () => ({ type: 'azure' }),
   };
+
+  let mockScmAuthApi: Partial<ScmAuthApi>;
+
+  beforeEach(() => {
+    mockScmAuthApi = {
+      getCredentials: jest.fn().mockResolvedValue({ token: 'abc123' }),
+    };
+  });
 
   describe('happy path rendering', () => {
     it('should render the repo url picker with minimal props', async () => {
@@ -73,9 +84,12 @@ describe('RepoUrlPicker', () => {
         >
           <SecretsContextProvider>
             <Form
+              validator={validator}
               schema={{ type: 'string' }}
               uiSchema={{ 'ui:field': 'RepoUrlPicker' }}
-              fields={{ RepoUrlPicker: RepoUrlPicker }}
+              fields={{
+                RepoUrlPicker: RepoUrlPicker as ScaffolderRJSFField<string>,
+              }}
               onSubmit={onSubmit}
             />
           </SecretsContextProvider>
@@ -85,8 +99,15 @@ describe('RepoUrlPicker', () => {
       const [ownerInput, repoInput] = getAllByRole('textbox');
       const submitButton = getByRole('button');
 
-      fireEvent.change(ownerInput, { target: { value: 'backstage' } });
-      fireEvent.change(repoInput, { target: { value: 'repo123' } });
+      act(() => {
+        ownerInput.focus();
+        fireEvent.change(ownerInput, { target: { value: 'backstage' } });
+        ownerInput.blur();
+
+        repoInput.focus();
+        fireEvent.change(repoInput, { target: { value: 'repo123' } });
+        repoInput.blur();
+      });
 
       fireEvent.click(submitButton);
 
@@ -102,19 +123,22 @@ describe('RepoUrlPicker', () => {
       const { getByRole } = await renderInTestApp(
         <TestApiProvider
           apis={[
-            [scmIntegrationsApiRef, mockIntegrationsApi],
+            [scmIntegrationsApiRef, mockIntegrationsApiAzure],
             [scmAuthApiRef, {}],
             [scaffolderApiRef, mockScaffolderApi],
           ]}
         >
           <SecretsContextProvider>
             <Form
+              validator={validator}
               schema={{ type: 'string' }}
               uiSchema={{
                 'ui:field': 'RepoUrlPicker',
                 'ui:options': { allowedHosts: ['dev.azure.com'] },
               }}
-              fields={{ RepoUrlPicker: RepoUrlPicker }}
+              fields={{
+                RepoUrlPicker: RepoUrlPicker as ScaffolderRJSFField<string>,
+              }}
             />
           </SecretsContextProvider>
         </TestApiProvider>,
@@ -124,17 +148,81 @@ describe('RepoUrlPicker', () => {
         getByRole('option', { name: 'dev.azure.com' }),
       ).toBeInTheDocument();
     });
+
+    it('should render properly with allowedProject', async () => {
+      const { getByRole } = await renderInTestApp(
+        <TestApiProvider
+          apis={[
+            [scmIntegrationsApiRef, mockIntegrationsApiAzure],
+            [scmAuthApiRef, {}],
+            [scaffolderApiRef, mockScaffolderApi],
+          ]}
+        >
+          <SecretsContextProvider>
+            <Form
+              validator={validator}
+              schema={{ type: 'string' }}
+              uiSchema={{
+                'ui:field': 'RepoUrlPicker',
+                'ui:options': {
+                  allowedHosts: ['dev.azure.com'],
+                  allowedProjects: ['Backstage'],
+                },
+              }}
+              fields={{
+                RepoUrlPicker: RepoUrlPicker as ScaffolderRJSFField<string>,
+              }}
+            />
+          </SecretsContextProvider>
+        </TestApiProvider>,
+      );
+
+      expect(getByRole('option', { name: 'Backstage' })).toBeInTheDocument();
+    });
+
+    it('should render properly with title and description', async () => {
+      const { getByText } = await renderInTestApp(
+        <TestApiProvider
+          apis={[
+            [scmIntegrationsApiRef, mockIntegrationsApi],
+            [scmAuthApiRef, {}],
+            [scaffolderApiRef, mockScaffolderApi],
+          ]}
+        >
+          <SecretsContextProvider>
+            <Form
+              validator={validator}
+              schema={{
+                type: 'string',
+                title: 'test title',
+                description: 'test description',
+              }}
+              uiSchema={{
+                'ui:field': 'RepoUrlPicker',
+              }}
+              fields={{
+                RepoUrlPicker: RepoUrlPicker as ScaffolderRJSFField<string>,
+              }}
+            />
+          </SecretsContextProvider>
+        </TestApiProvider>,
+      );
+
+      expect(getByText('test title')).toBeInTheDocument();
+      expect(getByText('test description')).toBeInTheDocument();
+    });
   });
 
   describe('requestUserCredentials', () => {
     it('should call the scmAuthApi with the correct params', async () => {
+      const secretsKey = 'testKey';
+
       const SecretsComponent = () => {
         const { secrets } = useTemplateSecrets();
-        return (
-          <div data-testid="current-secrets">{JSON.stringify({ secrets })}</div>
-        );
+        const secret = secrets[secretsKey];
+        return secret ? <div>{secret}</div> : null;
       };
-      const { getAllByRole, getByTestId } = await renderInTestApp(
+      const { getByText } = await renderInTestApp(
         <TestApiProvider
           apis={[
             [scmIntegrationsApiRef, mockIntegrationsApi],
@@ -144,35 +232,33 @@ describe('RepoUrlPicker', () => {
         >
           <SecretsContextProvider>
             <Form
+              validator={validator}
               schema={{ type: 'string' }}
               uiSchema={{
                 'ui:field': 'RepoUrlPicker',
                 'ui:options': {
                   requestUserCredentials: {
-                    secretsKey: 'testKey',
+                    secretsKey,
                     additionalScopes: { github: ['workflow'] },
                   },
                 },
               }}
-              fields={{ RepoUrlPicker: RepoUrlPicker }}
+              fields={{
+                RepoUrlPicker: RepoUrlPicker as ScaffolderRJSFField<string>,
+              }}
             />
             <SecretsComponent />
           </SecretsContextProvider>
         </TestApiProvider>,
       );
 
-      const [ownerInput, repoInput] = getAllByRole('textbox');
-
       await act(async () => {
-        fireEvent.change(ownerInput, { target: { value: 'backstage' } });
-        fireEvent.change(repoInput, { target: { value: 'repo123' } });
-
         // need to wait for the debounce to finish
         await new Promise(resolve => setTimeout(resolve, 600));
       });
 
       expect(mockScmAuthApi.getCredentials).toHaveBeenCalledWith({
-        url: 'https://github.com/backstage/repo123',
+        url: 'https://github.com',
         additionalScope: {
           repoWrite: true,
           customScopes: {
@@ -181,22 +267,10 @@ describe('RepoUrlPicker', () => {
         },
       });
 
-      const currentSecrets = JSON.parse(
-        getByTestId('current-secrets').textContent!,
-      );
-
-      expect(currentSecrets).toEqual({
-        secrets: { testKey: 'abc123' },
-      });
+      expect(getByText('abc123')).toBeInTheDocument();
     });
     it('should call the scmAuthApi with the correct params if workspace is nested', async () => {
-      const SecretsComponent = () => {
-        const { secrets } = useTemplateSecrets();
-        return (
-          <div data-testid="current-secrets">{JSON.stringify({ secrets })}</div>
-        );
-      };
-      const { getAllByRole } = await renderInTestApp(
+      await renderInTestApp(
         <TestApiProvider
           apis={[
             [scmIntegrationsApiRef, mockIntegrationsApi],
@@ -206,6 +280,7 @@ describe('RepoUrlPicker', () => {
         >
           <SecretsContextProvider>
             <Form
+              validator={validator}
               schema={{ type: 'string' }}
               uiSchema={{
                 'ui:field': 'RepoUrlPicker',
@@ -216,40 +291,51 @@ describe('RepoUrlPicker', () => {
                   },
                 },
               }}
-              fields={{ RepoUrlPicker: RepoUrlPicker }}
+              fields={{
+                RepoUrlPicker: RepoUrlPicker as ScaffolderRJSFField<string>,
+              }}
             />
-            <SecretsComponent />
           </SecretsContextProvider>
         </TestApiProvider>,
       );
 
-      const [projectInput, repoInput] = getAllByRole('textbox');
-
       await act(async () => {
-        fireEvent.change(projectInput, {
-          target: { value: 'backstage/mysubgroup' },
-        });
-        fireEvent.change(repoInput, { target: { value: 'repo123' } });
-
         // need to wait for the debounce to finish
         await new Promise(resolve => setTimeout(resolve, 600));
       });
 
       expect(mockScmAuthApi.getCredentials).toHaveBeenCalledWith({
-        url: 'https://gitlab.example.com/backstage/mysubgroup/repo123',
+        url: 'https://gitlab.example.com',
         additionalScope: {
           repoWrite: true,
         },
       });
     });
-    it('should call the scmAuthApi with the correct params if only a project is set', async () => {
+
+    it('should call the scmAuthApi with the new host when the host is changed', async () => {
+      const secretsKey = 'testKey';
+
       const SecretsComponent = () => {
         const { secrets } = useTemplateSecrets();
-        return (
-          <div data-testid="current-secrets">{JSON.stringify({ secrets })}</div>
-        );
+        const secret = secrets[secretsKey];
+        return secret ? <div>{secret}</div> : null;
       };
-      const { getAllByRole, getByTestId } = await renderInTestApp(
+      const allowedHosts = ['github.com', 'gitlab.example.com'];
+
+      (mockScmAuthApi.getCredentials as jest.Mock).mockImplementation(
+        ({ url }) => {
+          let token = '';
+          if (url === `https://${allowedHosts[0]}`) {
+            token = 'abc123';
+          } else if (url === `https://${allowedHosts[1]}`) {
+            token = 'def456';
+          }
+          return Promise.resolve({ token });
+        },
+      );
+      const secondHost = allowedHosts[1];
+
+      const { getAllByRole, getByText } = await renderInTestApp(
         <TestApiProvider
           apis={[
             [scmIntegrationsApiRef, mockIntegrationsApi],
@@ -259,46 +345,46 @@ describe('RepoUrlPicker', () => {
         >
           <SecretsContextProvider>
             <Form
+              validator={validator}
               schema={{ type: 'string' }}
               uiSchema={{
                 'ui:field': 'RepoUrlPicker',
                 'ui:options': {
-                  allowedHosts: ['server.bitbucket.org'],
+                  allowedHosts,
                   requestUserCredentials: {
-                    secretsKey: 'testKey',
+                    secretsKey,
                   },
                 },
               }}
-              fields={{ RepoUrlPicker: RepoUrlPicker }}
+              fields={{
+                RepoUrlPicker: RepoUrlPicker as ScaffolderRJSFField<string>,
+              }}
             />
             <SecretsComponent />
           </SecretsContextProvider>
         </TestApiProvider>,
       );
 
-      const [projectInput, repoInput] = getAllByRole('textbox');
+      await act(async () => {
+        // need to wait for the debounce to finish to fetch credentials for the first selected host
+        await new Promise(resolve => setTimeout(resolve, 600));
+      });
+      expect(getByText('abc123')).toBeInTheDocument();
 
       await act(async () => {
-        fireEvent.change(projectInput, { target: { value: 'backstage' } });
-        fireEvent.change(repoInput, { target: { value: 'repo123' } });
+        // Select the second host
+        const hostInput = getAllByRole('combobox')[0];
+        await userEvent.selectOptions(hostInput, secondHost);
 
         // need to wait for the debounce to finish
         await new Promise(resolve => setTimeout(resolve, 600));
       });
-
+      expect(getByText('def456')).toBeInTheDocument();
       expect(mockScmAuthApi.getCredentials).toHaveBeenCalledWith({
-        url: 'https://server.bitbucket.org/backstage/repo123',
+        url: `https://${secondHost}`,
         additionalScope: {
           repoWrite: true,
         },
-      });
-
-      const currentSecrets = JSON.parse(
-        getByTestId('current-secrets').textContent!,
-      );
-
-      expect(currentSecrets).toEqual({
-        secrets: { testKey: 'abc123' },
       });
     });
   });

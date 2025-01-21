@@ -15,13 +15,16 @@
  */
 import { RELATION_OWNED_BY } from '@backstage/catalog-model';
 import { identityApiRef, useApi } from '@backstage/core-plugin-api';
-import { TextField } from '@material-ui/core';
+import TextField from '@material-ui/core/TextField';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 import React from 'react';
-import useAsync from 'react-use/lib/useAsync';
+import useAsync from 'react-use/esm/useAsync';
 import { EntityPicker } from '../EntityPicker/EntityPicker';
 
 import { OwnedEntityPickerProps } from './schema';
+import { EntityPickerProps } from '../EntityPicker/schema';
+import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
+import { scaffolderTranslationRef } from '../../../translation';
 
 export { OwnedEntityPickerSchema } from './schema';
 
@@ -32,8 +35,12 @@ export { OwnedEntityPickerSchema } from './schema';
  * @public
  */
 export const OwnedEntityPicker = (props: OwnedEntityPickerProps) => {
+  const { t } = useTranslationRef(scaffolderTranslationRef);
   const {
-    schema: { title = 'Entity', description = 'An entity from the catalog' },
+    schema: {
+      title = t('fields.ownedEntityPicker.title'),
+      description = t('fields.ownedEntityPicker.description'),
+    },
     uiSchema,
     required,
   } = props;
@@ -44,7 +51,6 @@ export const OwnedEntityPicker = (props: OwnedEntityPickerProps) => {
     return identity.ownershipEntityRefs;
   });
 
-  const allowedKinds = uiSchema['ui:options']?.allowedKinds;
   if (loading)
     return (
       <Autocomplete
@@ -65,25 +71,48 @@ export const OwnedEntityPicker = (props: OwnedEntityPickerProps) => {
       />
     );
 
-  return (
-    <EntityPicker
-      {...props}
-      schema={{ title, description }}
-      allowedKinds={allowedKinds}
-      catalogFilter={
-        allowedKinds
-          ? {
-              filter: {
-                kind: allowedKinds,
-                [`relations.${RELATION_OWNED_BY}`]: identityRefs || [],
-              },
-            }
-          : {
-              filter: {
-                [`relations.${RELATION_OWNED_BY}`]: identityRefs || [],
-              },
-            }
-      }
-    />
+  const entityPickerUISchema = buildEntityPickerUISchema(
+    uiSchema,
+    identityRefs,
   );
+
+  return <EntityPicker {...props} uiSchema={entityPickerUISchema} />;
 };
+
+/**
+ * Builds a `uiSchema` for an `EntityPicker` from a parent `OwnedEntityPicker`.
+ * Migrates deprecated parameters such as `allowedKinds` to `catalogFilter` structure.
+ *
+ * @param uiSchema The `uiSchema` of an `OwnedEntityPicker` component.
+ * @param identityRefs The user and group entities that the user claims ownership through.
+ * @returns The `uiSchema` for an `EntityPicker` component.
+ */
+function buildEntityPickerUISchema(
+  uiSchema: OwnedEntityPickerProps['uiSchema'],
+  identityRefs: string[] | undefined,
+): EntityPickerProps['uiSchema'] {
+  // Note: This is typed to avoid es-lint rule TS2698
+  const uiOptions: EntityPickerProps['uiSchema']['ui:options'] =
+    uiSchema?.['ui:options'] || {};
+  const { allowedKinds, ...extraOptions } = uiOptions;
+
+  const catalogFilter = asArray(uiOptions.catalogFilter).map(e => ({
+    ...e,
+    ...(allowedKinds ? { kind: allowedKinds } : {}),
+    [`relations.${RELATION_OWNED_BY}`]: identityRefs || [],
+  }));
+
+  return {
+    'ui:options': {
+      ...extraOptions,
+      catalogFilter,
+    },
+  };
+}
+
+function asArray(catalogFilter: any): any[] {
+  if (catalogFilter) {
+    return Array.isArray(catalogFilter) ? catalogFilter : [catalogFilter];
+  }
+  return [{}];
+}

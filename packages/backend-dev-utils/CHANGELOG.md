@@ -1,5 +1,47 @@
 # @backstage/backend-dev-utils
 
+## 0.1.5
+
+### Patch Changes
+
+- 3a35172: Fix `EventEmitter` memory leak in the development utilities
+
+## 0.1.4
+
+### Patch Changes
+
+- 9aac2b0: Use `--cwd` as the first `yarn` argument
+
+## 0.1.4-next.0
+
+### Patch Changes
+
+- 9aac2b0: Use `--cwd` as the first `yarn` argument
+
+## 0.1.3
+
+### Patch Changes
+
+- 516fd3e: Updated README to reflect release status
+
+## 0.1.3-next.0
+
+### Patch Changes
+
+- 516fd3e: Updated README to reflect release status
+
+## 0.1.2
+
+### Patch Changes
+
+- afa48341fb: Fix an issue where early IPC responses would be lost.
+
+## 0.1.2-next.0
+
+### Patch Changes
+
+- afa48341fb: Fix an issue where early IPC responses would be lost.
+
 ## 0.1.1
 
 ### Patch Changes

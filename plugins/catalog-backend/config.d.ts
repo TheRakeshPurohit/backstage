@@ -139,6 +139,16 @@ export interface Config {
     }>;
 
     /**
+     * Disables the compatibility layer for relations in returned entities that
+     * ensures that all relations objects have both `target` and `targetRef`.
+     *
+     * Enabling this option significantly reduces the memory usage of the
+     * catalog, and slightly increases performance, but may break consumers that
+     * rely on the existence of `target` in the relations objects.
+     */
+    disableRelationsCompatibility?: boolean;
+
+    /**
      * The strategy to use for entities that are orphaned, i.e. no longer have
      * any other entities or providers referencing them. The default value is
      * "keep".
@@ -146,8 +156,24 @@ export interface Config {
     orphanStrategy?: 'keep' | 'delete';
 
     /**
+     * The strategy to use when stitching together the final entities.
+     */
+    stitchingStrategy?:
+      | {
+          /** Perform stitching in-band immediately when needed */
+          mode: 'immediate';
+        }
+      | {
+          /** Defer stitching to be performed asynchronously */
+          mode: 'deferred';
+          /** Polling interval for tasks in seconds */
+          pollingInterval?: HumanDuration | string;
+          /** How long to wait for a stitch to complete before giving up in seconds */
+          stitchTimeout?: HumanDuration | string;
+        };
+
+    /**
      * The interval at which the catalog should process its entities.
-     *
      * @remarks
      *
      * Example:
@@ -155,6 +181,13 @@ export interface Config {
      * ```yaml
      * catalog:
      *   processingInterval: { minutes: 30 }
+     * ```
+     *
+     * or to disabled processing:
+     *
+     * ```yaml
+     * catalog:
+     *  processingInterval: false
      * ```
      *
      * Note that this is only a suggested minimum, and the actual interval may
@@ -168,6 +201,6 @@ export interface Config {
      * systems that are queried by processors, such as version control systems
      * housing catalog-info files.
      */
-    processingInterval?: HumanDuration;
+    processingInterval?: HumanDuration | false;
   };
 }

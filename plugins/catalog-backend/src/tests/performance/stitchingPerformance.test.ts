@@ -14,33 +14,26 @@
  * limitations under the License.
  */
 
+import { createBackendModule } from '@backstage/backend-plugin-api';
 import {
-  coreServices,
-  createBackendModule,
-  createServiceFactory,
-} from '@backstage/backend-plugin-api';
-import { TestDatabases, startTestBackend } from '@backstage/backend-test-utils';
-import { catalogPlugin } from '@backstage/plugin-catalog-backend/alpha';
+  TestDatabases,
+  mockServices,
+  startTestBackend,
+} from '@backstage/backend-test-utils';
 import { catalogProcessingExtensionPoint } from '@backstage/plugin-catalog-node/alpha';
+import { createDeferred } from '@backstage/types';
 import { Knex } from 'knex';
+import { default as catalogPlugin } from '../..';
 import { applyDatabaseMigrations } from '../../database/migrations';
 import {
+  SyntheticLoadEntitiesProcessor,
+  SyntheticLoadEntitiesProvider,
   SyntheticLoadEvents,
   SyntheticLoadOptions,
-  SyntheticLoadEntitiesProvider,
-  SyntheticLoadEntitiesProcessor,
 } from './lib/catalogModuleSyntheticLoadEntities';
 import { describePerformanceTest, performanceTraceEnabled } from './lib/env';
 
-function defer<T>() {
-  let resolve: (value: T | PromiseLike<T>) => void;
-  let reject: (error?: unknown) => void;
-  const promise = new Promise<T>((_resolve, _reject) => {
-    resolve = _resolve;
-    reject = _reject;
-  });
-  return { promise, resolve: resolve!, reject: reject! };
-}
+jest.setTimeout(600_000);
 
 const traceLog: typeof console.log = performanceTraceEnabled
   ? console.log
@@ -49,7 +42,7 @@ const traceLog: typeof console.log = performanceTraceEnabled
 class Tracker {
   private insertBaseEntitiesStart: number | undefined;
   private insertBaseEntitiesEnd: number | undefined;
-  private readonly deferred = defer<void>();
+  private readonly deferred = createDeferred();
 
   constructor(
     private readonly knex: Knex,
@@ -92,7 +85,7 @@ class Tracker {
   }
 
   async completion(): Promise<void> {
-    return this.deferred.promise;
+    return this.deferred;
   }
 
   private completionPolling() {
@@ -148,20 +141,9 @@ class Tracker {
   }
 }
 
-function staticDatabase(knex: Knex) {
-  return createServiceFactory({
-    service: coreServices.database,
-    deps: {},
-    createRootContext: () => undefined,
-    factory: () => ({ getClient: async () => knex }),
-  });
-}
-
-jest.setTimeout(600_000);
-
 describePerformanceTest('stitchingPerformance', () => {
   const databases = TestDatabases.create({
-    ids: [/* 'MYSQL_8', */ 'POSTGRES_13', 'POSTGRES_9', 'SQLITE_3'],
+    ids: [/* 'MYSQL_8', */ 'POSTGRES_16', 'POSTGRES_12', 'SQLITE_3'],
   });
 
   it.each(databases.eachSupportedId())(
@@ -177,14 +159,21 @@ describePerformanceTest('stitchingPerformance', () => {
         childrenCount: 3,
       };
 
+      const config = {
+        backend: { baseUrl: 'http://localhost:7007' },
+        catalog: { stitchingStrategy: { mode: 'immediate' } },
+      };
+
       const tracker = new Tracker(knex, load);
 
       const backend = await startTestBackend({
         features: [
-          catalogPlugin(),
+          catalogPlugin,
+          mockServices.rootConfig.factory({ data: config }),
+          mockServices.database.factory({ knex }),
           createBackendModule({
-            moduleId: 'syntheticLoadEntities',
             pluginId: 'catalog',
+            moduleId: 'synthetic-load-entities',
             register(reg) {
               reg.registerInit({
                 deps: {
@@ -201,7 +190,59 @@ describePerformanceTest('stitchingPerformance', () => {
               });
             },
           }),
-          staticDatabase(knex),
+        ],
+      });
+
+      await expect(tracker.completion()).resolves.toBeUndefined();
+      await backend.stop();
+      await knex.destroy();
+    },
+  );
+
+  it.each(databases.eachSupportedId())(
+    'runs stitching in deferred mode, %p',
+    async databaseId => {
+      const knex = await databases.init(databaseId);
+      await applyDatabaseMigrations(knex);
+
+      const load: SyntheticLoadOptions = {
+        baseEntitiesCount: 1000,
+        baseRelationsCount: 3,
+        baseRelationsSkew: 0.3,
+        childrenCount: 3,
+      };
+
+      const config = {
+        backend: { baseUrl: 'http://localhost:7007' },
+        catalog: { stitchingStrategy: { mode: 'deferred' } },
+      };
+
+      const tracker = new Tracker(knex, load);
+
+      const backend = await startTestBackend({
+        features: [
+          import('@backstage/plugin-catalog-backend'),
+          mockServices.rootConfig.factory({ data: config }),
+          mockServices.database.factory({ knex }),
+          createBackendModule({
+            pluginId: 'catalog',
+            moduleId: 'synthetic-load-entities',
+            register(reg) {
+              reg.registerInit({
+                deps: {
+                  catalog: catalogProcessingExtensionPoint,
+                },
+                async init({ catalog }) {
+                  catalog.addEntityProvider(
+                    new SyntheticLoadEntitiesProvider(load, tracker.events()),
+                  );
+                  catalog.addProcessor(
+                    new SyntheticLoadEntitiesProcessor(load),
+                  );
+                },
+              });
+            },
+          }),
         ],
       });
 

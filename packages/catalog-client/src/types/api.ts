@@ -203,6 +203,10 @@ export interface GetEntitiesByRefsRequest {
    * declarations.
    */
   fields?: EntityFieldsQuery | undefined;
+  /**
+   * If given, return only entities that match the given filter.
+   */
+  filter?: EntityFilterQuery;
 }
 
 /**
@@ -408,6 +412,7 @@ export type QueryEntitiesRequest =
 export type QueryEntitiesInitialRequest = {
   fields?: string[];
   limit?: number;
+  offset?: number;
   filter?: EntityFilterQuery;
   orderFields?: EntityOrderQuery;
   fullTextFilter?: {
@@ -494,8 +499,8 @@ export interface CatalogApi {
    *   limit: 20,
    *   fullTextFilter: {
    *     term: 'A',
-   *   }
-   *   orderFields: { field: 'metadata.name' order: 'asc' },
+   *   },
+   *   orderFields: { field: 'metadata.name', order: 'asc' },
    * });
    * ```
    *
@@ -630,10 +635,22 @@ export interface CatalogApi {
   ): Promise<void>;
 
   /**
+   * Gets a location associated with an entity.
+   *
+   * @param entityRef - A complete entity ref, either on string or compound form
+   * @param options - Additional options
+   */
+  getLocationByEntity(
+    entityRef: string | CompoundEntityRef,
+    options?: CatalogRequestOptions,
+  ): Promise<Location | undefined>;
+
+  /**
    * Validate entity and its location.
    *
    * @param entity - Entity to validate
    * @param locationRef - Location ref in format `url:http://example.com/file`
+   * @param options - Additional options
    */
   validateEntity(
     entity: Entity,

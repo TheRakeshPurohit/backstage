@@ -15,37 +15,34 @@
  */
 
 import {
-  Entity,
   CompoundEntityRef,
+  Entity,
   parseEntityRef,
-  stringifyEntityRef,
   stringifyLocationRef,
 } from '@backstage/catalog-model';
 import { ResponseError } from '@backstage/errors';
-import crossFetch from 'cross-fetch';
 import {
-  CATALOG_FILTER_EXISTS,
   AddLocationRequest,
   AddLocationResponse,
+  CATALOG_FILTER_EXISTS,
   CatalogApi,
-  GetEntitiesRequest,
-  GetEntitiesResponse,
   CatalogRequestOptions,
-  GetEntityAncestorsRequest,
-  GetEntityAncestorsResponse,
-  Location,
-  GetEntityFacetsRequest,
-  GetEntityFacetsResponse,
-  ValidateEntityResponse,
+  EntityFilterQuery,
   GetEntitiesByRefsRequest,
   GetEntitiesByRefsResponse,
+  GetEntitiesRequest,
+  GetEntitiesResponse,
+  GetEntityAncestorsRequest,
+  GetEntityAncestorsResponse,
+  GetEntityFacetsRequest,
+  GetEntityFacetsResponse,
+  Location,
   QueryEntitiesRequest,
   QueryEntitiesResponse,
-  EntityFilterQuery,
+  ValidateEntityResponse,
 } from './types/api';
-import { DiscoveryApi } from './types/discovery';
-import { FetchApi } from './types/fetch';
-import { isQueryEntitiesInitialRequest } from './utils';
+import { isQueryEntitiesInitialRequest, splitRefsIntoChunks } from './utils';
+import { DefaultApiClient, TypedResponse } from './schema/openapi';
 
 /**
  * A frontend and backend compatible client for communicating with the Backstage
@@ -54,15 +51,13 @@ import { isQueryEntitiesInitialRequest } from './utils';
  * @public
  */
 export class CatalogClient implements CatalogApi {
-  private readonly discoveryApi: DiscoveryApi;
-  private readonly fetchApi: FetchApi;
+  private readonly apiClient: DefaultApiClient;
 
   constructor(options: {
     discoveryApi: { getBaseUrl(pluginId: string): Promise<string> };
     fetchApi?: { fetch: typeof fetch };
   }) {
-    this.discoveryApi = options.discoveryApi;
-    this.fetchApi = options.fetchApi || { fetch: crossFetch };
+    this.apiClient = new DefaultApiClient(options);
   }
 
   /**
@@ -72,13 +67,11 @@ export class CatalogClient implements CatalogApi {
     request: GetEntityAncestorsRequest,
     options?: CatalogRequestOptions,
   ): Promise<GetEntityAncestorsResponse> {
-    const { kind, namespace, name } = parseEntityRef(request.entityRef);
     return await this.requestRequired(
-      'GET',
-      `/entities/by-name/${encodeURIComponent(kind)}/${encodeURIComponent(
-        namespace,
-      )}/${encodeURIComponent(name)}/ancestry`,
-      options,
+      await this.apiClient.getEntityAncestryByName(
+        { path: parseEntityRef(request.entityRef) },
+        options,
+      ),
     );
   }
 
@@ -90,9 +83,22 @@ export class CatalogClient implements CatalogApi {
     options?: CatalogRequestOptions,
   ): Promise<Location | undefined> {
     return await this.requestOptional(
-      'GET',
-      `/locations/${encodeURIComponent(id)}`,
-      options,
+      await this.apiClient.getLocation({ path: { id } }, options),
+    );
+  }
+
+  /**
+   * {@inheritdoc CatalogApi.getLocationByEntity}
+   */
+  async getLocationByEntity(
+    entityRef: CompoundEntityRef | string,
+    options?: CatalogRequestOptions,
+  ): Promise<Location | undefined> {
+    return await this.requestOptional(
+      await this.apiClient.getLocationByEntity(
+        { path: parseEntityRef(entityRef) },
+        options,
+      ),
     );
   }
 
@@ -111,64 +117,31 @@ export class CatalogClient implements CatalogApi {
       limit,
       after,
     } = request ?? {};
-    const params = this.getParams(filter);
-
-    if (fields.length) {
-      params.push(`fields=${fields.map(encodeURIComponent).join(',')}`);
-    }
-
+    const encodedOrder = [];
     if (order) {
       for (const directive of [order].flat()) {
         if (directive) {
-          params.push(
-            `order=${encodeURIComponent(directive.order)}:${encodeURIComponent(
-              directive.field,
-            )}`,
-          );
+          encodedOrder.push(`${directive.order}:${directive.field}`);
         }
       }
     }
 
-    if (offset !== undefined) {
-      params.push(`offset=${offset}`);
-    }
-    if (limit !== undefined) {
-      params.push(`limit=${limit}`);
-    }
-    if (after !== undefined) {
-      params.push(`after=${encodeURIComponent(after)}`);
-    }
-
-    const query = params.length ? `?${params.join('&')}` : '';
-    const entities: Entity[] = await this.requestRequired(
-      'GET',
-      `/entities${query}`,
-      options,
+    const entities = await this.requestRequired(
+      await this.apiClient.getEntities(
+        {
+          query: {
+            fields,
+            limit,
+            filter: this.getFilterValue(filter),
+            offset,
+            after,
+            order: order ? encodedOrder : undefined,
+          },
+        },
+        options,
+      ),
     );
-
-    const refCompare = (a: Entity, b: Entity) => {
-      // in case field filtering is used, these fields might not be part of the response
-      if (
-        a.metadata?.name === undefined ||
-        a.kind === undefined ||
-        b.metadata?.name === undefined ||
-        b.kind === undefined
-      ) {
-        return 0;
-      }
-
-      const aRef = stringifyEntityRef(a);
-      const bRef = stringifyEntityRef(b);
-      if (aRef < bRef) {
-        return -1;
-      }
-      if (aRef > bRef) {
-        return 1;
-      }
-      return 0;
-    };
-
-    return { items: entities.sort(refCompare) };
+    return { items: entities };
   }
 
   /**
@@ -178,32 +151,34 @@ export class CatalogClient implements CatalogApi {
     request: GetEntitiesByRefsRequest,
     options?: CatalogRequestOptions,
   ): Promise<GetEntitiesByRefsResponse> {
-    const body: any = { entityRefs: request.entityRefs };
-    if (request.fields?.length) {
-      body.fields = request.fields;
-    }
-
-    const baseUrl = await this.discoveryApi.getBaseUrl('catalog');
-    const url = `${baseUrl}/entities/by-refs`;
-
-    const response = await this.fetchApi.fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options?.token && { Authorization: `Bearer ${options?.token}` }),
-      },
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      throw await ResponseError.fromResponse(response);
-    }
-
-    const { items } = (await response.json()) as {
-      items: Array<Entity | null>;
+    const getOneChunk = async (refs: string[]) => {
+      const response = await this.apiClient.getEntitiesByRefs(
+        {
+          body: { entityRefs: refs, fields: request.fields },
+          query: { filter: this.getFilterValue(request.filter) },
+        },
+        options,
+      );
+      if (!response.ok) {
+        throw await ResponseError.fromResponse(response);
+      }
+      const body = (await response.json()) as {
+        items: Array<Entity | null>;
+      };
+      return body.items.map(i => i ?? undefined);
     };
 
-    return { items: items.map(i => i ?? undefined) };
+    let result: Array<Entity | undefined> | undefined;
+    for (const refs of splitRefsIntoChunks(request.entityRefs)) {
+      const entities = await getOneChunk(refs);
+      if (!result) {
+        result = entities;
+      } else {
+        result.push(...entities);
+      }
+    }
+
+    return { items: result ?? [] };
   }
 
   /**
@@ -212,55 +187,58 @@ export class CatalogClient implements CatalogApi {
   async queryEntities(
     request: QueryEntitiesRequest = {},
     options?: CatalogRequestOptions,
-  ) {
-    const params: string[] = [];
+  ): Promise<QueryEntitiesResponse> {
+    const params: Partial<
+      Parameters<typeof this.apiClient.getEntitiesByQuery>[0]['query']
+    > = {};
 
     if (isQueryEntitiesInitialRequest(request)) {
       const {
         fields = [],
         filter,
         limit,
+        offset,
         orderFields,
         fullTextFilter,
       } = request;
-      params.push(...this.getParams(filter));
+      params.filter = this.getFilterValue(filter);
 
       if (limit !== undefined) {
-        params.push(`limit=${limit}`);
+        params.limit = limit;
+      }
+      if (offset !== undefined) {
+        params.offset = offset;
       }
       if (orderFields !== undefined) {
-        (Array.isArray(orderFields) ? orderFields : [orderFields]).forEach(
-          ({ field, order }) => params.push(`orderField=${field},${order}`),
-        );
+        params.orderField = (
+          Array.isArray(orderFields) ? orderFields : [orderFields]
+        ).map(({ field, order }) => `${field},${order}`);
       }
       if (fields.length) {
-        params.push(`fields=${fields.map(encodeURIComponent).join(',')}`);
+        params.fields = fields;
       }
 
       const normalizedFullTextFilterTerm = fullTextFilter?.term?.trim();
       if (normalizedFullTextFilterTerm) {
-        params.push(`fullTextFilterTerm=${normalizedFullTextFilterTerm}`);
+        params.fullTextFilterTerm = normalizedFullTextFilterTerm;
       }
       if (fullTextFilter?.fields?.length) {
-        params.push(`fullTextFilterFields=${fullTextFilter.fields.join(',')}`);
+        params.fullTextFilterFields = fullTextFilter.fields;
       }
     } else {
       const { fields = [], limit, cursor } = request;
 
-      params.push(`cursor=${cursor}`);
+      params.cursor = cursor;
       if (limit !== undefined) {
-        params.push(`limit=${limit}`);
+        params.limit = limit;
       }
       if (fields.length) {
-        params.push(`fields=${fields.map(encodeURIComponent).join(',')}`);
+        params.fields = fields;
       }
     }
 
-    const query = params.length ? `?${params.join('&')}` : '';
-    return this.requestRequired<QueryEntitiesResponse>(
-      'GET',
-      `/entities/by-query${query}`,
-      options,
+    return this.requestRequired(
+      await this.apiClient.getEntitiesByQuery({ query: params }, options),
     );
   }
 
@@ -271,13 +249,13 @@ export class CatalogClient implements CatalogApi {
     entityRef: string | CompoundEntityRef,
     options?: CatalogRequestOptions,
   ): Promise<Entity | undefined> {
-    const { kind, namespace, name } = parseEntityRef(entityRef);
     return this.requestOptional(
-      'GET',
-      `/entities/by-name/${encodeURIComponent(kind)}/${encodeURIComponent(
-        namespace,
-      )}/${encodeURIComponent(name)}`,
-      options,
+      await this.apiClient.getEntityByName(
+        {
+          path: parseEntityRef(entityRef),
+        },
+        options,
+      ),
     );
   }
 
@@ -294,11 +272,10 @@ export class CatalogClient implements CatalogApi {
   ): Promise<Entity | undefined> {
     const { kind, namespace = 'default', name } = compoundName;
     return this.requestOptional(
-      'GET',
-      `/entities/by-name/${encodeURIComponent(kind)}/${encodeURIComponent(
-        namespace,
-      )}/${encodeURIComponent(name)}`,
-      options,
+      await this.apiClient.getEntityByName(
+        { path: { kind, namespace, name } },
+        options,
+      ),
     );
   }
 
@@ -306,16 +283,9 @@ export class CatalogClient implements CatalogApi {
    * {@inheritdoc CatalogApi.refreshEntity}
    */
   async refreshEntity(entityRef: string, options?: CatalogRequestOptions) {
-    const response = await this.fetchApi.fetch(
-      `${await this.discoveryApi.getBaseUrl('catalog')}/refresh`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(options?.token && { Authorization: `Bearer ${options?.token}` }),
-        },
-        method: 'POST',
-        body: JSON.stringify({ entityRef }),
-      },
+    const response = await this.apiClient.refreshEntity(
+      { body: { entityRef } },
+      options,
     );
 
     if (response.status !== 200) {
@@ -331,14 +301,14 @@ export class CatalogClient implements CatalogApi {
     options?: CatalogRequestOptions,
   ): Promise<GetEntityFacetsResponse> {
     const { filter = [], facets } = request;
-    const params = this.getParams(filter);
-
-    for (const facet of facets) {
-      params.push(`facet=${encodeURIComponent(facet)}`);
-    }
-
-    const query = params.length ? `?${params.join('&')}` : '';
-    return await this.requestOptional('GET', `/entity-facets${query}`, options);
+    return await this.requestOptional(
+      await this.apiClient.getEntityFacets(
+        {
+          query: { facet: facets, filter: this.getFilterValue(filter) },
+        },
+        options,
+      ),
+    );
   }
 
   /**
@@ -350,18 +320,12 @@ export class CatalogClient implements CatalogApi {
   ): Promise<AddLocationResponse> {
     const { type = 'url', target, dryRun } = request;
 
-    const response = await this.fetchApi.fetch(
-      `${await this.discoveryApi.getBaseUrl('catalog')}/locations${
-        dryRun ? '?dryRun=true' : ''
-      }`,
+    const response = await this.apiClient.createLocation(
       {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(options?.token && { Authorization: `Bearer ${options?.token}` }),
-        },
-        method: 'POST',
-        body: JSON.stringify({ type, target }),
+        body: { type, target },
+        query: { dryRun: dryRun ? 'true' : undefined },
       },
+      options,
     );
 
     if (response.status !== 201) {
@@ -388,10 +352,8 @@ export class CatalogClient implements CatalogApi {
     locationRef: string,
     options?: CatalogRequestOptions,
   ): Promise<Location | undefined> {
-    const all: { data: Location }[] = await this.requestRequired(
-      'GET',
-      '/locations',
-      options,
+    const all = await this.requestRequired(
+      await this.apiClient.getLocations({}, options),
     );
     return all
       .map(r => r.data)
@@ -406,9 +368,7 @@ export class CatalogClient implements CatalogApi {
     options?: CatalogRequestOptions,
   ): Promise<void> {
     await this.requestIgnored(
-      'DELETE',
-      `/locations/${encodeURIComponent(id)}`,
-      options,
+      await this.apiClient.deleteLocation({ path: { id } }, options),
     );
   }
 
@@ -420,9 +380,7 @@ export class CatalogClient implements CatalogApi {
     options?: CatalogRequestOptions,
   ): Promise<void> {
     await this.requestIgnored(
-      'DELETE',
-      `/entities/by-uid/${encodeURIComponent(uid)}`,
-      options,
+      await this.apiClient.deleteEntityByUid({ path: { uid } }, options),
     );
   }
 
@@ -434,16 +392,9 @@ export class CatalogClient implements CatalogApi {
     locationRef: string,
     options?: CatalogRequestOptions,
   ): Promise<ValidateEntityResponse> {
-    const response = await this.fetchApi.fetch(
-      `${await this.discoveryApi.getBaseUrl('catalog')}/validate-entity`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(options?.token && { Authorization: `Bearer ${options?.token}` }),
-        },
-        method: 'POST',
-        body: JSON.stringify({ entity, location: locationRef }),
-      },
+    const response = await this.apiClient.validateEntity(
+      { body: { entity, location: locationRef } },
+      options,
     );
 
     if (response.ok) {
@@ -456,7 +407,7 @@ export class CatalogClient implements CatalogApi {
       throw await ResponseError.fromResponse(response);
     }
 
-    const { errors = [] } = await response.json();
+    const { errors = [] } = (await response.json()) as any;
 
     return {
       valid: false,
@@ -468,33 +419,13 @@ export class CatalogClient implements CatalogApi {
   // Private methods
   //
 
-  private async requestIgnored(
-    method: string,
-    path: string,
-    options?: CatalogRequestOptions,
-  ): Promise<void> {
-    const url = `${await this.discoveryApi.getBaseUrl('catalog')}${path}`;
-    const headers: Record<string, string> = options?.token
-      ? { Authorization: `Bearer ${options.token}` }
-      : {};
-    const response = await this.fetchApi.fetch(url, { method, headers });
-
+  private async requestIgnored(response: Response): Promise<void> {
     if (!response.ok) {
       throw await ResponseError.fromResponse(response);
     }
   }
 
-  private async requestRequired<T = any>(
-    method: string,
-    path: string,
-    options?: CatalogRequestOptions,
-  ): Promise<T> {
-    const url = `${await this.discoveryApi.getBaseUrl('catalog')}${path}`;
-    const headers: Record<string, string> = options?.token
-      ? { Authorization: `Bearer ${options.token}` }
-      : {};
-    const response = await this.fetchApi.fetch(url, { method, headers });
-
+  private async requestRequired<T>(response: TypedResponse<T>): Promise<T> {
     if (!response.ok) {
       throw await ResponseError.fromResponse(response);
     }
@@ -502,17 +433,7 @@ export class CatalogClient implements CatalogApi {
     return response.json();
   }
 
-  private async requestOptional(
-    method: string,
-    path: string,
-    options?: CatalogRequestOptions,
-  ): Promise<any | undefined> {
-    const url = `${await this.discoveryApi.getBaseUrl('catalog')}${path}`;
-    const headers: Record<string, string> = options?.token
-      ? { Authorization: `Bearer ${options.token}` }
-      : {};
-    const response = await this.fetchApi.fetch(url, { method, headers });
-
+  private async requestOptional(response: Response): Promise<any | undefined> {
     if (!response.ok) {
       if (response.status === 404) {
         return undefined;
@@ -523,8 +444,8 @@ export class CatalogClient implements CatalogApi {
     return await response.json();
   }
 
-  private getParams(filter: EntityFilterQuery = []) {
-    const params: string[] = [];
+  private getFilterValue(filter: EntityFilterQuery = []) {
+    const filters: string[] = [];
     // filter param can occur multiple times, for example
     // /api/catalog/entities?filter=metadata.name=wayback-search,kind=component&filter=metadata.name=www-artist,kind=component'
     // the "outer array" defined by `filter` occurrences corresponds to "anyOf" filters
@@ -534,19 +455,17 @@ export class CatalogClient implements CatalogApi {
       for (const [key, value] of Object.entries(filterItem)) {
         for (const v of [value].flat()) {
           if (v === CATALOG_FILTER_EXISTS) {
-            filterParts.push(encodeURIComponent(key));
+            filterParts.push(key);
           } else if (typeof v === 'string') {
-            filterParts.push(
-              `${encodeURIComponent(key)}=${encodeURIComponent(v)}`,
-            );
+            filterParts.push(`${key}=${v}`);
           }
         }
       }
 
       if (filterParts.length) {
-        params.push(`filter=${filterParts.join(',')}`);
+        filters.push(filterParts.join(','));
       }
     }
-    return params;
+    return filters;
   }
 }

@@ -1,7 +1,5 @@
 # search-backend-module-catalog
 
-> DISCLAIMER: The new backend system is in alpha, and so are the search backend module support for the new backend system. We don't recommend you to migrate your backend installations to the new system yet. But if you want to experiment, you can find getting started guides below.
-
 This package exports a module that extends the search backend to also indexing the entities of your catalog.
 
 ## Installation
@@ -10,20 +8,18 @@ Add the module package as a dependency:
 
 ```bash
 # From your Backstage root directory
-yarn add --cwd packages/backend @backstage/plugin-search-backend-module-catalog
+yarn --cwd packages/backend add @backstage/plugin-search-backend-module-catalog
 ```
 
 Add the collator to your backend instance, along with the search plugin itself:
 
 ```tsx
-// packages/backend-next/src/index.ts
+// packages/backend/src/index.ts
 import { createBackend } from '@backstage/backend-defaults';
-import { searchPlugin } from '@backstage/plugin-search-backend/alpha';
-import { searchModuleCatalogCollator } from '@backstage/plugin-search-backend-module-catalog/alpha';
 
 const backend = createBackend();
-backend.add(searchPlugin());
-backend.add(searchModuleCatalogCollator());
+backend.add(import('@backstage/plugin-search-backend'));
+backend.add(import('@backstage/plugin-search-backend-module-catalog'));
 backend.start();
 ```
 
@@ -34,15 +30,11 @@ You may also want to add configuration parameters to your app-config, for exampl
 This module also has an extension point, which lets you inject advanced customizations. Here's an example of how to leverage that extension point to tweak the transformer used for building the search indexer documents:
 
 ```tsx
-// packages/backend-next/src/index.ts
+// packages/backend/src/index.ts
 import { createBackend } from '@backstage/backend-defaults';
 import { createBackendModule } from '@backstage/backend-plugin-api';
-import { searchPlugin } from '@backstage/plugin-search-backend/alpha';
 import { CatalogCollatorEntityTransformer } from '@backstage/plugin-search-backend-module-catalog';
-import {
-  searchModuleCatalogCollator,
-  catalogCollatorExtensionPoint,
-} from '@backstage/plugin-search-backend-module-catalog/alpha';
+import { catalogCollatorExtensionPoint } from '@backstage/plugin-search-backend-module-catalog/alpha';
 
 const customTransformer: CatalogCollatorEntityTransformer = entity => ({
   title: entity.metadata.title || entity.metadata.name,
@@ -56,16 +48,16 @@ const customTransformer: CatalogCollatorEntityTransformer = entity => ({
 });
 
 const backend = createBackend();
-backend.add(searchPlugin());
-backend.add(searchModuleCatalogCollator());
+backend.add(import('@backstage/plugin-search-backend'));
+backend.add(import('@backstage/plugin-search-backend-module-catalog'));
 backend.add(
   createBackendModule({
     pluginId: 'search',
-    moduleId: 'myCatalogCollatorOptions',
+    moduleId: 'my-catalog-collator-options',
     register(reg) {
       reg.registerInit({
         deps: { collator: catalogCollatorExtensionPoint },
-        init({ collator }) {
+        async init({ collator }) {
           collator.setEntityTransformer(customTransformer);
         },
       });

@@ -4,26 +4,33 @@ title: Configuring App with plugins
 description: Documentation on How Configuring App with plugins
 ---
 
+Audience: Developers
+
+:::note Note
+Backstage plugins are primarily written using [TypeScript](https://www.typescriptlang.org), [Node.js](https://nodejs.org) and [React](https://reactjs.org). Having an understanding of these technologies will be beneficial on your journey to customizing Backstage!
+:::
+
+## Summary
+
 Backstage plugins customize the app for your needs. There is a
-[plugin marketplace](https://backstage.io/plugins) with plugins for many common
+[plugin directory](https://backstage.io/plugins) with plugins for many common
 infrastructure needs - CI/CD, monitoring, auditing, and more.
 
 ## Adding existing plugins to your app
 
 The following steps assume that you have
-[created a Backstage app](./create-an-app.md) and want to add an existing plugin
+[created a Backstage app](./index.md) and want to add an existing plugin
 to it.
 
 We are using the
-[CircleCI](https://github.com/backstage/backstage/blob/master/plugins/circleci/README.md)
+[CircleCI](https://github.com/CircleCI-Public/backstage-plugin/tree/main/plugins/circleci)
 plugin in this example, which is designed to show CI/CD pipeline information attached
 to an entity in the software catalog.
 
 1. Add the plugin's npm package to the repo:
 
-   ```bash
-   # From your Backstage root directory
-   yarn add --cwd packages/app @backstage/plugin-circleci
+   ```bash title="From your Backstage root directory"
+   yarn --cwd packages/app add @circleci/backstage-plugin
    ```
 
    Note the plugin is added to the `app` package, rather than the root
@@ -38,7 +45,7 @@ to an entity in the software catalog.
    import {
      EntityCircleCIContent,
      isCircleCIAvailable,
-   } from '@backstage/plugin-circleci';
+   } from '@circleci/backstage-plugin';
    /* highlight-add-end */
 
    const cicdContent = (
@@ -75,7 +82,7 @@ to an entity in the software catalog.
 ### Adding a plugin page to the Sidebar
 
 In a standard Backstage app created with
-[@backstage/create-app](./create-an-app.md), the sidebar is managed inside
+[@backstage/create-app](./index.md), the sidebar is managed inside
 `packages/app/src/components/Root/Root.tsx`. The file exports the entire
 `Sidebar` element of your app, which you can extend with additional entries by
 adding new `SidebarItem` elements.

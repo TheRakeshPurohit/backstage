@@ -16,11 +16,7 @@
 import React from 'react';
 import type { FieldValidation } from '@rjsf/utils';
 import { scaffolderPlugin } from '@backstage/plugin-scaffolder';
-import { TextField } from '@material-ui/core';
-import {
-  NextFieldExtensionComponentProps,
-  createNextScaffolderFieldExtension,
-} from '@backstage/plugin-scaffolder-react/alpha';
+import TextField from '@material-ui/core/TextField';
 import {
   createScaffolderFieldExtension,
   FieldExtensionComponentProps,
@@ -67,7 +63,7 @@ export const LowerCaseValuePickerFieldExtension = scaffolderPlugin.provide(
 );
 
 const MockDelayComponent = (
-  props: NextFieldExtensionComponentProps<{ test?: string }>,
+  props: FieldExtensionComponentProps<{ test?: string }>,
 ) => {
   const { onChange, formData, rawErrors = [] } = props;
   return (
@@ -83,7 +79,7 @@ const MockDelayComponent = (
 };
 
 export const DelayingComponentFieldExtension = scaffolderPlugin.provide(
-  createNextScaffolderFieldExtension({
+  createScaffolderFieldExtension({
     name: 'DelayingComponent',
     component: MockDelayComponent,
     validation: async (

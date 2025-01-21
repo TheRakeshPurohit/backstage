@@ -20,22 +20,15 @@ import {
   ScmAuth,
 } from '@backstage/integration-react';
 import {
-  costInsightsApiRef,
-  ExampleCostInsightsClient,
-} from '@backstage/plugin-cost-insights';
-import {
-  graphQlBrowseApiRef,
-  GraphQLEndpoints,
-} from '@backstage/plugin-graphiql';
-import {
   AnyApiFactory,
   configApiRef,
   createApiFactory,
   discoveryApiRef,
-  errorApiRef,
-  githubAuthApiRef,
 } from '@backstage/core-plugin-api';
 import { AuthProxyDiscoveryApi } from './AuthProxyDiscoveryApi';
+import { formDecoratorsApiRef } from '@backstage/plugin-scaffolder/alpha';
+import { DefaultScaffolderFormDecoratorsApi } from '@backstage/plugin-scaffolder/alpha';
+import { mockDecorator } from './components/scaffolder/decorators';
 
 export const apis: AnyApiFactory[] = [
   createApiFactory({
@@ -49,26 +42,14 @@ export const apis: AnyApiFactory[] = [
     factory: ({ configApi }) => ScmIntegrationsApi.fromConfig(configApi),
   }),
 
-  ScmAuth.createDefaultApiFactory(),
-
   createApiFactory({
-    api: graphQlBrowseApiRef,
-    deps: { errorApi: errorApiRef, githubAuthApi: githubAuthApiRef },
-    factory: ({ errorApi, githubAuthApi }) =>
-      GraphQLEndpoints.from([
-        GraphQLEndpoints.create({
-          id: 'gitlab',
-          title: 'GitLab',
-          url: 'https://gitlab.com/api/graphql',
-        }),
-        GraphQLEndpoints.github({
-          id: 'github',
-          title: 'GitHub',
-          errorApi,
-          githubAuthApi,
-        }),
-      ]),
+    api: formDecoratorsApiRef,
+    deps: {},
+    factory: () =>
+      DefaultScaffolderFormDecoratorsApi.create({
+        decorators: [mockDecorator],
+      }),
   }),
 
-  createApiFactory(costInsightsApiRef, new ExampleCostInsightsClient()),
+  ScmAuth.createDefaultApiFactory(),
 ];

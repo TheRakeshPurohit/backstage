@@ -22,14 +22,14 @@ import {
 } from '@backstage/catalog-model';
 import { AlphaEntity } from '@backstage/catalog-model/alpha';
 import { EntityFilter, UserListFilterKind } from './types';
-import { getEntityRelations } from './utils';
+import { getEntityRelations } from './utils/getEntityRelations';
 
 /**
  * Filter entities based on Kind.
  * @public
  */
 export class EntityKindFilter implements EntityFilter {
-  constructor(readonly value: string) {}
+  constructor(readonly value: string, readonly label: string) {}
 
   getCatalogFilters(): Record<string, string | string[]> {
     return { kind: this.value };
@@ -72,6 +72,10 @@ export class EntityTagFilter implements EntityFilter {
     return this.values.every(v => (entity.metadata.tags ?? []).includes(v));
   }
 
+  getCatalogFilters(): Record<string, string | string[]> {
+    return { 'metadata.tags': this.values };
+  }
+
   toQueryValue(): string[] {
     return this.values;
   }
@@ -90,6 +94,7 @@ export class EntityTextFilter implements EntityFilter {
     const partialMatch = this.toUpperArray([
       entity.metadata.name,
       entity.metadata.title,
+      (entity.spec?.profile as { displayName?: string })?.displayName,
     ]);
 
     for (const word of words) {
@@ -102,6 +107,18 @@ export class EntityTextFilter implements EntityFilter {
     }
 
     return true;
+  }
+
+  getFullTextFilters() {
+    return {
+      term: this.value,
+      // Update this to be more dynamic based on table columns.
+      fields: ['metadata.name', 'metadata.title', 'spec.profile.displayName'],
+    };
+  }
+
+  toQueryValue() {
+    return this.value;
   }
 
   private toUpperArray(
@@ -136,6 +153,10 @@ export class EntityOwnerFilter implements EntityFilter {
     }, [] as string[]);
   }
 
+  getCatalogFilters(): Record<string, string | string[]> {
+    return { 'relations.ownedBy': this.values };
+  }
+
   filterEntity(entity: Entity): boolean {
     return this.values.some(v =>
       getEntityRelations(entity, RELATION_OWNED_BY).some(
@@ -160,6 +181,10 @@ export class EntityOwnerFilter implements EntityFilter {
 export class EntityLifecycleFilter implements EntityFilter {
   constructor(readonly values: string[]) {}
 
+  getCatalogFilters(): Record<string, string | string[]> {
+    return { 'spec.lifecycle': this.values };
+  }
+
   filterEntity(entity: Entity): boolean {
     return this.values.some(v => entity.spec?.lifecycle === v);
   }
@@ -176,6 +201,9 @@ export class EntityLifecycleFilter implements EntityFilter {
 export class EntityNamespaceFilter implements EntityFilter {
   constructor(readonly values: string[]) {}
 
+  getCatalogFilters(): Record<string, string | string[]> {
+    return { 'metadata.namespace': this.values };
+  }
   filterEntity(entity: Entity): boolean {
     return this.values.some(v => entity.metadata.namespace === v);
   }
@@ -186,7 +214,65 @@ export class EntityNamespaceFilter implements EntityFilter {
 }
 
 /**
+ * @public
+ */
+export class EntityUserFilter implements EntityFilter {
+  private constructor(
+    readonly value: UserListFilterKind,
+    readonly refs?: string[],
+  ) {}
+
+  static owned(ownershipEntityRefs: string[]) {
+    return new EntityUserFilter('owned', ownershipEntityRefs);
+  }
+
+  static all() {
+    return new EntityUserFilter('all');
+  }
+
+  static starred(starredEntityRefs: string[]) {
+    return new EntityUserFilter('starred', starredEntityRefs);
+  }
+
+  getCatalogFilters(): Record<string, string[]> {
+    if (this.value === 'owned') {
+      return { 'relations.ownedBy': this.refs ?? [] };
+    }
+    if (this.value === 'starred') {
+      return {
+        'metadata.name': this.refs?.map(e => parseEntityRef(e).name) ?? [],
+      };
+    }
+    return {};
+  }
+
+  filterEntity(entity: Entity) {
+    if (this.value === 'starred') {
+      return this.refs?.includes(stringifyEntityRef(entity)) ?? true;
+    }
+    // used only for retro-compatibility with non paginated data.
+    // This is supposed to return always true for paginated
+    // owned entities, since the filters are applied server side.
+    if (this.value === 'owned') {
+      const relations = getEntityRelations(entity, RELATION_OWNED_BY);
+
+      return (
+        this.refs?.some(v =>
+          relations.some(o => stringifyEntityRef(o) === v),
+        ) ?? false
+      );
+    }
+    return true;
+  }
+
+  toQueryValue(): string {
+    return this.value;
+  }
+}
+
+/**
  * Filters entities based on whatever the user has starred or owns them.
+ * @deprecated use EntityUserFilter
  * @public
  */
 export class UserListFilter implements EntityFilter {
@@ -218,6 +304,14 @@ export class UserListFilter implements EntityFilter {
  */
 export class EntityOrphanFilter implements EntityFilter {
   constructor(readonly value: boolean) {}
+
+  getCatalogFilters(): Record<string, string | string[]> {
+    if (this.value) {
+      return { 'metadata.annotations.backstage.io/orphan': String(this.value) };
+    }
+    return {};
+  }
+
   filterEntity(entity: Entity): boolean {
     const orphan = entity.metadata.annotations?.['backstage.io/orphan'];
     return orphan !== undefined && this.value.toString() === orphan;
@@ -230,6 +324,7 @@ export class EntityOrphanFilter implements EntityFilter {
  */
 export class EntityErrorFilter implements EntityFilter {
   constructor(readonly value: boolean) {}
+
   filterEntity(entity: Entity): boolean {
     const error =
       ((entity as AlphaEntity)?.status?.items?.length as number) > 0;

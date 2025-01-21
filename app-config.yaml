@@ -1,11 +1,17 @@
 app:
   title: Backstage Example App
   baseUrl: http://localhost:3000
+  experimental:
+    packages: all # ✨
+
   #datadogRum:
   #  clientToken: '123456789'
   #  applicationId: qwerty
   #   site: # datadoghq.eu default = datadoghq.com
   #   env: # optional
+  #   sessionSampleRate: 100
+  #   sessionReplaySampleRate: 0
+
   support:
     url: https://github.com/backstage/backstage/issues # Used by common ErrorPage
     items: # Used by common SupportButton component
@@ -29,6 +35,12 @@ backend:
   # auth:
   #   keys:
   #     - secret: ${BACKEND_SECRET}
+
+  auth:
+    # TODO: once plugins have been migrated we can remove this, but right now it
+    # is require for the backend-next to work in this repo
+    dangerouslyDisableDefaultAuthPolicy: true
+
   baseUrl: http://localhost:7007
   listen:
     port: 7007
@@ -209,6 +221,17 @@ integrations:
   #   apiBaseUrl: server.bitbucket.com
   #   username: ${BITBUCKET_SERVER_USERNAME}
   #   appPassword: ${BITBUCKET_SERVER_APP_PASSWORD}
+
+  # azureBlobStorage:
+  #   - accountName: ${ACCOUNT_NAME} # required
+  #     endpoint: ${CUSTOM_ENDPOINT} # custom endpoint will require either aadCredentials or sasToken
+  #     sasToken: ${SAS_TOKEN}
+  #     aadCredential:
+  #       clientId: ${CLIENT_ID}
+  #       tenantId: ${TENANT_ID}
+  #       clientSecret: ${CLIENT_SECRET}
+  #     accountKey: ${ACCOUNT_KEY}
+
   azure:
     - host: dev.azure.com
       token: ${AZURE_TOKEN}
@@ -232,6 +255,19 @@ catalog:
         - System
         - Domain
         - Location
+  providers:
+    azureBlob:
+      accountName: ${ACCOUNT_NAME}
+      containerName: ${CONTAINER_NAME}
+      schedule: # same options as in TaskScheduleDefinition
+        # supports cron, ISO duration, "human duration" as used in code
+        frequency: { minutes: 30 }
+        # supports ISO duration, "human duration" as used in code
+        timeout: { minutes: 3 }
+    backstageOpenapi:
+      plugins:
+        - catalog
+        - search
 
   processors:
     ldapOrg:
@@ -288,9 +324,6 @@ catalog:
       target: ../../plugins/scaffolder-backend/sample-templates/all-templates.yaml
       rules:
         - allow: [Template]
-    # Backstage end-to-end tests of TechDocs
-    - type: file
-      target: ../../cypress/e2e-fixture.catalog.info.yaml
 scaffolder:
   # Use to customize default commit author info used when new components are created
   # defaultAuthor:
@@ -384,9 +417,10 @@ auth:
       development:
         clientId: ${AUTH_ATLASSIAN_CLIENT_ID}
         clientSecret: ${AUTH_ATLASSIAN_CLIENT_SECRET}
-        scopes: ${AUTH_ATLASSIAN_SCOPES}
-    myproxy:
-      development: {}
+        scope: ${AUTH_ATLASSIAN_SCOPES}
+    myproxy: {}
+    guest: {}
+
 costInsights:
   engineerCost: 200000
   engineerThreshold: 0.5

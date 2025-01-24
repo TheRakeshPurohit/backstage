@@ -254,6 +254,39 @@ export namespace Models {
   }
 
   /**
+   * A paginated list of projects.
+   * @public
+   */
+  export interface PaginatedProjects extends Paginated<Project> {
+    /**
+     * The values of the current page.
+     */
+    values?: Set<Project>;
+  }
+
+  /**
+   * A paginated list of workspaces.
+   * @public
+   */
+  export interface PaginatedWorkspaces extends Paginated<Workspace> {
+    /**
+     * The values of the current page.
+     */
+    values?: Set<Workspace>;
+  }
+
+  /**
+   * A paginated list of branches.
+   * @public
+   */
+  export interface PaginatedBranches extends Paginated<Branch> {
+    /**
+     * The values of the current page.
+     */
+    values?: Set<Branch>;
+  }
+
+  /**
    * Object describing a user's role on resources like commits or pull requests.
    * @public
    */
@@ -373,7 +406,19 @@ export namespace Models {
      * The concatenation of the repository owner's username and the slugified name, e.g. "evzijst/interruptingcow". This is the same string used in Bitbucket URLs.
      */
     full_name?: string;
+    /**
+     *
+     * The issue tracker for this repository is enabled. Issue Tracker
+     * features are not supported for repositories in workspaces
+     * administered through admin.atlassian.com.
+     */
     has_issues?: boolean;
+    /**
+     *
+     * The wiki for this repository is enabled. Wiki
+     * features are not supported for repositories in workspaces
+     * administered through admin.atlassian.com.
+     */
     has_wiki?: boolean;
     is_private?: boolean;
     language?: string;

@@ -15,7 +15,6 @@
  */
 
 import { mockServices, startTestBackend } from '@backstage/backend-test-utils';
-import { authPlugin } from '@backstage/plugin-auth-backend';
 import { authModuleGithubProvider } from './module';
 import request from 'supertest';
 import { decodeOAuthState } from '@backstage/plugin-auth-node';
@@ -24,7 +23,7 @@ describe('authModuleGithubProvider', () => {
   it('should start', async () => {
     const { server } = await startTestBackend({
       features: [
-        authPlugin,
+        import('@backstage/plugin-auth-backend'),
         authModuleGithubProvider,
         mockServices.rootConfig.factory({
           data: {
@@ -68,11 +67,13 @@ describe('authModuleGithubProvider', () => {
       client_id: 'my-client-id',
       redirect_uri: `http://localhost:${server.port()}/api/auth/github/handler/frame`,
       state: expect.any(String),
+      scope: 'read:user',
     });
 
     expect(decodeOAuthState(startUrl.searchParams.get('state')!)).toEqual({
       env: 'development',
       nonce: decodeURIComponent(nonceCookie.value),
+      scope: 'read:user',
     });
   });
 });

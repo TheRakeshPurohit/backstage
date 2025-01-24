@@ -24,3 +24,30 @@ const commonGitlabConfig = z.object({
 });
 
 export default commonGitlabConfig;
+
+export const commonGitlabConfigExample = {
+  repoUrl: 'gitlab.com?owner=namespace-or-owner&repo=project-name',
+  token: '${{ secrets.USER_OAUTH_TOKEN }}',
+};
+
+/**
+ * Gitlab issue types as specified by gitlab api
+ *
+ * @public
+ */
+export enum IssueType {
+  ISSUE = 'issue',
+  INCIDENT = 'incident',
+  TEST = 'test_case',
+  TASK = 'task',
+}
+
+/**
+ * Gitlab issue state events for modifications
+ *
+ * @public
+ */
+export enum IssueStateEvent {
+  CLOSE = 'close',
+  REOPEN = 'reopen',
+}

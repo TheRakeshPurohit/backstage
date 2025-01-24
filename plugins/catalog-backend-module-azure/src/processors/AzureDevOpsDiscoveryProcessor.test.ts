@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { getVoidLogger } from '@backstage/backend-common';
 import { ConfigReader } from '@backstage/config';
 import { LocationSpec } from '@backstage/plugin-catalog-common';
 import {
@@ -22,6 +21,7 @@ import {
   parseUrl,
 } from './AzureDevOpsDiscoveryProcessor';
 import { codeSearch } from '../lib';
+import { mockServices } from '@backstage/backend-test-utils';
 
 jest.mock('../lib');
 const mockCodeSearch = codeSearch as jest.MockedFunction<typeof codeSearch>;
@@ -35,6 +35,7 @@ describe('AzureDevOpsDiscoveryProcessor', () => {
         project: 'my-proj',
         repo: '',
         catalogPath: '/catalog-info.yaml',
+        branch: '',
       });
 
       expect(
@@ -47,6 +48,7 @@ describe('AzureDevOpsDiscoveryProcessor', () => {
         project: 'engineering',
         repo: 'backstage',
         catalogPath: '/catalog.yaml',
+        branch: '',
       });
 
       expect(
@@ -59,6 +61,33 @@ describe('AzureDevOpsDiscoveryProcessor', () => {
         project: 'engineering',
         repo: 'backstage',
         catalogPath: '/src/*/catalog.yaml',
+        branch: '',
+      });
+
+      expect(
+        parseUrl(
+          'https://azuredevops.mycompany.com/spotify/engineering/_git/backstage?path=/src/*/catalog.yaml&version=GBtopic/catalog-info',
+        ),
+      ).toEqual({
+        baseUrl: 'https://azuredevops.mycompany.com',
+        org: 'spotify',
+        project: 'engineering',
+        repo: 'backstage',
+        catalogPath: '/src/*/catalog.yaml',
+        branch: 'topic/catalog-info',
+      });
+
+      expect(
+        parseUrl(
+          'https://azuredevops.mycompany.com/spotify/engineering/_git/backstage?path=/src/*/catalog.yaml&version=GBtopic%2Fcatalog-info',
+        ),
+      ).toEqual({
+        baseUrl: 'https://azuredevops.mycompany.com',
+        org: 'spotify',
+        project: 'engineering',
+        repo: 'backstage',
+        catalogPath: '/src/*/catalog.yaml',
+        branch: 'topic/catalog-info',
       });
     });
 
@@ -77,7 +106,7 @@ describe('AzureDevOpsDiscoveryProcessor', () => {
             azure: [{ host: 'dev.azure.com', token: 'blob' }],
           },
         }),
-        { logger: getVoidLogger() },
+        { logger: mockServices.logger.mock() },
       );
       const location: LocationSpec = {
         type: 'not-azure-discovery',
@@ -99,7 +128,7 @@ describe('AzureDevOpsDiscoveryProcessor', () => {
           ],
         },
       }),
-      { logger: getVoidLogger() },
+      { logger: mockServices.logger.mock() },
     );
     const location: LocationSpec = {
       type: 'azure-discovery',
@@ -119,7 +148,7 @@ describe('AzureDevOpsDiscoveryProcessor', () => {
           github: [{ host: 'dev.azure.com', token: 'blob' }],
         },
       }),
-      { logger: getVoidLogger() },
+      { logger: mockServices.logger.mock() },
     );
 
     beforeEach(() => {
@@ -164,6 +193,7 @@ describe('AzureDevOpsDiscoveryProcessor', () => {
         'engineering',
         '',
         '/catalog-info.yaml',
+        '',
       );
       expect(emitter).toHaveBeenCalledTimes(2);
       expect(emitter).toHaveBeenCalledWith({
@@ -214,6 +244,7 @@ describe('AzureDevOpsDiscoveryProcessor', () => {
         'engineering',
         'backstage',
         '/catalog-info.yaml',
+        '',
       );
       expect(emitter).toHaveBeenCalledTimes(1);
       expect(emitter).toHaveBeenCalledWith({
@@ -222,6 +253,49 @@ describe('AzureDevOpsDiscoveryProcessor', () => {
           type: 'url',
           target:
             'https://dev.azure.com/shopify/engineering/_git/backstage?path=/catalog-info.yaml',
+          presence: 'optional',
+        },
+      });
+    });
+
+    it('output locations with branch if specified in target', async () => {
+      const location: LocationSpec = {
+        type: 'azure-discovery',
+        target:
+          'https://dev.azure.com/shopify/engineering/_git/backstage?path=/catalog-info.yaml&version=GBtopic/catalog-info',
+      };
+      mockCodeSearch.mockResolvedValueOnce([
+        {
+          fileName: 'catalog-info.yaml',
+          path: '/catalog-info.yaml',
+          repository: {
+            name: 'backstage',
+          },
+          project: {
+            name: '*',
+          },
+        },
+      ]);
+      const emitter = jest.fn();
+
+      await processor.readLocation(location, false, emitter);
+
+      expect(mockCodeSearch).toHaveBeenCalledWith(
+        expect.anything(),
+        { host: 'dev.azure.com' },
+        'shopify',
+        'engineering',
+        'backstage',
+        '/catalog-info.yaml',
+        'topic/catalog-info',
+      );
+      expect(emitter).toHaveBeenCalledTimes(1);
+      expect(emitter).toHaveBeenCalledWith({
+        type: 'location',
+        location: {
+          type: 'url',
+          target:
+            'https://dev.azure.com/shopify/engineering/_git/backstage?path=/catalog-info.yaml&version=GBtopic/catalog-info',
           presence: 'optional',
         },
       });
@@ -256,6 +330,7 @@ describe('AzureDevOpsDiscoveryProcessor', () => {
         'engineering',
         '',
         '/src/*/catalog.yaml',
+        '',
       );
       expect(emitter).toHaveBeenCalledTimes(1);
       expect(emitter).toHaveBeenCalledWith({
@@ -286,6 +361,7 @@ describe('AzureDevOpsDiscoveryProcessor', () => {
         'engineering',
         'backstage',
         '/catalog-info.yaml',
+        '',
       );
       expect(emitter).not.toHaveBeenCalled();
     });

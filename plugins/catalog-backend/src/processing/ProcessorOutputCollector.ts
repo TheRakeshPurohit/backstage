@@ -15,14 +15,13 @@
  */
 
 import {
-  Entity,
   ANNOTATION_LOCATION,
   ANNOTATION_ORIGIN_LOCATION,
-  stringifyLocationRef,
+  Entity,
   stringifyEntityRef,
+  stringifyLocationRef,
 } from '@backstage/catalog-model';
 import { assertError } from '@backstage/errors';
-import { Logger } from 'winston';
 import {
   CatalogProcessor,
   CatalogProcessorResult,
@@ -36,6 +35,7 @@ import {
   validateEntityEnvelope,
 } from './util';
 import { RefreshKeyData } from './types';
+import { LoggerService } from '@backstage/backend-plugin-api';
 
 /**
  * Helper class for aggregating all of the emitted data from processors.
@@ -48,7 +48,7 @@ export class ProcessorOutputCollector {
   private done = false;
 
   constructor(
-    private readonly logger: Logger,
+    private readonly logger: LoggerService,
     private readonly parentEntity: Entity,
   ) {}
 
@@ -75,7 +75,7 @@ export class ProcessorOutputCollector {
     };
   }
 
-  private receive(logger: Logger, i: CatalogProcessorResult) {
+  private receive(logger: LoggerService, i: CatalogProcessorResult) {
     if (this.done) {
       logger.warn(
         `Item of type "${
@@ -115,24 +115,27 @@ export class ProcessorOutputCollector {
 
       // Note that at this point, we have only validated the envelope part of
       // the entity data. Annotations are not part of that, so we have to be
-      // defensive. If the annotations were malformed (e.g. were not a valid
-      // object), we just skip over this step and let the full entity
-      // validation at the next step of processing catch that.
+      // defensive and report an error if the annotations isn't a valid object, to avoid
+      // hiding errors when adding location annotations.
       const annotations = entity.metadata.annotations || {};
-      if (typeof annotations === 'object' && !Array.isArray(annotations)) {
-        const originLocation = getEntityOriginLocationRef(this.parentEntity);
-        entity = {
-          ...entity,
-          metadata: {
-            ...entity.metadata,
-            annotations: {
-              ...annotations,
-              [ANNOTATION_ORIGIN_LOCATION]: originLocation,
-              [ANNOTATION_LOCATION]: location,
-            },
-          },
-        };
+      if (typeof annotations !== 'object' || Array.isArray(annotations)) {
+        this.errors.push(
+          new Error('metadata.annotations must be a valid object'),
+        );
+        return;
       }
+      const originLocation = getEntityOriginLocationRef(this.parentEntity);
+      entity = {
+        ...entity,
+        metadata: {
+          ...entity.metadata,
+          annotations: {
+            ...annotations,
+            [ANNOTATION_ORIGIN_LOCATION]: originLocation,
+            [ANNOTATION_LOCATION]: location,
+          },
+        },
+      };
 
       this.deferredEntities.push({ entity, locationKey: location });
     } else if (i.type === 'location') {

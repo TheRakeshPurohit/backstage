@@ -15,13 +15,13 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 
 import { analyticsApiRef } from '@backstage/core-plugin-api';
 import {
-  MockAnalyticsApi,
+  mockApis,
   TestApiProvider,
-  wrapInTestApp,
+  renderInTestApp,
 } from '@backstage/test-utils';
 
 import { IssueLink } from './IssueLink';
@@ -55,15 +55,13 @@ const defaultGitlabProps = {
 };
 
 describe('FeedbackLink', () => {
-  const apiSpy = new MockAnalyticsApi();
+  const analytics = mockApis.analytics();
 
-  it('Should open new Github issue tab', () => {
-    render(
-      wrapInTestApp(
-        <TestApiProvider apis={[[analyticsApiRef, apiSpy]]}>
-          <IssueLink {...defaultGithubProps} />
-        </TestApiProvider>,
-      ),
+  it('Should open new Github issue tab', async () => {
+    await renderInTestApp(
+      <TestApiProvider apis={[[analyticsApiRef, analytics]]}>
+        <IssueLink {...defaultGithubProps} />
+      </TestApiProvider>,
     );
 
     const link = screen.getByText(/Open new Github issue/);
@@ -77,13 +75,11 @@ describe('FeedbackLink', () => {
     );
   });
 
-  it('Should open new Gitlab issue tab', () => {
-    render(
-      wrapInTestApp(
-        <TestApiProvider apis={[[analyticsApiRef, apiSpy]]}>
-          <IssueLink {...defaultGitlabProps} />
-        </TestApiProvider>,
-      ),
+  it('Should open new Gitlab issue tab', async () => {
+    await renderInTestApp(
+      <TestApiProvider apis={[[analyticsApiRef, analytics]]}>
+        <IssueLink {...defaultGitlabProps} />
+      </TestApiProvider>,
     );
 
     const link = screen.getByText(/Open new Gitlab issue/);
@@ -98,21 +94,21 @@ describe('FeedbackLink', () => {
   });
 
   it('Should track click events', async () => {
-    render(
-      wrapInTestApp(
-        <TestApiProvider apis={[[analyticsApiRef, apiSpy]]}>
-          <IssueLink {...defaultGithubProps} />
-        </TestApiProvider>,
-      ),
+    await renderInTestApp(
+      <TestApiProvider apis={[[analyticsApiRef, analytics]]}>
+        <IssueLink {...defaultGithubProps} />
+      </TestApiProvider>,
     );
 
     fireEvent.click(screen.getByText(/Open new Github issue/));
 
     await waitFor(() => {
-      expect(apiSpy.getEvents()[0]).toMatchObject({
-        action: 'click',
-        subject: 'Open new  Github  issue',
-      });
+      expect(analytics.captureEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'click',
+          subject: 'Open new  Github  issue',
+        }),
+      );
     });
   });
 });

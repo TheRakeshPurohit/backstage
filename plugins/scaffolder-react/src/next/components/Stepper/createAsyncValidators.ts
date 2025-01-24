@@ -17,24 +17,34 @@
 import { FieldValidation } from '@rjsf/utils';
 import type { JsonObject, JsonValue } from '@backstage/types';
 import { ApiHolder } from '@backstage/core-plugin-api';
-import { Draft07 as JSONSchema } from 'json-schema-library';
+import {
+  Draft07 as JSONSchema,
+  JsonError,
+  JsonSchema,
+} from 'json-schema-library';
 import { createFieldValidation, extractSchemaFromStep } from '../../lib';
-import { NextCustomFieldValidator } from '../../extensions';
+import {
+  CustomFieldValidator,
+  FieldExtensionUiSchema,
+} from '@backstage/plugin-scaffolder-react';
 import { isObject } from './utils';
-import { NextFieldExtensionUiSchema } from '../../extensions/types';
 
-/**
- * @internal
- */
+/** @alpha */
 export type FormValidation = {
   [name: string]: FieldValidation | FormValidation;
 };
 
+const isJsonError = (
+  value: JsonError | JsonSchema,
+): value is { type: 'error'; message: string } =>
+  'type' in value && value.type === 'error';
+
+/** @alpha */
 export const createAsyncValidators = (
   rootSchema: JsonObject,
   validators: Record<
     string,
-    undefined | NextCustomFieldValidator<unknown, unknown>
+    undefined | CustomFieldValidator<unknown, unknown>
   >,
   context: {
     apiHolder: ApiHolder;
@@ -53,7 +63,7 @@ export const createAsyncValidators = (
       key: string,
       value: JsonValue | undefined,
       schema: JsonObject,
-      uiSchema: NextFieldExtensionUiSchema<unknown, unknown>,
+      uiSchema: FieldExtensionUiSchema<unknown, unknown>,
     ) => {
       const validator = validators[validatorName];
       if (validator) {
@@ -73,16 +83,30 @@ export const createAsyncValidators = (
     };
 
     for (const [key, value] of Object.entries(current)) {
-      const path = `${pathPrefix}/${key}`;
-      const definitionInSchema = parsedSchema.getSchema(path, formData);
-      const { schema, uiSchema } = extractSchemaFromStep(definitionInSchema);
+      const pointer = `${pathPrefix}/${key}`;
+      const definitionInSchema = parsedSchema.getSchema({
+        pointer,
+        data: formData,
+      });
+
+      if (!definitionInSchema) {
+        continue;
+      }
+
+      if (isJsonError(definitionInSchema)) {
+        throw new Error(definitionInSchema.message);
+      }
+
+      const { schema, uiSchema } = extractSchemaFromStep(
+        definitionInSchema as JsonObject,
+      );
 
       const hasItems = definitionInSchema && definitionInSchema.items;
 
       const doValidateItem = async (
         propValue: JsonObject,
         itemSchema: JsonObject,
-        itemUiSchema: NextFieldExtensionUiSchema<unknown, unknown>,
+        itemUiSchema: FieldExtensionUiSchema<unknown, unknown>,
       ) => {
         await validateForm(
           propValue['ui:field'] as string,
@@ -101,7 +125,7 @@ export const createAsyncValidators = (
         }
       };
 
-      if (definitionInSchema && 'ui:field' in definitionInSchema) {
+      if ('ui:field' in definitionInSchema) {
         await doValidateItem(definitionInSchema, schema, uiSchema);
       } else if (hasItems && 'ui:field' in definitionInSchema.items) {
         await doValidate(definitionInSchema.items);
@@ -111,8 +135,28 @@ export const createAsyncValidators = (
         for (const [, propValue] of Object.entries(properties)) {
           await doValidate(propValue);
         }
+        if (Array.isArray(value)) {
+          for (const [_, v] of Object.entries(value)) {
+            const { schema: itemSchema, uiSchema: itemUiSchema } =
+              extractSchemaFromStep(definitionInSchema.items);
+
+            if (isObject(v)) {
+              for (const [pK, pV] of Object.entries(v)) {
+                if ('ui:field' in itemUiSchema[pK]) {
+                  await validateForm(
+                    itemUiSchema[pK]['ui:field'],
+                    pK,
+                    pV,
+                    itemSchema,
+                    itemUiSchema,
+                  );
+                }
+              }
+            }
+          }
+        }
       } else if (isObject(value)) {
-        formValidation[key] = await validate(formData, path, value);
+        formValidation[key] = await validate(formData, pointer, value);
       }
     }
 

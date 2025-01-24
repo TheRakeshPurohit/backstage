@@ -14,23 +14,37 @@
  * limitations under the License.
  */
 
-import { TaskScheduleDefinition } from '@backstage/backend-tasks';
+import {
+  createServiceFactory,
+  SchedulerServiceTaskScheduleDefinition,
+} from '@backstage/backend-plugin-api';
 import { mockServices, startTestBackend } from '@backstage/backend-test-utils';
+import { EntityProviderConnection } from '@backstage/plugin-catalog-node';
 import { catalogProcessingExtensionPoint } from '@backstage/plugin-catalog-node/alpha';
-import { Duration } from 'luxon';
-import { catalogModuleGitlabDiscoveryEntityProvider } from './catalogModuleGitlabDiscoveryEntityProvider';
+import { TestEventsService } from '@backstage/plugin-events-backend-test-utils';
+import { eventsServiceRef } from '@backstage/plugin-events-node';
 import { GitlabDiscoveryEntityProvider } from '../providers';
+import { catalogModuleGitlabDiscoveryEntityProvider } from './catalogModuleGitlabDiscoveryEntityProvider';
 
 describe('catalogModuleGitlabDiscoveryEntityProvider', () => {
   it('should register provider at the catalog extension point', async () => {
+    const events = new TestEventsService();
+    const eventsServiceFactory = createServiceFactory({
+      service: eventsServiceRef,
+      deps: {},
+      async factory({}) {
+        return events;
+      },
+    });
     let addedProviders: Array<GitlabDiscoveryEntityProvider> | undefined;
-    let usedSchedule: TaskScheduleDefinition | undefined;
+    let usedSchedule: SchedulerServiceTaskScheduleDefinition | undefined;
 
     const extensionPoint = {
       addEntityProvider: (providers: any) => {
         addedProviders = providers;
       },
     };
+    const connection = jest.fn() as unknown as EntityProviderConnection;
     const runner = jest.fn();
     const scheduler = mockServices.scheduler.mock({
       createScheduledTaskRunner(schedule) {
@@ -68,19 +82,28 @@ describe('catalogModuleGitlabDiscoveryEntityProvider', () => {
     await startTestBackend({
       extensionPoints: [[catalogProcessingExtensionPoint, extensionPoint]],
       features: [
-        catalogModuleGitlabDiscoveryEntityProvider(),
+        eventsServiceFactory,
+        catalogModuleGitlabDiscoveryEntityProvider,
         mockServices.rootConfig.factory({ data: config }),
         mockServices.logger.factory(),
         scheduler.factory,
       ],
     });
 
-    expect(usedSchedule?.frequency).toEqual(Duration.fromISO('P1M'));
-    expect(usedSchedule?.timeout).toEqual(Duration.fromISO('PT3M'));
+    expect(usedSchedule?.frequency).toEqual({ months: 1 });
+    expect(usedSchedule?.timeout).toEqual({ minutes: 3 });
     expect(addedProviders?.length).toEqual(1);
-    expect(addedProviders?.pop()?.getProviderName()).toEqual(
+    expect(runner).not.toHaveBeenCalled();
+
+    const provider = addedProviders!.pop()!;
+    expect(provider.getProviderName()).toEqual(
       'GitlabDiscoveryEntityProvider:test-id',
     );
-    expect(runner).not.toHaveBeenCalled();
+    await provider.connect(connection);
+    expect(events.subscribed).toHaveLength(1);
+    expect(events.subscribed[0].id).toEqual(
+      'GitlabDiscoveryEntityProvider:test-id',
+    );
+    expect(runner).toHaveBeenCalledTimes(1);
   });
 });

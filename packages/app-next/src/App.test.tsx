@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-import React from 'react';
 import { renderWithEffects } from '@backstage/test-utils';
+
+// Rarely, and only in windows CI, do these tests take slightly more than the
+// default five seconds
+jest.setTimeout(15_000);
 
 describe('App', () => {
   it('should render', async () => {
@@ -41,8 +44,8 @@ describe('App', () => {
       ] as any,
     };
 
-    const { default: App } = await import('./App');
-    const rendered = await renderWithEffects(<App />);
+    const { default: app } = await import('./App');
+    const rendered = await renderWithEffects(app);
     expect(rendered.baseElement).toBeInTheDocument();
   });
 });

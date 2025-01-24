@@ -45,6 +45,22 @@ export interface TemplateEntityV1beta3 extends Entity {
      * The type that the Template will create. For example service, website or library.
      */
     type: string;
+
+    /**
+     * Template specific configuration of the presentation layer.
+     */
+    presentation?: TemplatePresentationV1beta3;
+
+    /**
+     * Recovery strategy for the template
+     */
+    EXPERIMENTAL_recovery?: TemplateRecoveryV1beta3;
+
+    /**
+     * Form hooks to be run
+     */
+    EXPERIMENTAL_formDecorators?: { id: string; input?: JsonObject }[];
+
     /**
      * This is a JSONSchema or an array of JSONSchema's which is used to render a form in the frontend
      * to collect user input and validate it against that schema. This can then be used in the `steps` part below to template
@@ -64,6 +80,47 @@ export interface TemplateEntityV1beta3 extends Entity {
      * The owner entityRef of the TemplateEntity
      */
     owner?: string;
+  };
+}
+
+/**
+ * Depends on how you designed your task you might tailor the behaviour for each of them.
+ *
+ * @public
+ */
+export interface TemplateRecoveryV1beta3 extends JsonObject {
+  /**
+   *
+   * none - not recover, let the task be marked as failed
+   * startOver - do recover, start the execution of the task from the first step.
+   *
+   * @public
+   */
+  EXPERIMENTAL_strategy?: 'none' | 'startOver';
+}
+
+/**
+ * The presentation of the template.
+ *
+ * @public
+ */
+export interface TemplatePresentationV1beta3 extends JsonObject {
+  /**
+   * Overrides default buttons' text
+   */
+  buttonLabels?: {
+    /**
+     * The text for the button which leads to the previous template page
+     */
+    backButtonText?: string;
+    /**
+     * The text for the button which starts the execution of the template
+     */
+    createButtonText?: string;
+    /**
+     * The text for the button which opens template's review/summary
+     */
+    reviewButtonText?: string;
   };
 }
 

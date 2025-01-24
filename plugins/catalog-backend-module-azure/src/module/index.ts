@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-export { catalogModuleAzureDevOpsEntityProvider } from './catalogModuleAzureDevOpsEntityProvider';
+export { catalogModuleAzureEntityProvider as default } from './catalogModuleAzureDevOpsEntityProvider';

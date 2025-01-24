@@ -14,22 +14,28 @@
  * limitations under the License.
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 
-import { makeStyles, Grid } from '@material-ui/core';
+import Grid from '@material-ui/core/Grid';
+import { makeStyles } from '@material-ui/core/styles';
 
 import {
   TechDocsShadowDom,
+  useShadowDomStylesLoading,
+  useShadowRootElements,
   useTechDocsReaderPage,
 } from '@backstage/plugin-techdocs-react';
 import { CompoundEntityRef } from '@backstage/catalog-model';
-import { Content, ErrorPage } from '@backstage/core-components';
+import { Content, ErrorPage, Progress } from '@backstage/core-components';
 
 import { TechDocsSearch } from '../../../search';
 import { TechDocsStateIndicator } from '../TechDocsStateIndicator';
 
 import { useTechDocsReaderDom } from './dom';
-import { withTechDocsReaderProvider } from '../TechDocsReaderProvider';
+import {
+  useTechDocsReader,
+  withTechDocsReaderProvider,
+} from '../TechDocsReaderProvider';
 import { TechDocsReaderPageContentAddons } from './TechDocsReaderPageContentAddons';
 
 const useStyles = makeStyles({
@@ -59,6 +65,13 @@ export type TechDocsReaderPageContentProps = {
    */
   withSearch?: boolean;
   /**
+   * If {@link TechDocsReaderPageContentProps.withSearch | withSearch} is true,
+   * this will redirect the search result urls, e.g. turn search results into
+   * links within the "Docs" tab of the entity page, instead of the global docs
+   * page.
+   */
+  searchResultUrlMapper?: (url: string) => string;
+  /**
    * Callback called when the content is rendered.
    */
   onReady?: () => void;
@@ -70,7 +83,7 @@ export type TechDocsReaderPageContentProps = {
  */
 export const TechDocsReaderPageContent = withTechDocsReaderProvider(
   (props: TechDocsReaderPageContentProps) => {
-    const { withSearch = true, onReady } = props;
+    const { withSearch = true, searchResultUrlMapper, onReady } = props;
     const classes = useStyles();
 
     const {
@@ -78,8 +91,24 @@ export const TechDocsReaderPageContent = withTechDocsReaderProvider(
       entityRef,
       setShadowRoot,
     } = useTechDocsReaderPage();
-
+    const { state } = useTechDocsReader();
     const dom = useTechDocsReaderDom(entityRef);
+    const path = window.location.pathname;
+    const hash = window.location.hash;
+    const isStyleLoading = useShadowDomStylesLoading(dom);
+    const [hashElement] = useShadowRootElements([`[id="${hash.slice(1)}"]`]);
+
+    useEffect(() => {
+      if (isStyleLoading) return;
+
+      if (hash) {
+        if (hashElement) {
+          hashElement.scrollIntoView();
+        }
+      } else {
+        document?.querySelector('header')?.scrollIntoView();
+      }
+    }, [path, hash, hashElement, isStyleLoading]);
 
     const handleAppend = useCallback(
       (newShadowRoot: ShadowRoot) => {
@@ -120,11 +149,14 @@ export const TechDocsReaderPageContent = withTechDocsReaderProvider(
               <TechDocsSearch
                 entityId={entityRef}
                 entityTitle={entityMetadata?.metadata?.title}
+                searchResultUrlMapper={searchResultUrlMapper}
               />
             </Grid>
           )}
           <Grid xs={12} item>
             {/* Centers the styles loaded event to avoid having multiple locations setting the opacity style in Shadow Dom causing the screen to flash multiple times */}
+            {(state === 'CHECKING' || isStyleLoading) && <Progress />}
+
             <TechDocsShadowDom element={dom} onAppend={handleAppend}>
               <TechDocsReaderPageContentAddons />
             </TechDocsShadowDom>

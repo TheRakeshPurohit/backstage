@@ -23,20 +23,15 @@ import React, {
 } from 'react';
 import qs from 'qs';
 
-import {
-  makeStyles,
-  Theme,
-  List,
-  ListProps,
-  ListSubheader,
-  Menu,
-  MenuItem,
-  InputBase,
-  Select,
-  Chip,
-  Typography,
-  TypographyProps,
-} from '@material-ui/core';
+import List, { ListProps } from '@material-ui/core/List';
+import ListSubheader from '@material-ui/core/ListSubheader';
+import Menu from '@material-ui/core/Menu';
+import MenuItem from '@material-ui/core/MenuItem';
+import InputBase from '@material-ui/core/InputBase';
+import Select from '@material-ui/core/Select';
+import Chip from '@material-ui/core/Chip';
+import Typography, { TypographyProps } from '@material-ui/core/Typography';
+import { makeStyles, Theme } from '@material-ui/core/styles';
 import AddIcon from '@material-ui/icons/Add';
 import ArrowRightIcon from '@material-ui/icons/ArrowForwardIos';
 
@@ -193,7 +188,7 @@ export const SearchResultGroupTextFilterField = (
         contentEditable
         suppressContentEditableWarning
       >
-        {value}
+        {value?.toString()}
       </Typography>
     </SearchResultGroupFilterFieldLayout>
   );
@@ -377,7 +372,7 @@ export function SearchResultGroupLayout<FilterOption>(
     filterOptions,
     renderFilterOption = filterOption => (
       <MenuItem key={String(filterOption)} value={String(filterOption)}>
-        {filterOption}
+        {String(filterOption)}
       </MenuItem>
     ),
     filterFields,

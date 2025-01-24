@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import { IconComponent } from '@backstage/core-plugin-api';
-import { BackstageTheme } from '@backstage/theme';
 import { Link } from '@backstage/core-components';
-import { makeStyles } from '@material-ui/core';
+import { makeStyles } from '@material-ui/core/styles';
 import React from 'react';
 
-interface CardLinkProps {
+export interface CardLinkProps {
   icon: IconComponent;
   text: string;
   url: string;
 }
 
-const useStyles = makeStyles<BackstageTheme>(() => ({
+const useStyles = makeStyles(() => ({
   linkText: {
     display: 'inline-flex',
     alignItems: 'center',

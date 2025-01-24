@@ -15,19 +15,26 @@
  */
 
 import React, { ReactNode } from 'react';
-import {
-  Box,
-  Chip,
-  ListItemIcon,
-  ListItemText,
-  makeStyles,
-} from '@material-ui/core';
+import Box from '@material-ui/core/Box';
+import Chip from '@material-ui/core/Chip';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import ListItemText from '@material-ui/core/ListItemText';
+import Typography from '@material-ui/core/Typography';
+import { makeStyles } from '@material-ui/core/styles';
 import { Link } from '@backstage/core-components';
 import {
   IndexableDocument,
   ResultHighlight,
 } from '@backstage/plugin-search-common';
 import { HighlightedSearchResultText } from '@backstage/plugin-search-react';
+import { catalogTranslationRef } from '../../alpha/translation';
+import { useTranslationRef } from '@backstage/frontend-plugin-api';
+
+/** @public */
+export type CatalogSearchResultListItemClassKey =
+  | 'item'
+  | 'flexContainer'
+  | 'itemText';
 
 const useStyles = makeStyles(
   {
@@ -56,6 +63,7 @@ export interface CatalogSearchResultListItemProps {
   result?: IndexableDocument;
   highlight?: ResultHighlight;
   rank?: number;
+  lineClamp?: number;
 }
 
 /** @public */
@@ -66,6 +74,7 @@ export function CatalogSearchResultListItem(
   const highlight = props.highlight as ResultHighlight;
 
   const classes = useStyles();
+  const { t } = useTranslationRef(catalogTranslationRef);
 
   if (!result) return null;
 
@@ -94,21 +103,43 @@ export function CatalogSearchResultListItem(
             </Link>
           }
           secondary={
-            highlight?.fields.text ? (
-              <HighlightedSearchResultText
-                text={highlight.fields.text}
-                preTag={highlight.preTag}
-                postTag={highlight.postTag}
-              />
-            ) : (
-              result.text
-            )
+            <Typography
+              component="span"
+              style={{
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: props.lineClamp,
+                overflow: 'hidden',
+              }}
+              color="textSecondary"
+              variant="body2"
+            >
+              {highlight?.fields.text ? (
+                <HighlightedSearchResultText
+                  text={highlight.fields.text}
+                  preTag={highlight.preTag}
+                  postTag={highlight.postTag}
+                />
+              ) : (
+                result.text
+              )}
+            </Typography>
           }
         />
         <Box>
           {result.kind && <Chip label={`Kind: ${result.kind}`} size="small" />}
+          {result.type && <Chip label={`Type: ${result.type}`} size="small" />}
           {result.lifecycle && (
-            <Chip label={`Lifecycle: ${result.lifecycle}`} size="small" />
+            <Chip
+              label={`${t('searchResultItem.lifecycle')}: ${result.lifecycle}`}
+              size="small"
+            />
+          )}
+          {result.owner && (
+            <Chip
+              label={`${t('searchResultItem.Owner')}: ${result.owner}`}
+              size="small"
+            />
           )}
         </Box>
       </div>

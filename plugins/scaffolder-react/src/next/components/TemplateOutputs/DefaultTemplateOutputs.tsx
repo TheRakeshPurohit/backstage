@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 import { InfoCard, MarkdownContent } from '@backstage/core-components';
-import { ScaffolderTaskOutput } from '@backstage/plugin-scaffolder-react';
-import { Box, Paper } from '@material-ui/core';
-import React, { useMemo, useState } from 'react';
+import {
+  ScaffolderOutputText,
+  ScaffolderTaskOutput,
+} from '@backstage/plugin-scaffolder-react';
+import Box from '@material-ui/core/Box';
+import Paper from '@material-ui/core/Paper';
+import React, { useEffect, useMemo, useState } from 'react';
 import { LinkOutputs } from './LinkOutputs';
 import { TextOutputs } from './TextOutputs';
 
@@ -28,36 +32,56 @@ import { TextOutputs } from './TextOutputs';
 export const DefaultTemplateOutputs = (props: {
   output?: ScaffolderTaskOutput;
 }) => {
-  const [textOutputIndex, setTextOutputIndex] = useState<number | undefined>();
+  const { output } = props;
+  const [textOutputIndex, setTextOutputIndex] = useState<number | undefined>(
+    undefined,
+  );
+
+  useEffect(() => {
+    if (textOutputIndex === undefined && output?.text) {
+      const defaultIndex = output.text.findIndex(
+        (t: ScaffolderOutputText) => t.default,
+      );
+      setTextOutputIndex(defaultIndex >= 0 ? defaultIndex : 0);
+    }
+  }, [textOutputIndex, output]);
 
   const textOutput = useMemo(
     () =>
-      textOutputIndex !== undefined
-        ? props.output?.text?.[textOutputIndex]
-        : null,
-    [props.output, textOutputIndex],
+      textOutputIndex !== undefined ? output?.text?.[textOutputIndex] : null,
+    [output, textOutputIndex],
   );
 
-  if (!props.output) {
+  if (!output) {
     return null;
   }
 
+  const emptyOutput = Object.keys(output).length === 0;
+
   return (
     <>
-      <Box paddingBottom={2}>
-        <Paper>
-          <Box padding={2} justifyContent="center" display="flex" gridGap={16}>
-            <TextOutputs
-              output={props.output}
-              index={textOutputIndex}
-              setIndex={setTextOutputIndex}
-            />
-            <LinkOutputs output={props.output} />
-          </Box>
-        </Paper>
-      </Box>
+      {!emptyOutput ? (
+        <Box paddingBottom={2} data-testid="output-box">
+          <Paper>
+            <Box
+              padding={2}
+              justifyContent="center"
+              display="flex"
+              gridGap={16}
+              flexWrap="wrap"
+            >
+              <TextOutputs
+                output={output}
+                index={textOutputIndex}
+                setIndex={setTextOutputIndex}
+              />
+              <LinkOutputs output={output} />
+            </Box>
+          </Paper>
+        </Box>
+      ) : null}
       {textOutput ? (
-        <Box paddingBottom={2}>
+        <Box paddingBottom={2} data-testid="text-output-box">
           <InfoCard
             title={textOutput.title ?? 'Text Output'}
             noPadding

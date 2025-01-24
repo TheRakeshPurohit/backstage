@@ -14,4 +14,10 @@
  * limitations under the License.
  */
 
-export { eventsModuleGerritEventRouter } from './service/eventsModuleGerritEventRouter';
+import { eventsModuleGerritEventRouter as feature } from './service/eventsModuleGerritEventRouter';
+
+/** @alpha */
+const _feature = feature;
+export default _feature;
+/** @alpha */
+export const eventsModuleGerritEventRouter = _feature;

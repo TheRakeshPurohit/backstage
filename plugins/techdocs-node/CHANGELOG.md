@@ -1,5 +1,1088 @@
 # @backstage/plugin-techdocs-node
 
+## 1.13.0-next.0
+
+### Minor Changes
+
+- 8de3d2d: Allow configurable optional retries for publisher AWS S3 operations.
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.2.0-next.0
+  - @backstage/catalog-model@1.7.3
+  - @backstage/config@1.3.2
+  - @backstage/errors@1.2.7
+  - @backstage/integration@1.16.1
+  - @backstage/integration-aws-node@0.1.15
+  - @backstage/plugin-search-common@1.2.17
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.16
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.16.1
+  - @backstage/backend-plugin-api@1.1.1
+  - @backstage/catalog-model@1.7.3
+  - @backstage/config@1.3.2
+  - @backstage/errors@1.2.7
+  - @backstage/integration-aws-node@0.1.15
+  - @backstage/plugin-search-common@1.2.17
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.16-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.1.1-next.1
+  - @backstage/catalog-model@1.7.3-next.0
+  - @backstage/config@1.3.2-next.0
+  - @backstage/errors@1.2.7-next.0
+  - @backstage/plugin-search-common@1.2.17-next.0
+  - @backstage/integration-aws-node@0.1.15-next.0
+  - @backstage/integration@1.16.1-next.0
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.16-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.1.1-next.0
+  - @backstage/catalog-model@1.7.2
+  - @backstage/config@1.3.1
+  - @backstage/errors@1.2.6
+  - @backstage/integration@1.16.0
+  - @backstage/integration-aws-node@0.1.14
+  - @backstage/plugin-search-common@1.2.16
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.15
+
+### Patch Changes
+
+- 5f04976: Fixed a bug that caused missing code in published packages.
+- Updated dependencies
+  - @backstage/integration@1.16.0
+  - @backstage/backend-plugin-api@1.1.0
+  - @backstage/errors@1.2.6
+  - @backstage/catalog-model@1.7.2
+  - @backstage/config@1.3.1
+  - @backstage/integration-aws-node@0.1.14
+  - @backstage/plugin-search-common@1.2.16
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.15-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.1.0-next.2
+  - @backstage/errors@1.2.6-next.0
+  - @backstage/catalog-model@1.7.2-next.0
+  - @backstage/config@1.3.1-next.0
+  - @backstage/integration@1.16.0-next.1
+  - @backstage/integration-aws-node@0.1.14-next.0
+  - @backstage/plugin-search-common@1.2.16-next.0
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.15-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.1.0-next.1
+  - @backstage/catalog-model@1.7.1
+  - @backstage/config@1.3.0
+  - @backstage/errors@1.2.5
+  - @backstage/integration@1.16.0-next.0
+  - @backstage/integration-aws-node@0.1.13
+  - @backstage/plugin-search-common@1.2.15
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.15-next.0
+
+### Patch Changes
+
+- 5f04976: Fixed a bug that caused missing code in published packages.
+- Updated dependencies
+  - @backstage/integration@1.16.0-next.0
+  - @backstage/backend-plugin-api@1.0.3-next.0
+  - @backstage/catalog-model@1.7.1
+  - @backstage/config@1.3.0
+  - @backstage/errors@1.2.5
+  - @backstage/integration-aws-node@0.1.13
+  - @backstage/plugin-search-common@1.2.15
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.13
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@1.3.0
+  - @backstage/integration-aws-node@0.1.13
+  - @backstage/backend-plugin-api@1.0.2
+  - @backstage/catalog-model@1.7.1
+  - @backstage/errors@1.2.5
+  - @backstage/integration@1.15.2
+  - @backstage/plugin-search-common@1.2.15
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.13-next.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration-aws-node@0.1.13-next.0
+  - @backstage/backend-plugin-api@1.0.2-next.2
+  - @backstage/catalog-model@1.7.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration@1.15.1
+  - @backstage/plugin-search-common@1.2.14
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.13-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.0.2-next.2
+  - @backstage/catalog-model@1.7.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration@1.15.1
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.14
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.13-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.0.2-next.1
+  - @backstage/catalog-model@1.7.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration@1.15.1
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.14
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.13-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.0.2-next.0
+  - @backstage/catalog-model@1.7.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration@1.15.1
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.14
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.12
+
+### Patch Changes
+
+- 7774828: Updated dependency `@smithy/node-http-handler` to `^3.0.0`.
+- 720a2f9: Updated dependency `git-url-parse` to `^15.0.0`.
+- fbdc631: Allow to pass StorageOptions to GCS Publisher
+- Updated dependencies
+  - @backstage/integration@1.15.1
+  - @backstage/backend-plugin-api@1.0.1
+  - @backstage/catalog-model@1.7.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.14
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.12-next.2
+
+### Patch Changes
+
+- 7774828: Updated dependency `@smithy/node-http-handler` to `^3.0.0`.
+- 720a2f9: Updated dependency `git-url-parse` to `^15.0.0`.
+- fbdc631: Allow to pass StorageOptions to GCS Publisher
+- Updated dependencies
+  - @backstage/integration@1.15.1-next.1
+  - @backstage/backend-plugin-api@1.0.1-next.1
+  - @backstage/catalog-model@1.7.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.14
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.12-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.15.1-next.0
+  - @backstage/backend-plugin-api@1.0.1-next.0
+  - @backstage/catalog-model@1.7.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.14
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.12-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.0.1-next.0
+  - @backstage/catalog-model@1.7.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration@1.15.0
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.14
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.11
+
+### Patch Changes
+
+- f715f5c: Move `TechdocsContainerRunner` from `publish` to `generate`.
+- 4417dd4: Fix typo and unify TechDocs casing in doc strings
+- 57da51f: Add support for mapping custom tags in the techdocs yaml parser that validates the mkdocs.yaml file
+- c2b63ab: Updated dependency `supertest` to `^7.0.0`.
+- 3606843: Internal fixes to match `testcontainers` update
+- 33ebb28: As the `@backstage/backend-common` package is deprecated, we have updated the `techdocs-node` package to stop depending on it.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.0.0
+  - @backstage/catalog-model@1.7.0
+  - @backstage/integration@1.15.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.14
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.11-next.2
+
+### Patch Changes
+
+- 57da51f: Add support for mapping custom tags in the techdocs yaml parser that validates the mkdocs.yaml file
+- c2b63ab: Updated dependency `supertest` to `^7.0.0`.
+- 3606843: Internal fixes to match `testcontainers` update
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.0.0-next.2
+  - @backstage/integration@1.15.0-next.0
+  - @backstage/catalog-model@1.6.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.14
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.11-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.9.0-next.1
+  - @backstage/catalog-model@1.6.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration@1.14.0
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.14
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.11-next.0
+
+### Patch Changes
+
+- 4417dd4: Fix typo and unify TechDocs casing in doc strings
+- 33ebb28: As the `@backstage/backend-common` package is deprecated, we have updated the `techdocs-node` package to stop depending on it.
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.9.0-next.0
+  - @backstage/catalog-model@1.6.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration@1.14.0
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.14
+  - @backstage/plugin-techdocs-common@0.1.0
+
+## 1.12.9
+
+### Patch Changes
+
+- 389f5a4: Update deprecated url-reader-related imports.
+- 69bd940: Use annotation constants from new techdocs-common package.
+- 949083d: Update `patchMkdocsYmlPrebuild` to modify `repo_url` and `edit_uri` independently.
+- 5cedd9f: Fix TechDocs Edit URL for nested docs
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.8.0
+  - @backstage/backend-common@0.24.0
+  - @backstage/plugin-search-common@1.2.14
+  - @backstage/integration@1.14.0
+  - @backstage/plugin-techdocs-common@0.1.0
+  - @backstage/catalog-model@1.6.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration-aws-node@0.1.12
+
+## 1.12.9-next.3
+
+### Patch Changes
+
+- 5cedd9f: Fix TechDocs Edit URL for nested docs
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.8.0-next.3
+  - @backstage/backend-common@0.23.4-next.3
+  - @backstage/catalog-model@1.6.0-next.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration@1.14.0-next.0
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.14-next.1
+  - @backstage/plugin-techdocs-common@0.1.0-next.0
+
+## 1.12.9-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.8.0-next.2
+  - @backstage/backend-common@0.23.4-next.2
+  - @backstage/plugin-search-common@1.2.14-next.1
+  - @backstage/integration@1.14.0-next.0
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-techdocs-common@0.1.0-next.0
+
+## 1.12.9-next.1
+
+### Patch Changes
+
+- 69bd940: Use annotation constants from new techdocs-common package.
+- 949083d: Update `patchMkdocsYmlPrebuild` to modify `repo_url` and `edit_uri` independently.
+- Updated dependencies
+  - @backstage/plugin-techdocs-common@0.1.0-next.0
+  - @backstage/backend-plugin-api@0.7.1-next.1
+  - @backstage/backend-common@0.23.4-next.1
+  - @backstage/integration@1.14.0-next.0
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.14-next.0
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+
+## 1.12.9-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.23.4-next.0
+  - @backstage/integration@1.14.0-next.0
+  - @backstage/backend-plugin-api@0.7.1-next.0
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.13
+
+## 1.12.8
+
+### Patch Changes
+
+- 9ecf5fd: Adds extension point for publishers to the techdocs backend
+- 4c4d077: Bumps default version of techdocs docker image to latest
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.7.0
+  - @backstage/backend-common@0.23.3
+  - @backstage/integration@1.13.0
+  - @backstage/plugin-search-common@1.2.13
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration-aws-node@0.1.12
+
+## 1.12.8-next.1
+
+### Patch Changes
+
+- 9ecf5fd: Adds extension point for publishers to the techdocs backend
+- 4c4d077: Bumps default version of techdocs docker image to latest
+- Updated dependencies
+  - @backstage/backend-common@0.23.3-next.1
+  - @backstage/backend-plugin-api@0.6.22-next.1
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration@1.13.0-next.0
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.12
+
+## 1.12.7-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.6.21-next.0
+  - @backstage/backend-common@0.23.2-next.0
+  - @backstage/integration@1.13.0-next.0
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.12
+
+## 1.12.5
+
+### Patch Changes
+
+- e64bfb2: Allow defining custom build log transport for techdocs builder
+- 48c38f0: `TechdocsGenerator` won't require a `containerRunner` option anymore for generating TechDocs in docker.
+- d44a20a: Added additional plugin metadata to `package.json`.
+- 5db7536: Updated `getRepoUrlFromLocationAnnotation` to check for Harness SCM integration
+- Updated dependencies
+  - @backstage/backend-common@0.23.0
+  - @backstage/backend-plugin-api@0.6.19
+  - @backstage/integration@1.12.0
+  - @backstage/plugin-search-common@1.2.12
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration-aws-node@0.1.12
+
+## 1.12.5-next.3
+
+### Patch Changes
+
+- d44a20a: Added additional plugin metadata to `package.json`.
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.6.19-next.3
+  - @backstage/integration@1.12.0-next.1
+  - @backstage/plugin-search-common@1.2.12-next.0
+  - @backstage/backend-common@0.23.0-next.3
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration-aws-node@0.1.12
+
+## 1.12.5-next.2
+
+### Patch Changes
+
+- e64bfb2: Allow defining custom build log transport for techdocs builder
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.6.19-next.2
+  - @backstage/backend-common@0.23.0-next.2
+  - @backstage/integration@1.12.0-next.0
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.11
+
+## 1.12.5-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.6.19-next.1
+  - @backstage/backend-common@0.23.0-next.1
+
+## 1.12.5-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.22.1-next.0
+  - @backstage/backend-plugin-api@0.6.19-next.0
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration@1.11.0
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.11
+
+## 1.12.4
+
+### Patch Changes
+
+- d229dc4: Move path utilities from `backend-common` to the `backend-plugin-api` package.
+- Updated dependencies
+  - @backstage/catalog-model@1.5.0
+  - @backstage/backend-common@0.22.0
+  - @backstage/backend-plugin-api@0.6.18
+  - @backstage/integration@1.11.0
+
+## 1.12.4-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.22.0-next.2
+  - @backstage/integration@1.11.0-next.0
+
+## 1.12.4-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.22.0-next.1
+  - @backstage/backend-plugin-api@0.6.18-next.1
+
+## 1.12.4-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-model@1.5.0-next.0
+  - @backstage/backend-common@0.21.8-next.0
+  - @backstage/backend-plugin-api@0.6.18-next.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration@1.10.0
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.11
+
+## 1.12.3
+
+### Patch Changes
+
+- 8e28c88: Allow overriding default techdocs preparers with new `TechdocsPreparerExtensionPoint`
+- Updated dependencies
+  - @backstage/backend-common@0.21.7
+  - @backstage/backend-plugin-api@0.6.17
+  - @backstage/integration@1.10.0
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/catalog-model@1.4.5
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-search-common@1.2.11
+
+## 1.12.3-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.21.7-next.1
+  - @backstage/backend-plugin-api@0.6.17-next.1
+  - @backstage/catalog-model@1.4.5
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration@1.10.0-next.0
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.11
+
+## 1.12.3-next.0
+
+### Patch Changes
+
+- 8e28c88: Allow overriding default techdocs preparers with new `TechdocsPreparerExtensionPoint`
+- Updated dependencies
+  - @backstage/backend-common@0.21.7-next.0
+  - @backstage/integration@1.10.0-next.0
+  - @backstage/backend-plugin-api@0.6.17-next.0
+  - @backstage/catalog-model@1.4.5
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/plugin-search-common@1.2.11
+
+## 1.12.2
+
+### Patch Changes
+
+- 81a995f: Updated dependency `aws-sdk-client-mock` to `^4.0.0`.
+- Updated dependencies
+  - @backstage/backend-common@0.21.6
+  - @backstage/integration-aws-node@0.1.12
+  - @backstage/backend-plugin-api@0.6.16
+  - @backstage/catalog-model@1.4.5
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration@1.9.1
+  - @backstage/plugin-search-common@1.2.11
+
+## 1.12.1
+
+### Patch Changes
+
+- 81a995f: Updated dependency `aws-sdk-client-mock` to `^4.0.0`.
+- Updated dependencies
+  - @backstage/backend-common@0.21.5
+  - @backstage/integration-aws-node@0.1.11
+  - @backstage/backend-plugin-api@0.6.15
+  - @backstage/catalog-model@1.4.5
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/integration@1.9.1
+  - @backstage/plugin-search-common@1.2.11
+
+## 1.12.0
+
+### Minor Changes
+
+- 718b734: Create extension point `TechdocsGeneratorExtensionPoint` to allow adding a custom generator
+
+### Patch Changes
+
+- 5b4f565: Fix handling of default plugins that have configuration
+- Updated dependencies
+  - @backstage/backend-common@0.21.4
+  - @backstage/integration@1.9.1
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/backend-plugin-api@0.6.14
+  - @backstage/plugin-search-common@1.2.11
+  - @backstage/catalog-model@1.4.5
+  - @backstage/integration-aws-node@0.1.10
+
+## 1.12.0-next.2
+
+### Minor Changes
+
+- 718b734: Create extension point `TechdocsGeneratorExtensionPoint` to allow adding a custom generator
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.9.1-next.2
+  - @backstage/backend-common@0.21.4-next.2
+  - @backstage/backend-plugin-api@0.6.14-next.2
+  - @backstage/catalog-model@1.4.5-next.0
+  - @backstage/config@1.2.0-next.1
+  - @backstage/errors@1.2.4-next.0
+  - @backstage/integration-aws-node@0.1.10-next.1
+  - @backstage/plugin-search-common@1.2.11-next.1
+
+## 1.11.6-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@1.2.0-next.1
+  - @backstage/backend-common@0.21.4-next.1
+  - @backstage/backend-plugin-api@0.6.14-next.1
+  - @backstage/integration@1.9.1-next.1
+  - @backstage/integration-aws-node@0.1.10-next.1
+  - @backstage/catalog-model@1.4.5-next.0
+  - @backstage/errors@1.2.4-next.0
+  - @backstage/plugin-search-common@1.2.11-next.1
+
+## 1.11.5-next.0
+
+### Patch Changes
+
+- 5b4f565: Fix handling of default plugins that have configuration
+- Updated dependencies
+  - @backstage/backend-common@0.21.3-next.0
+  - @backstage/errors@1.2.4-next.0
+  - @backstage/backend-plugin-api@0.6.13-next.0
+  - @backstage/plugin-search-common@1.2.11-next.0
+  - @backstage/catalog-model@1.4.5-next.0
+  - @backstage/config@1.1.2-next.0
+  - @backstage/integration@1.9.1-next.0
+  - @backstage/integration-aws-node@0.1.10-next.0
+
+## 1.11.2
+
+### Patch Changes
+
+- 6bb6f3e: Updated dependency `fs-extra` to `^11.2.0`.
+  Updated dependency `@types/fs-extra` to `^11.0.0`.
+- 1cae748: Updated dependency `git-url-parse` to `^14.0.0`.
+- 77e3050: Update to a newer version of `@trendyol-js/openstack-swift-sdk`
+- Updated dependencies
+  - @backstage/backend-common@0.21.0
+  - @backstage/backend-plugin-api@0.6.10
+  - @backstage/catalog-model@1.4.4
+  - @backstage/integration-aws-node@0.1.9
+  - @backstage/integration@1.9.0
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-search-common@1.2.10
+
+## 1.11.2-next.3
+
+### Patch Changes
+
+- 1cae748: Updated dependency `git-url-parse` to `^14.0.0`.
+- Updated dependencies
+  - @backstage/backend-common@0.21.0-next.3
+  - @backstage/integration-aws-node@0.1.9-next.0
+  - @backstage/integration@1.9.0-next.1
+  - @backstage/backend-plugin-api@0.6.10-next.3
+  - @backstage/catalog-model@1.4.4-next.0
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-search-common@1.2.10
+
+## 1.11.2-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.21.0-next.2
+  - @backstage/backend-plugin-api@0.6.10-next.2
+  - @backstage/config@1.1.1
+  - @backstage/integration-aws-node@0.1.8
+  - @backstage/catalog-model@1.4.4-next.0
+  - @backstage/errors@1.2.3
+  - @backstage/integration@1.9.0-next.0
+  - @backstage/plugin-search-common@1.2.10
+
+## 1.11.2-next.1
+
+### Patch Changes
+
+- 77e3050: Update to a newer version of `@trendyol-js/openstack-swift-sdk`
+- Updated dependencies
+  - @backstage/catalog-model@1.4.4-next.0
+  - @backstage/backend-plugin-api@0.6.10-next.1
+  - @backstage/backend-common@0.21.0-next.1
+  - @backstage/integration@1.9.0-next.0
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/integration-aws-node@0.1.8
+  - @backstage/plugin-search-common@1.2.10
+
+## 1.11.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.21.0-next.0
+  - @backstage/backend-plugin-api@0.6.10-next.0
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/integration@1.8.0
+  - @backstage/integration-aws-node@0.1.8
+  - @backstage/plugin-search-common@1.2.10
+
+## 1.11.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.20.1
+  - @backstage/backend-plugin-api@0.6.9
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/integration@1.8.0
+  - @backstage/integration-aws-node@0.1.8
+  - @backstage/plugin-search-common@1.2.10
+
+## 1.11.1-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.6.9-next.2
+  - @backstage/backend-common@0.20.1-next.2
+
+## 1.11.1-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.20.1-next.1
+  - @backstage/integration@1.8.0
+  - @backstage/integration-aws-node@0.1.8
+  - @backstage/config@1.1.1
+  - @backstage/backend-plugin-api@0.6.9-next.1
+  - @backstage/catalog-model@1.4.3
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-search-common@1.2.9
+
+## 1.11.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.20.1-next.0
+  - @backstage/backend-plugin-api@0.6.9-next.0
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/integration@1.8.0
+  - @backstage/integration-aws-node@0.1.8
+  - @backstage/plugin-search-common@1.2.9
+
+## 1.11.0
+
+### Minor Changes
+
+- d15d483: Add command `--runAsDefaultUser` for `@techdocs/cli generate` to bypass running the docker builds as host user for macOS and Linux.
+
+### Patch Changes
+
+- 99fb541: Updated dependency `@azure/identity` to `^4.0.0`.
+- 2666675: Updated dependency `@google-cloud/storage` to `^7.0.0`.
+- 4f773c1: Bumped the default TechDocs docker image version to the latest which was released several month ago
+- Updated dependencies
+  - @backstage/backend-common@0.20.0
+  - @backstage/integration@1.8.0
+  - @backstage/backend-plugin-api@0.6.8
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/integration-aws-node@0.1.8
+  - @backstage/plugin-search-common@1.2.9
+
+## 1.11.0-next.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.20.0-next.3
+  - @backstage/backend-plugin-api@0.6.8-next.3
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/integration@1.8.0-next.1
+  - @backstage/integration-aws-node@0.1.8
+  - @backstage/plugin-search-common@1.2.8
+
+## 1.11.0-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.20.0-next.2
+  - @backstage/backend-plugin-api@0.6.8-next.2
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/integration@1.8.0-next.1
+  - @backstage/integration-aws-node@0.1.8
+  - @backstage/plugin-search-common@1.2.8
+
+## 1.11.0-next.1
+
+### Patch Changes
+
+- 99fb54183b: Updated dependency `@azure/identity` to `^4.0.0`.
+- 2666675457: Updated dependency `@google-cloud/storage` to `^7.0.0`.
+- 4f773c15f6: Bumped the default TechDocs docker image version to the latest which was released several month ago
+- Updated dependencies
+  - @backstage/integration@1.8.0-next.1
+  - @backstage/backend-common@0.20.0-next.1
+  - @backstage/backend-plugin-api@0.6.8-next.1
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/integration-aws-node@0.1.8
+  - @backstage/plugin-search-common@1.2.8
+
+## 1.11.0-next.0
+
+### Minor Changes
+
+- d15d483a49: Add command `--runAsDefaultUser` for `@techdocs/cli generate` to bypass running the docker builds as host user for macOS and Linux.
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.20.0-next.0
+  - @backstage/integration@1.8.0-next.0
+  - @backstage/backend-plugin-api@0.6.8-next.0
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/integration-aws-node@0.1.8
+  - @backstage/plugin-search-common@1.2.8
+
+## 1.10.0
+
+### Minor Changes
+
+- 67cff7b06f: Expose an extension point to set a custom build strategy. Also move `DocsBuildStrategy` type to `@backstage/plugin-techdocs-node` and deprecate `ShouldBuildParameters` type.
+
+### Patch Changes
+
+- e61a975f61: Switch to `@smithy/node-http-handler` instead of the `@aws-sdk/node-http-handler`
+- 3d043526f4: Updated dependency `aws-sdk-client-mock` to `^3.0.0`.
+- Updated dependencies
+  - @backstage/integration@1.7.2
+  - @backstage/backend-common@0.19.9
+  - @backstage/backend-plugin-api@0.6.7
+  - @backstage/integration-aws-node@0.1.8
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-search-common@1.2.8
+
+## 1.10.0-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.6.7-next.2
+  - @backstage/backend-common@0.19.9-next.2
+
+## 1.10.0-next.1
+
+### Minor Changes
+
+- 67cff7b06f: Expose an extension point to set a custom build strategy. Also move `DocsBuildStrategy` type to `@backstage/plugin-techdocs-node` and deprecate `ShouldBuildParameters` type.
+
+### Patch Changes
+
+- e61a975f61: Switch to `@smithy/node-http-handler` instead of the `@aws-sdk/node-http-handler`
+- Updated dependencies
+  - @backstage/integration@1.7.2-next.0
+  - @backstage/backend-common@0.19.9-next.1
+  - @backstage/backend-plugin-api@0.6.7-next.1
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/integration-aws-node@0.1.7
+  - @backstage/plugin-search-common@1.2.7
+
+## 1.9.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.19.9-next.0
+  - @backstage/integration@1.7.1
+  - @backstage/integration-aws-node@0.1.7
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-search-common@1.2.7
+
+## 1.9.0
+
+### Minor Changes
+
+- 344cfbcfbc: Allow prepared directory clean up for custom preparers
+
+  When using custom preparer for TechDocs, the `preparedDir` might
+  end up taking disk space. This requires all custom preparers to
+  implement a new method `shouldCleanPreparedDirectory` which indicates
+  whether the prepared directory should be cleaned after generation.
+
+- d06b30b050: Add possibility to use a mkdocs config file with a different name than `mkdocs.<yaml|yml> with the serve command using the `--mkdocs-config-file-name` argument
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.19.8
+  - @backstage/integration@1.7.1
+  - @backstage/catalog-model@1.4.3
+  - @backstage/errors@1.2.3
+  - @backstage/config@1.1.1
+  - @backstage/integration-aws-node@0.1.7
+  - @backstage/plugin-search-common@1.2.7
+
+## 1.9.0-next.2
+
+### Minor Changes
+
+- 344cfbcfbc: Allow prepared directory clean up for custom preparers
+
+  When using custom preparer for TechDocs, the `preparedDir` might
+  end up taking disk space. This requires all custom preparers to
+  implement a new method `shouldCleanPreparedDirectory` which indicates
+  whether the prepared directory should be cleaned after generation.
+
+- d06b30b050: Add possibility to use a mkdocs config file with a different name than `mkdocs.<yaml|yml> with the serve command using the `--mkdocs-config-file-name` argument
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.19.8-next.2
+  - @backstage/catalog-model@1.4.3-next.0
+  - @backstage/integration@1.7.1-next.1
+  - @backstage/errors@1.2.3-next.0
+  - @backstage/config@1.1.1-next.0
+  - @backstage/integration-aws-node@0.1.7-next.0
+  - @backstage/plugin-search-common@1.2.7-next.0
+
+## 1.8.2-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.19.7-next.1
+  - @backstage/config@1.1.0
+  - @backstage/integration-aws-node@0.1.6
+  - @backstage/catalog-model@1.4.2
+  - @backstage/errors@1.2.2
+  - @backstage/integration@1.7.1-next.0
+  - @backstage/plugin-search-common@1.2.6
+
+## 1.8.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.7.1-next.0
+  - @backstage/backend-common@0.19.7-next.0
+  - @backstage/config@1.1.0
+  - @backstage/integration-aws-node@0.1.6
+  - @backstage/catalog-model@1.4.2
+  - @backstage/errors@1.2.2
+  - @backstage/plugin-search-common@1.2.6
+
+## 1.8.0
+
+### Minor Changes
+
+- 5985d458ee30: Add a `techdocs.publisher.azureBlobStorage.connectionString` app-config setting, which can be leveraged for improved Azurite support.
+- 10a86bd4ae12: Add optional config and cli option for techdocs to specify default mkdocs plugins.
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.19.5
+  - @backstage/config@1.1.0
+  - @backstage/catalog-model@1.4.2
+  - @backstage/errors@1.2.2
+  - @backstage/integration@1.7.0
+  - @backstage/plugin-search-common@1.2.6
+  - @backstage/integration-aws-node@0.1.6
+
+## 1.8.0-next.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-model@1.4.2-next.2
+  - @backstage/config@1.1.0-next.2
+  - @backstage/errors@1.2.2-next.0
+  - @backstage/integration@1.7.0-next.3
+  - @backstage/plugin-search-common@1.2.6-next.2
+  - @backstage/backend-common@0.19.5-next.3
+  - @backstage/integration-aws-node@0.1.6-next.2
+
+## 1.8.0-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@1.1.0-next.1
+  - @backstage/backend-common@0.19.5-next.2
+  - @backstage/integration@1.7.0-next.2
+  - @backstage/integration-aws-node@0.1.6-next.1
+  - @backstage/catalog-model@1.4.2-next.1
+  - @backstage/errors@1.2.1
+  - @backstage/plugin-search-common@1.2.6-next.1
+
 ## 1.8.0-next.1
 
 ### Minor Changes

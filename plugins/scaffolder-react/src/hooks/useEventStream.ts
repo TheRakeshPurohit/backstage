@@ -62,12 +62,14 @@ type ReducerLogEntry = {
     message: string;
     output?: ScaffolderTaskOutput;
     error?: Error;
+    recoverStrategy?: 'none' | 'startOver';
   };
 };
 
 type ReducerAction =
   | { type: 'INIT'; data: ScaffolderTask }
   | { type: 'CANCELLED' }
+  | { type: 'RECOVERED'; data: ReducerLogEntry }
   | { type: 'LOGS'; data: ReducerLogEntry[] }
   | { type: 'COMPLETED'; data: ReducerLogEntry }
   | { type: 'ERROR'; data: Error };
@@ -105,17 +107,19 @@ function reducer(draft: TaskStream, action: ReducerAction) {
         const currentStepLog = draft.stepLogs?.[entry.body.stepId];
         const currentStep = draft.steps?.[entry.body.stepId];
 
-        if (entry.body.status && entry.body.status !== currentStep.status) {
-          currentStep.status = entry.body.status;
+        if (currentStep) {
+          if (entry.body.status && entry.body.status !== currentStep.status) {
+            currentStep.status = entry.body.status;
 
-          if (currentStep.status === 'processing') {
-            currentStep.startedAt = entry.createdAt;
-          }
+            if (currentStep.status === 'processing') {
+              currentStep.startedAt = entry.createdAt;
+            }
 
-          if (
-            ['cancelled', 'completed', 'failed'].includes(currentStep.status)
-          ) {
-            currentStep.endedAt = entry.createdAt;
+            if (
+              ['cancelled', 'completed', 'failed'].includes(currentStep.status)
+            ) {
+              currentStep.endedAt = entry.createdAt;
+            }
           }
         }
 
@@ -135,6 +139,22 @@ function reducer(draft: TaskStream, action: ReducerAction) {
 
     case 'CANCELLED': {
       draft.cancelled = true;
+      return;
+    }
+
+    case 'RECOVERED': {
+      draft.cancelled = false;
+      draft.completed = false;
+      draft.output = undefined;
+      draft.error = undefined;
+
+      for (const stepId in draft.steps) {
+        if (draft.steps.hasOwnProperty(stepId)) {
+          draft.steps[stepId].startedAt = undefined;
+          draft.steps[stepId].endedAt = undefined;
+          draft.steps[stepId].status = 'open';
+        }
+      }
       return;
     }
 
@@ -170,12 +190,16 @@ export const useTaskEventStream = (taskId: string): TaskStream => {
     let subscription: Subscription | undefined;
     let logPusher: NodeJS.Timeout | undefined;
     let retryCount = 1;
+    let isTaskRecoverable = false;
     const startStreamLogProcess = () =>
       scaffolderApi.getTask(taskId).then(
         task => {
           if (didCancel) {
             return;
           }
+          isTaskRecoverable =
+            task.spec.EXPERIMENTAL_recovery?.EXPERIMENTAL_strategy ===
+            'startOver';
           dispatch({ type: 'INIT', data: task });
 
           // TODO(blam): Use a normal fetch to fetch the current log for the event stream
@@ -184,7 +208,10 @@ export const useTaskEventStream = (taskId: string): TaskStream => {
           // stream logs. Without this, if you have a lot of logs, it can look like the
           // task is being rebuilt on load as it progresses through the steps at a slower
           // rate whilst it builds the status from the event logs
-          const observable = scaffolderApi.streamLogs({ taskId });
+          const observable = scaffolderApi.streamLogs({
+            isTaskRecoverable,
+            taskId,
+          });
 
           const collectedLogEvents = new Array<LogEvent>();
 
@@ -202,6 +229,7 @@ export const useTaskEventStream = (taskId: string): TaskStream => {
 
           subscription = observable.subscribe({
             next: event => {
+              retryCount = 1;
               switch (event.type) {
                 case 'log':
                   return collectedLogEvents.push(event);
@@ -211,6 +239,9 @@ export const useTaskEventStream = (taskId: string): TaskStream => {
                 case 'completion':
                   emitLogs();
                   dispatch({ type: 'COMPLETED', data: event });
+                  return undefined;
+                case 'recovered':
+                  dispatch({ type: 'RECOVERED', data: event });
                   return undefined;
                 default:
                   throw new Error(
@@ -226,16 +257,18 @@ export const useTaskEventStream = (taskId: string): TaskStream => {
               // just to restart the fetch process
               // details here https://github.com/backstage/backstage/issues/15002
 
+              const maxRetries = 3;
+
               if (!error.message) {
-                error.message = `We cannot connect at the moment, trying again in some seconds... Retrying (${retryCount}/3 retries)`;
+                error.message = `We cannot connect at the moment, trying again in some seconds... Retrying (${
+                  retryCount > maxRetries ? maxRetries : retryCount
+                }/${maxRetries} retries)`;
               }
 
-              if (retryCount <= 3) {
-                setTimeout(() => {
-                  retryCount += 1;
-                  startStreamLogProcess();
-                }, 15000);
-              }
+              setTimeout(() => {
+                retryCount += 1;
+                void startStreamLogProcess();
+              }, 15000);
 
               dispatch({ type: 'ERROR', data: error });
             },
@@ -247,14 +280,16 @@ export const useTaskEventStream = (taskId: string): TaskStream => {
           }
         },
       );
-    startStreamLogProcess();
+    void startStreamLogProcess();
     return () => {
-      didCancel = true;
-      if (subscription) {
-        subscription.unsubscribe();
-      }
-      if (logPusher) {
-        clearInterval(logPusher);
+      if (!isTaskRecoverable) {
+        didCancel = true;
+        if (subscription) {
+          subscription.unsubscribe();
+        }
+        if (logPusher) {
+          clearInterval(logPusher);
+        }
       }
     };
   }, [scaffolderApi, dispatch, taskId]);

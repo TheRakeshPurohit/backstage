@@ -27,9 +27,26 @@ export interface FeatureDiscoveryService {
 /**
  * An optional service that can be used to dynamically load in additional BackendFeatures at runtime.
  * @alpha
+ * @deprecated The `featureDiscoveryServiceRef` is deprecated in favor of using {@link @backstage/backend-defaults#discoveryFeatureLoader} instead.
  */
 export const featureDiscoveryServiceRef =
   createServiceRef<FeatureDiscoveryService>({
     id: 'core.featureDiscovery',
     scope: 'root',
   });
+
+/**
+ * EXPERIMENTAL: Instance metadata service.
+ *
+ * @alpha
+ */
+export const instanceMetadataServiceRef = createServiceRef<
+  import('./services/definitions/InstanceMetadataService').InstanceMetadataService
+>({
+  id: 'core.instanceMetadata',
+});
+
+export type {
+  BackendFeatureMeta,
+  InstanceMetadataService,
+} from './services/definitions/InstanceMetadataService';

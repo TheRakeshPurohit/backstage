@@ -16,10 +16,11 @@
 
 import { Entity } from '@backstage/catalog-model';
 import { TestApiProvider } from '@backstage/test-utils';
-import { WrapperComponent, renderHook } from '@testing-library/react-hooks';
-import React from 'react';
+import { renderHook, waitFor } from '@testing-library/react';
+import React, { ComponentType, PropsWithChildren } from 'react';
 import { catalogApiRef } from '../api';
 import { useRelatedEntities } from './useRelatedEntities';
+import { catalogApiMock } from '../testUtils';
 
 describe('useRelatedEntities', () => {
   afterEach(() => {
@@ -46,11 +47,9 @@ describe('useRelatedEntities', () => {
     ],
   };
 
-  const catalogApi = {
-    getEntitiesByRefs: jest.fn(),
-  };
+  const catalogApi = catalogApiMock.mock();
 
-  const wrapper: WrapperComponent<{}> = ({ children }) => {
+  const wrapper: ComponentType<PropsWithChildren<{}>> = ({ children }) => {
     return (
       <TestApiProvider apis={[[catalogApiRef, catalogApi]]}>
         {children}
@@ -60,7 +59,7 @@ describe('useRelatedEntities', () => {
 
   it('filters and requests entities', async () => {
     catalogApi.getEntitiesByRefs.mockResolvedValueOnce({
-      items: [entity, null], // one of them doesn't exist
+      items: [entity, undefined], // one of them doesn't exist
     });
 
     const rendered = renderHook(
@@ -70,7 +69,9 @@ describe('useRelatedEntities', () => {
 
     expect(rendered.result.current).toEqual({ loading: true });
 
-    await rendered.waitForValueToChange(() => rendered.result.current.loading);
+    await waitFor(() => {
+      expect(rendered.result.current.loading).toBe(false);
+    });
 
     expect(catalogApi.getEntitiesByRefs).toHaveBeenCalledWith({
       entityRefs: ['group:default/the-owners-1', 'group:default/the-owners-2'],

@@ -18,57 +18,41 @@ import {
   createBackendPlugin,
   coreServices,
 } from '@backstage/backend-plugin-api';
-import { loggerToWinstonLogger } from '@backstage/backend-common';
 import {
   eventsExtensionPoint,
   EventsExtensionPoint,
 } from '@backstage/plugin-events-node/alpha';
 import {
-  EventBroker,
-  EventPublisher,
-  EventSubscriber,
+  eventsServiceRef,
   HttpPostIngressOptions,
 } from '@backstage/plugin-events-node';
-import { DefaultEventBroker } from './DefaultEventBroker';
 import Router from 'express-promise-router';
 import { HttpPostIngressEventPublisher } from './http';
+import { createEventBusRouter } from './hub';
 
 class EventsExtensionPointImpl implements EventsExtensionPoint {
-  #eventBroker: EventBroker | undefined;
   #httpPostIngresses: HttpPostIngressOptions[] = [];
-  #publishers: EventPublisher[] = [];
-  #subscribers: EventSubscriber[] = [];
 
-  setEventBroker(eventBroker: EventBroker): void {
-    this.#eventBroker = eventBroker;
+  setEventBroker(_: any): void {
+    throw new Error(
+      'setEventBroker is not supported anymore; use eventsServiceRef instead',
+    );
   }
 
-  addPublishers(
-    ...publishers: Array<EventPublisher | Array<EventPublisher>>
-  ): void {
-    this.#publishers.push(...publishers.flat());
+  addPublishers(_: any): void {
+    throw new Error(
+      'addPublishers is not supported anymore; use EventsService instead',
+    );
   }
 
-  addSubscribers(
-    ...subscribers: Array<EventSubscriber | Array<EventSubscriber>>
-  ): void {
-    this.#subscribers.push(...subscribers.flat());
+  addSubscribers(_: any): void {
+    throw new Error(
+      'addSubscribers is not supported anymore; use EventsService instead',
+    );
   }
 
   addHttpPostIngress(options: HttpPostIngressOptions) {
     this.#httpPostIngresses.push(options);
-  }
-
-  get eventBroker() {
-    return this.#eventBroker;
-  }
-
-  get publishers() {
-    return this.#publishers;
-  }
-
-  get subscribers() {
-    return this.#subscribers;
   }
 
   get httpPostIngresses() {
@@ -79,7 +63,7 @@ class EventsExtensionPointImpl implements EventsExtensionPoint {
 /**
  * Events plugin
  *
- * @alpha
+ * @public
  */
 export const eventsPlugin = createBackendPlugin({
   pluginId: 'events',
@@ -90,12 +74,24 @@ export const eventsPlugin = createBackendPlugin({
     env.registerInit({
       deps: {
         config: coreServices.rootConfig,
+        events: eventsServiceRef,
+        database: coreServices.database,
+        httpAuth: coreServices.httpAuth,
+        httpRouter: coreServices.httpRouter,
+        lifecycle: coreServices.lifecycle,
         logger: coreServices.logger,
-        router: coreServices.httpRouter,
+        scheduler: coreServices.scheduler,
       },
-      async init({ config, logger, router }) {
-        const winstonLogger = loggerToWinstonLogger(logger);
-
+      async init({
+        config,
+        events,
+        database,
+        httpAuth,
+        httpRouter,
+        lifecycle,
+        logger,
+        scheduler,
+      }) {
         const ingresses = Object.fromEntries(
           extensionPoint.httpPostIngresses.map(ingress => [
             ingress.topic,
@@ -105,20 +101,37 @@ export const eventsPlugin = createBackendPlugin({
 
         const http = HttpPostIngressEventPublisher.fromConfig({
           config,
+          events,
           ingresses,
-          logger: winstonLogger,
+          logger,
         });
         const eventsRouter = Router();
         http.bind(eventsRouter);
-        router.use(eventsRouter);
 
-        const eventBroker =
-          extensionPoint.eventBroker ?? new DefaultEventBroker(winstonLogger);
+        // MUST be registered *before* the event bus router.
+        // Otherwise, it would already make use of `express.json()`
+        // that is used there as part of the middleware stack.
+        httpRouter.use(eventsRouter);
 
-        eventBroker.subscribe(extensionPoint.subscribers);
-        [extensionPoint.publishers, http]
-          .flat()
-          .forEach(publisher => publisher.setEventBroker(eventBroker));
+        const notifyTimeoutMs = config.getOptionalNumber(
+          'events.notifyTimeoutMs',
+        );
+
+        httpRouter.use(
+          await createEventBusRouter({
+            database,
+            lifecycle,
+            logger,
+            httpAuth,
+            scheduler,
+            notifyTimeoutMs,
+          }),
+        );
+
+        httpRouter.addAuthPolicy({
+          allow: 'unauthenticated',
+          path: '/http',
+        });
       },
     });
   },

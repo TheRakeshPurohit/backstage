@@ -6,8 +6,6 @@ sidebar_label: Testing
 description: Learn how to test your backend plugins and modules
 ---
 
-> **DISCLAIMER: The new backend system is in alpha, and still under active development. While we have reviewed the interfaces carefully, they may still be iterated on before the stable release.**
-
 Utilities for testing backend plugins and modules are available in
 `@backstage/backend-test-utils`. This section describes those facilities.
 
@@ -23,8 +21,7 @@ collective term for backend [plugins](../architecture/04-plugins.md) and
 
 The function returns an HTTP server instance which can be used together with
 e.g. `supertest` to easily test the actual REST service surfaces of plugins who
-register routes with [the HTTP router service
-API](../core-services/01-index.md).
+register routes with [the HTTP router service API](../core-services/01-index.md).
 
 ```ts
 import { mockServices, startTestBackend } from '@backstage/backend-test-utils';
@@ -34,15 +31,20 @@ import { myPlugin } from './plugin.ts';
 describe('myPlugin', () => {
   it('can serve values from config', async () => {
     const fakeConfig = { myPlugin: { value: 7 } };
+    const mockLogger = mockServices.logger.mock();
 
     const { server } = await startTestBackend({
-      features: [myPlugin()],
-      services: [mockServices.rootConfig.factory({ data: fakeConfig })],
+      features: [
+        myPlugin(),
+        mockServices.rootConfig.factory({ data: fakeConfig }),
+        mockLogger,
+      ],
     });
 
     const response = await request(server).get('/api/example/get-value');
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ value: 7 });
+    expect(mockLogger.info).toHaveBeenCalledWith('Starting myPlugin');
   });
 });
 ```
@@ -54,6 +56,76 @@ The returned server also has a `port()` method which returns the dynamically
 bound listening port. You can use this to perform lower level network
 interactions with the running test service.
 
+### mock services
+
+The [`mockServices`](https://backstage.io/docs/reference/backend-test-utils.mockservices) object from `@backstage/backend-test-utils` provides service factory functions, and mocks for all core services that you can use to verify interactions between plugin and services.
+
+All mock services provide a factory function that is sufficient for most tests. Here's an example:
+
+```ts
+const fakeConfig = { myPlugin: { value: 7 } };
+const { server } = await startTestBackend({
+  features: [
+    // Will provide access to the default urlReaders automatically.
+    mockServices.urlReader.factory(),
+    // Some factories accept options, in this example we provide some fake config.
+    mockServices.rootConfig.factory({ data: fakeConfig }),
+  ],
+});
+```
+
+There might be situations where you want to mock a service implementation to verify interactions, in those cases you can use the `mock` function to get a mock object that you can interact with. Here's an example:
+
+```ts
+import { mockServices, startTestBackend } from '@backstage/backend-test-utils';
+import { myPlugin } from './plugin.ts';
+
+describe('myPlugin', () => {
+  it('should call use UrlReader', async () => {
+    const mockReader = mockServices.urlReader.mock();
+
+    await startTestBackend({
+      features: [myPlugin(), mockReader],
+    });
+
+    expect(mockReader.readUrl).toHaveBeenCalledWith('https://backstage.io');
+  });
+
+  it('should call use UrlReader again', async () => {
+    const partialImpl = jest.fn();
+    await startTestBackend({
+      features: [
+        myPlugin(),
+        // You could also supply partial implementations to the mock function.
+        mockServices.urlReader.mock({ readUrl: partialImpl }),
+      ],
+    });
+    expect(partialImpl).toHaveBeenCalledWith('https://backstage.io');
+  });
+});
+```
+
+Available services:
+
+- [`auth`](https://backstage.io/docs/reference/backend-test-utils.mockservices.auth/)
+- [`cache`](https://backstage.io/docs/reference/backend-test-utils.mockservices.cache/)
+- [`database`](https://backstage.io/docs/reference/backend-test-utils.mockservices.database/)
+- [`discovery`](https://backstage.io/docs/reference/backend-test-utils.mockservices.discovery/)
+- [`events`](https://backstage.io/docs/reference/backend-test-utils.mockservices.events/)
+- [`httpAuth`](https://backstage.io/docs/reference/backend-test-utils.mockservices.httpAuth/)
+- [`httpRouter`](https://backstage.io/docs/reference/backend-test-utils.mockservices.httpRouter/)
+- [`lifecycle`](https://backstage.io/docs/reference/backend-test-utils.mockservices.lifecycle/)
+- [`logger`](https://backstage.io/docs/reference/backend-test-utils.mockservices.logger/)
+- [`permissions`](https://backstage.io/docs/reference/backend-test-utils.mockservices.permissions/)
+- [`rootConfig`](https://backstage.io/docs/reference/backend-test-utils.mockservices.rootConfig/)
+- [`rootHealth`](https://backstage.io/docs/reference/backend-test-utils.mockservices.rootHealth/)
+- [`rootHttpRouter`](https://backstage.io/docs/reference/backend-test-utils.mockservices.rootHttpRouter/)
+- [`rootLifecycle`](https://backstage.io/docs/reference/backend-test-utils.mockservices.rootLifecycle/)
+- [`rootLogger`](https://backstage.io/docs/reference/backend-test-utils.mockservices.rootLogger/)
+- [`scheduler`](https://backstage.io/docs/reference/backend-test-utils.mockservices.scheduler/)
+- [`urlReader`](https://backstage.io/docs/reference/backend-test-utils.mockservices.urlReader/)
+- [`userInfo`](https://backstage.io/docs/reference/backend-test-utils.mockservices.userInfo/)
+
 ## Testing Remote Service Interactions
 
 If your backend plugin or service interacts with external services using HTTP
@@ -62,7 +134,7 @@ requests and return mock responses. This lets you stub out remote services
 rather than the local clients, leading to more thorough and robust tests. You
 can read more about how it works [in their documentation](https://mswjs.io/).
 
-The `@backstage/backend-test-utils` package exports a `setupRequestMockHandlers`
+The `@backstage/backend-test-utils` package exports a `registerMswTestHooks`
 function which ensures that the correct `jest` lifecycle hooks are invoked to
 set up and tear down your `msw` instance, and enables the option that completely
 rejects requests that don't match one of your mock rules. This ensures that your
@@ -71,13 +143,13 @@ tests cannot accidentally leak traffic into production from tests.
 Example:
 
 ```ts
-import { setupRequestMockHandlers } from '@backstage/backend-test-utils';
+import { registerMswTestHooks } from '@backstage/backend-test-utils';
 import { rest } from 'msw';
 import { setupServer } from 'msw/node';
 
 describe('read from remote', () => {
   const worker = setupServer();
-  setupRequestMockHandlers(worker);
+  registerMswTestHooks(worker);
 
   it('should auth and read successfully', async () => {
     expect.assertions(1);
@@ -118,7 +190,7 @@ describe('MyDatabaseClass', () => {
   // "physical" databases to test against is much costlier than creating the
   // "logical" databases within them that the individual tests use.
   const databases = TestDatabases.create({
-    ids: ['POSTGRES_13', 'POSTGRES_9', 'SQLITE_3', 'MYSQL_8'],
+    ids: ['POSTGRES_16', 'POSTGRES_12', 'SQLITE_3', 'MYSQL_8'],
   });
 
   // Just an example of how to conveniently bundle up the setup code
@@ -139,8 +211,10 @@ describe('MyDatabaseClass', () => {
         await knex<FooTableRow>('foo').insert({ value: 2 });
         // drive your system under test as usual
         await expect(subject.foos()).resolves.toEqual([{ value: 2 }]);
-      });
+      },
+    );
   });
+});
 ```
 
 If you want to pass the test database instance into backend plugins or services,
@@ -150,8 +224,7 @@ your test database.
 ```ts
 const { knex, subject } = await createSubject(databaseId);
 const { server } = await startTestBackend({
-  features: [myPlugin()],
-  services: [[coreServices.database, { getClient: async () => knex }]],
+  features: [myPlugin(), mockServices.database.factory({ knex })],
 });
 ```
 
@@ -166,3 +239,37 @@ it'll take into account when present.
 - `BACKSTAGE_TEST_DATABASE_POSTGRES13_CONNECTION_STRING`
 - `BACKSTAGE_TEST_DATABASE_POSTGRES9_CONNECTION_STRING`
 - `BACKSTAGE_TEST_DATABASE_MYSQL8_CONNECTION_STRING`
+
+## Testing Service Factories
+
+To facilitate testing of service factories, the `@backstage/backend-test-utils`
+package provides a `ServiceFactoryTester` helper that lets you instantiate services
+in a controlled context.
+
+The following example shows how to test a service factory where we also provide
+a mocked implementation of the `rootConfig` service.
+
+```ts
+import {
+  mockServices,
+  ServiceFactoryTester,
+} from '@backstage/backend-test-utils';
+import { myServiceFactory } from './myServiceFactory.ts';
+
+describe('myServiceFactory', () => {
+  it('should provide value', async () => {
+    const fakeConfig = { myConfiguredValue: 7 };
+
+    const tester = ServiceFactoryTester.from(myServiceFactory, {
+      dependencies: [mockServices.rootConfig.factory({ data: fakeConfig })],
+    });
+
+    const myService = await tester.get('test-plugin');
+
+    expect(myService.getValue()).toBe(7);
+  });
+});
+```
+
+The service factory tester also provides mocked implementations of the majority
+of all core services by default.

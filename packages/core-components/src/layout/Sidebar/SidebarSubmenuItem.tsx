@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import React, { useContext, useState } from 'react';
 import { resolvePath, useLocation, useResolvedPath } from 'react-router-dom';
 import { makeStyles } from '@material-ui/core/styles';
@@ -21,7 +22,6 @@ import Typography from '@material-ui/core/Typography';
 import { Link } from '../../components/Link';
 import { IconComponent } from '@backstage/core-plugin-api';
 import classnames from 'classnames';
-import { BackstageTheme } from '@backstage/theme';
 import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
 import ArrowDropUpIcon from '@material-ui/icons/ArrowDropUp';
 import { SidebarItemWithSubmenuContext } from './config';
@@ -29,7 +29,19 @@ import { isLocationMatch } from './utils';
 import Box from '@material-ui/core/Box';
 import Button from '@material-ui/core/Button';
 
-const useStyles = makeStyles<BackstageTheme>(
+/** @public */
+export type SidebarSubmenuItemClassKey =
+  | 'item'
+  | 'itemContainer'
+  | 'selected'
+  | 'label'
+  | 'subtitle'
+  | 'dropdownArrow'
+  | 'dropdown'
+  | 'dropdownItem'
+  | 'textContent';
+
+const useStyles = makeStyles(
   theme => ({
     item: {
       height: 48,
@@ -131,6 +143,7 @@ export type SidebarSubmenuItemProps = {
   icon?: IconComponent;
   dropdownItems?: SidebarSubmenuItemDropdownItem[];
   exact?: boolean;
+  initialShowDropdown?: boolean;
 };
 
 /**
@@ -149,7 +162,9 @@ export const SidebarSubmenuItem = (props: SidebarSubmenuItemProps) => {
   const currentLocation = useLocation();
   let isActive = isLocationMatch(currentLocation, toLocation, exact);
 
-  const [showDropDown, setShowDropDown] = useState(false);
+  const [showDropDown, setShowDropDown] = useState(
+    props.initialShowDropdown ?? false,
+  );
   const handleClickDropdown = () => {
     setShowDropDown(!showDropDown);
   };

@@ -97,7 +97,7 @@ export class RefreshingAuthSessionManager<T> implements SessionManager<T> {
     // stay in a synchronous call stack from the user interaction. The downside
     // is that the user will sometimes be requested to log in even if they
     // already had an existing session.
-    if (!this.currentSession && !options.instantPopup) {
+    if (!options.instantPopup) {
       try {
         const newSession = await this.collapsedSessionRefresh(options.scopes);
         this.currentSession = newSession;
@@ -137,10 +137,17 @@ export class RefreshingAuthSessionManager<T> implements SessionManager<T> {
       return this.refreshPromise;
     }
 
-    this.refreshPromise = this.connector.refreshSession(scopes);
+    this.refreshPromise = this.connector.refreshSession(
+      this.helper.getExtendedScope(this.currentSession, scopes),
+    );
 
     try {
       const session = await this.refreshPromise;
+      if (!this.helper.sessionExistsAndHasScope(session, scopes)) {
+        throw new Error(
+          'Refreshed session did not receive the required scopes',
+        );
+      }
       this.stateTracker.setIsSignedIn(true);
       return session;
     } finally {

@@ -14,33 +14,33 @@
  * limitations under the License.
  */
 
-import {
-  Divider,
-  IconButton,
-  ListItemIcon,
-  ListItemText,
-  MenuItem,
-  MenuList,
-  Popover,
-  Tooltip,
-} from '@material-ui/core';
-import { makeStyles } from '@material-ui/core/styles';
+import Divider from '@material-ui/core/Divider';
+import IconButton from '@material-ui/core/IconButton';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import ListItemText from '@material-ui/core/ListItemText';
+import MenuItem from '@material-ui/core/MenuItem';
+import MenuList from '@material-ui/core/MenuList';
+import Popover from '@material-ui/core/Popover';
+import Tooltip from '@material-ui/core/Tooltip';
+import { Theme, makeStyles } from '@material-ui/core/styles';
 import BugReportIcon from '@material-ui/icons/BugReport';
 import MoreVert from '@material-ui/icons/MoreVert';
 import FileCopyTwoToneIcon from '@material-ui/icons/FileCopyTwoTone';
-import React, { useCallback, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { IconComponent } from '@backstage/core-plugin-api';
 import { useEntityPermission } from '@backstage/plugin-catalog-react/alpha';
 import { catalogEntityDeletePermission } from '@backstage/plugin-catalog-common/alpha';
-import { BackstageTheme } from '@backstage/theme';
 import { UnregisterEntity, UnregisterEntityOptions } from './UnregisterEntity';
 import { useApi, alertApiRef } from '@backstage/core-plugin-api';
+import useCopyToClipboard from 'react-use/esm/useCopyToClipboard';
+import { catalogTranslationRef } from '../../alpha/translation';
+import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 
 /** @public */
 export type EntityContextMenuClassKey = 'button';
 
 const useStyles = makeStyles(
-  (theme: BackstageTheme) => {
+  (theme: Theme) => {
     return {
       button: {
         color: theme.page.fontColor,
@@ -72,6 +72,7 @@ export function EntityContextMenu(props: EntityContextMenuProps) {
     onUnregisterEntity,
     onInspectEntity,
   } = props;
+  const { t } = useTranslationRef(catalogTranslationRef);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement>();
   const classes = useStyles();
   const unregisterPermission = useEntityPermission(
@@ -88,16 +89,16 @@ export function EntityContextMenu(props: EntityContextMenuProps) {
   };
 
   const alertApi = useApi(alertApiRef);
-
-  const copyToClipboard = useCallback(() => {
-    window.navigator.clipboard.writeText(window.location.toString()).then(() =>
+  const [copyState, copyToClipboard] = useCopyToClipboard();
+  useEffect(() => {
+    if (!copyState.error && copyState.value) {
       alertApi.post({
-        message: 'Copied!',
+        message: t('entityContextMenu.copiedMessage'),
         severity: 'info',
         display: 'transient',
-      }),
-    );
-  }, [alertApi]);
+      });
+    }
+  }, [copyState, alertApi, t]);
 
   const extraItems = UNSTABLE_extraContextMenuItems && [
     ...UNSTABLE_extraContextMenuItems.map(item => (
@@ -119,7 +120,7 @@ export function EntityContextMenu(props: EntityContextMenuProps) {
 
   return (
     <>
-      <Tooltip title="More" arrow>
+      <Tooltip title={t('entityContextMenu.moreButtonTitle')} arrow>
         <IconButton
           aria-label="more"
           aria-controls="long-menu"
@@ -159,18 +160,18 @@ export function EntityContextMenu(props: EntityContextMenuProps) {
             <ListItemIcon>
               <BugReportIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText primary="Inspect entity" />
+            <ListItemText primary={t('entityContextMenu.inspectMenuTitle')} />
           </MenuItem>
           <MenuItem
             onClick={() => {
               onClose();
-              copyToClipboard();
+              copyToClipboard(window.location.toString());
             }}
           >
             <ListItemIcon>
               <FileCopyTwoToneIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText primary="Copy entity URL" />
+            <ListItemText primary={t('entityContextMenu.copyURLMenuTitle')} />
           </MenuItem>
         </MenuList>
       </Popover>

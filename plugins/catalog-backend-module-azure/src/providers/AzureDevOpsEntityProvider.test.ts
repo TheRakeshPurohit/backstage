@@ -14,35 +14,35 @@
  * limitations under the License.
  */
 
-import { getVoidLogger } from '@backstage/backend-common';
 import {
-  PluginTaskScheduler,
-  TaskInvocationDefinition,
-  TaskRunner,
-} from '@backstage/backend-tasks';
+  SchedulerService,
+  SchedulerServiceTaskRunner,
+  SchedulerServiceTaskInvocationDefinition,
+} from '@backstage/backend-plugin-api';
 import { ConfigReader } from '@backstage/config';
 import { EntityProviderConnection } from '@backstage/plugin-catalog-node';
 import { CodeSearchResultItem } from '../lib';
 import { AzureDevOpsEntityProvider } from './AzureDevOpsEntityProvider';
 import { codeSearch } from '../lib';
+import { mockServices } from '@backstage/backend-test-utils';
 
 jest.mock('../lib');
 const mockCodeSearch = codeSearch as jest.MockedFunction<typeof codeSearch>;
 
-class PersistingTaskRunner implements TaskRunner {
-  private tasks: TaskInvocationDefinition[] = [];
+class PersistingTaskRunner implements SchedulerServiceTaskRunner {
+  private tasks: SchedulerServiceTaskInvocationDefinition[] = [];
 
   getTasks() {
     return this.tasks;
   }
 
-  run(task: TaskInvocationDefinition): Promise<void> {
+  run(task: SchedulerServiceTaskInvocationDefinition): Promise<void> {
     this.tasks.push(task);
     return Promise.resolve(undefined);
   }
 }
 
-const logger = getVoidLogger();
+const logger = mockServices.logger.mock();
 
 describe('AzureDevOpsEntityProvider', () => {
   afterEach(() => {
@@ -83,7 +83,7 @@ describe('AzureDevOpsEntityProvider', () => {
     if (scheduleInConfig) {
       schedulingConfig.scheduler = {
         createScheduledTaskRunner: (_: any) => schedule,
-      } as unknown as PluginTaskScheduler;
+      } as unknown as SchedulerService;
     } else {
       schedulingConfig.schedule = schedule;
     }
@@ -275,7 +275,7 @@ describe('AzureDevOpsEntityProvider', () => {
   it('fail with scheduler but no schedule config', () => {
     const scheduler = {
       createScheduledTaskRunner: (_: any) => jest.fn(),
-    } as unknown as PluginTaskScheduler;
+    } as unknown as SchedulerService;
     const config = new ConfigReader({
       catalog: {
         providers: {

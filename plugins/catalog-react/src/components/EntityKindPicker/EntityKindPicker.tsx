@@ -16,16 +16,18 @@
 
 import { Select } from '@backstage/core-components';
 import { alertApiRef, useApi } from '@backstage/core-plugin-api';
-import { Box } from '@material-ui/core';
+import Box from '@material-ui/core/Box';
 import React, { useEffect, useMemo, useState } from 'react';
 import { EntityKindFilter } from '../../filters';
 import { useEntityList } from '../../hooks';
 import { filterKinds, useAllKinds } from './kindFilterUtils';
+import { catalogReactTranslationRef } from '../../translation';
+import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 
 function useEntityKindFilter(opts: { initialFilter: string }): {
   loading: boolean;
   error?: Error;
-  allKinds: string[];
+  allKinds: Map<string, string>;
   selectedKind: string;
   setSelectedKind: (kind: string) => void;
 } {
@@ -60,18 +62,21 @@ function useEntityKindFilter(opts: { initialFilter: string }): {
     }
   }, [filters.kind]);
 
+  const { allKinds, loading, error } = useAllKinds();
+  const selectedKindLabel = allKinds.get(selectedKind) || selectedKind;
+
   useEffect(() => {
     updateFilters({
-      kind: selectedKind ? new EntityKindFilter(selectedKind) : undefined,
+      kind: selectedKind
+        ? new EntityKindFilter(selectedKind, selectedKindLabel)
+        : undefined,
     });
-  }, [selectedKind, updateFilters]);
-
-  const { allKinds, loading, error } = useAllKinds();
+  }, [selectedKind, selectedKindLabel, updateFilters]);
 
   return {
     loading,
     error,
-    allKinds: allKinds ?? [],
+    allKinds,
     selectedKind,
     setSelectedKind,
   };
@@ -95,6 +100,7 @@ export interface EntityKindPickerProps {
 /** @public */
 export const EntityKindPicker = (props: EntityKindPickerProps) => {
   const { allowedKinds, hidden, initialFilter = 'component' } = props;
+  const { t } = useTranslationRef(catalogReactTranslationRef);
 
   const alertApi = useApi(alertApiRef);
 
@@ -106,25 +112,25 @@ export const EntityKindPicker = (props: EntityKindPickerProps) => {
   useEffect(() => {
     if (error) {
       alertApi.post({
-        message: `Failed to load entity kinds`,
+        message: t('entityKindPicker.errorMessage'),
         severity: 'error',
       });
     }
-  }, [error, alertApi]);
+  }, [error, alertApi, t]);
 
   if (error) return null;
 
   const options = filterKinds(allKinds, allowedKinds, selectedKind);
 
-  const items = Object.keys(options).map(key => ({
+  const items = [...options.entries()].map(([key, value]) => ({
+    label: value,
     value: key,
-    label: options[key],
   }));
 
   return hidden ? null : (
     <Box pb={1} pt={1}>
       <Select
-        label="Kind"
+        label={t('entityKindPicker.title')}
         items={items}
         selected={selectedKind.toLocaleLowerCase('en-US')}
         onChange={value => setSelectedKind(String(value))}

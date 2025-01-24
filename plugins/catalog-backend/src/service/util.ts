@@ -20,11 +20,16 @@ import lodash from 'lodash';
 import { z } from 'zod';
 import {
   Cursor,
-  EntityFilter,
   QueryEntitiesCursorRequest,
   QueryEntitiesInitialRequest,
   QueryEntitiesRequest,
 } from '../catalog/types';
+import { EntityFilter } from '@backstage/plugin-catalog-node';
+import {
+  Entity,
+  parseEntityRef,
+  stringifyEntityRef,
+} from '@backstage/catalog-model';
 
 export async function requireRequestBody(req: Request): Promise<unknown> {
   const contentType = req.header('content-type');
@@ -106,6 +111,12 @@ export const cursorParser: z.ZodSchema<Cursor> = z.object({
   orderFields: z.array(
     z.object({ field: z.string(), order: z.enum(['asc', 'desc']) }),
   ),
+  fullTextFilter: z
+    .object({
+      term: z.string(),
+      fields: z.array(z.string()).optional(),
+    })
+    .optional(),
   orderFieldValues: z.array(z.string().or(z.null())),
   filter: entityFilterParser.optional(),
   isPrevious: z.boolean(),
@@ -131,4 +142,27 @@ export function decodeCursor(encodedCursor: string) {
   } catch (e) {
     throw new InputError(`Malformed cursor: ${e}`);
   }
+}
+
+// TODO(freben): This is added as a compatibility guarantee, until we can be
+// sure that all adopters have re-stitched their entities so that the new
+// targetRef field is present on them, and that they have stopped consuming
+// the now-removed old field
+// TODO(patriko): Remove this in catalog 2.0
+export function expandLegacyCompoundRelationsInEntity(entity: Entity): Entity {
+  if (entity.relations) {
+    for (const relation of entity.relations as any) {
+      if (!relation.targetRef && relation.target) {
+        // This is the case where an old-form entity, not yet stitched with
+        // the updated code, was in the database
+        relation.targetRef = stringifyEntityRef(relation.target);
+      } else if (!relation.target && relation.targetRef) {
+        // This is the case where a new-form entity, stitched with the
+        // updated code, was in the database but we still want to produce
+        // the old data shape as well for compatibility reasons
+        relation.target = parseEntityRef(relation.targetRef);
+      }
+    }
+  }
+  return entity;
 }

@@ -18,12 +18,12 @@ import React from 'react';
 import { fireEvent, waitFor, screen, within } from '@testing-library/react';
 import { Entity } from '@backstage/catalog-model';
 import { EntityTypePicker } from './EntityTypePicker';
-import { MockEntityListContextProvider } from '../../testUtils/providers';
+import { MockEntityListContextProvider } from '@backstage/plugin-catalog-react/testUtils';
 import { catalogApiRef } from '../../api';
 import { EntityKindFilter, EntityTypeFilter } from '../../filters';
 import { alertApiRef } from '@backstage/core-plugin-api';
 import { ApiProvider } from '@backstage/core-app-api';
-import { renderWithEffects, TestApiRegistry } from '@backstage/test-utils';
+import { renderInTestApp, TestApiRegistry } from '@backstage/test-utils';
 import { GetEntityFacetsResponse } from '@backstage/catalog-client';
 
 const entities: Entity[] = [
@@ -83,10 +83,12 @@ const apis = TestApiRegistry.from(
 
 describe('<EntityTypePicker/>', () => {
   it('renders available entity types', async () => {
-    await renderWithEffects(
+    await renderInTestApp(
       <ApiProvider apis={apis}>
         <MockEntityListContextProvider
-          value={{ filters: { kind: new EntityKindFilter('component') } }}
+          value={{
+            filters: { kind: new EntityKindFilter('component', 'Component') },
+          }}
         >
           <EntityTypePicker />
         </MockEntityListContextProvider>
@@ -106,11 +108,11 @@ describe('<EntityTypePicker/>', () => {
 
   it('sets the selected type filter', async () => {
     const updateFilters = jest.fn();
-    await renderWithEffects(
+    await renderInTestApp(
       <ApiProvider apis={apis}>
         <MockEntityListContextProvider
           value={{
-            filters: { kind: new EntityKindFilter('component') },
+            filters: { kind: new EntityKindFilter('component', 'Component') },
             updateFilters,
           }}
         >
@@ -137,7 +139,7 @@ describe('<EntityTypePicker/>', () => {
   it('respects the query parameter filter value', async () => {
     const updateFilters = jest.fn();
     const queryParameters = { type: 'tool' };
-    await renderWithEffects(
+    await renderInTestApp(
       <ApiProvider apis={apis}>
         <MockEntityListContextProvider
           value={{
@@ -158,7 +160,7 @@ describe('<EntityTypePicker/>', () => {
 
   it('responds to external queryParameters changes', async () => {
     const updateFilters = jest.fn();
-    const rendered = await renderWithEffects(
+    const rendered = await renderInTestApp(
       <ApiProvider apis={apis}>
         <MockEntityListContextProvider
           value={{

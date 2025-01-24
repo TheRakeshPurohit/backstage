@@ -17,45 +17,61 @@
 import express from 'express';
 import Router from 'express-promise-router';
 import cookieParser from 'cookie-parser';
-import { LoggerService } from '@backstage/backend-plugin-api';
 import {
-  defaultAuthProviderFactories,
-  AuthProviderFactory,
-} from '../providers';
+  AuthService,
+  DatabaseService,
+  DiscoveryService,
+  HttpAuthService,
+  LoggerService,
+  RootConfigService,
+} from '@backstage/backend-plugin-api';
+import { defaultAuthProviderFactories } from '../providers';
+import { AuthOwnershipResolver } from '@backstage/plugin-auth-node';
 import {
-  PluginDatabaseManager,
-  PluginEndpointDiscovery,
   TokenManager,
+  createLegacyAuthAdapters,
 } from '@backstage/backend-common';
-import { assertError, NotFoundError } from '@backstage/errors';
-import { CatalogApi, CatalogClient } from '@backstage/catalog-client';
-import { Config } from '@backstage/config';
-import { createOidcRouter, TokenFactory, KeyStores } from '../identity';
+import { NotFoundError } from '@backstage/errors';
+import { CatalogApi } from '@backstage/catalog-client';
+import {
+  bindOidcRouter,
+  KeyStores,
+  TokenFactory,
+  UserInfoDatabaseHandler,
+} from '../identity';
 import session from 'express-session';
 import connectSessionKnex from 'connect-session-knex';
 import passport from 'passport';
-import { Minimatch } from 'minimatch';
-import { CatalogAuthResolverContext } from '../lib/resolvers';
 import { AuthDatabase } from '../database/AuthDatabase';
-import { BACKSTAGE_SESSION_EXPIRATION } from '../lib/session';
+import { readBackstageTokenExpiration } from './readBackstageTokenExpiration';
+import { TokenIssuer } from '../identity/types';
+import { StaticTokenIssuer } from '../identity/StaticTokenIssuer';
+import { StaticKeyStore } from '../identity/StaticKeyStore';
+import { bindProviderRouters, ProviderFactories } from '../providers/router';
 
-/** @public */
-export type ProviderFactories = { [s: string]: AuthProviderFactory };
-
-/** @public */
+/**
+ * @public
+ * @deprecated Please migrate to the new backend system as this will be removed in the future.
+ */
 export interface RouterOptions {
   logger: LoggerService;
-  database: PluginDatabaseManager;
-  config: Config;
-  discovery: PluginEndpointDiscovery;
-  tokenManager: TokenManager;
+  database: DatabaseService;
+  config: RootConfigService;
+  discovery: DiscoveryService;
+  tokenManager?: TokenManager;
+  auth?: AuthService;
+  httpAuth?: HttpAuthService;
   tokenFactoryAlgorithm?: string;
   providerFactories?: ProviderFactories;
   disableDefaultProviderFactories?: boolean;
   catalogApi?: CatalogApi;
+  ownershipResolver?: AuthOwnershipResolver;
 }
 
-/** @public */
+/**
+ * @public
+ * @deprecated Please migrate to the new backend system as this will be removed in the future.
+ */
 export async function createRouter(
   options: RouterOptions,
 ): Promise<express.Router> {
@@ -64,32 +80,50 @@ export async function createRouter(
     config,
     discovery,
     database,
-    tokenManager,
     tokenFactoryAlgorithm,
     providerFactories = {},
-    catalogApi,
   } = options;
+
+  const { auth, httpAuth } = createLegacyAuthAdapters(options);
+
   const router = Router();
 
   const appUrl = config.getString('app.baseUrl');
   const authUrl = await discovery.getExternalBaseUrl('auth');
-
+  const backstageTokenExpiration = readBackstageTokenExpiration(config);
   const authDb = AuthDatabase.create(database);
+
   const keyStore = await KeyStores.fromConfig(config, {
     logger,
     database: authDb,
   });
-  const keyDurationSeconds = BACKSTAGE_SESSION_EXPIRATION;
 
-  const tokenIssuer = new TokenFactory({
-    issuer: authUrl,
-    keyStore,
-    keyDurationSeconds,
-    logger: logger.child({ component: 'token-factory' }),
-    algorithm:
-      tokenFactoryAlgorithm ??
-      config.getOptionalString('auth.identityTokenAlgorithm'),
-  });
+  const userInfoDatabaseHandler = new UserInfoDatabaseHandler(
+    await authDb.get(),
+  );
+
+  let tokenIssuer: TokenIssuer;
+  if (keyStore instanceof StaticKeyStore) {
+    tokenIssuer = new StaticTokenIssuer(
+      {
+        logger: logger.child({ component: 'token-factory' }),
+        issuer: authUrl,
+        sessionExpirationSeconds: backstageTokenExpiration,
+      },
+      keyStore as StaticKeyStore,
+    );
+  } else {
+    tokenIssuer = new TokenFactory({
+      issuer: authUrl,
+      keyStore,
+      keyDurationSeconds: backstageTokenExpiration,
+      logger: logger.child({ component: 'token-factory' }),
+      algorithm:
+        tokenFactoryAlgorithm ??
+        config.getOptionalString('auth.identityTokenAlgorithm'),
+      userInfoDatabaseHandler,
+    });
+  }
 
   const secret = config.getOptionalString('auth.session.secret');
   if (secret) {
@@ -113,124 +147,39 @@ export async function createRouter(
   } else {
     router.use(cookieParser());
   }
+
   router.use(express.urlencoded({ extended: false }));
   router.use(express.json());
 
-  const allProviderFactories = options.disableDefaultProviderFactories
+  const providers = options.disableDefaultProviderFactories
     ? providerFactories
     : {
         ...defaultAuthProviderFactories,
         ...providerFactories,
       };
 
-  const providersConfig = config.getOptionalConfig('auth.providers');
+  bindProviderRouters(router, {
+    providers,
+    appUrl,
+    baseUrl: authUrl,
+    tokenIssuer,
+    ...options,
+    auth,
+    httpAuth,
+  });
 
-  const isOriginAllowed = createOriginFilter(config);
+  bindOidcRouter(router, {
+    auth,
+    tokenIssuer,
+    baseUrl: authUrl,
+    userInfoDatabaseHandler,
+  });
 
-  for (const [providerId, providerFactory] of Object.entries(
-    allProviderFactories,
-  )) {
-    if (providersConfig?.has(providerId)) {
-      logger.info(`Configuring auth provider: ${providerId}`);
-      try {
-        const provider = providerFactory({
-          providerId,
-          appUrl,
-          baseUrl: authUrl,
-          isOriginAllowed,
-          globalConfig: {
-            baseUrl: authUrl,
-            appUrl,
-            isOriginAllowed,
-          },
-          config: providersConfig.getConfig(providerId),
-          logger,
-          resolverContext: CatalogAuthResolverContext.create({
-            logger,
-            catalogApi:
-              catalogApi ?? new CatalogClient({ discoveryApi: discovery }),
-            tokenIssuer,
-            tokenManager,
-          }),
-        });
-
-        const r = Router();
-
-        r.get('/start', provider.start.bind(provider));
-        r.get('/handler/frame', provider.frameHandler.bind(provider));
-        r.post('/handler/frame', provider.frameHandler.bind(provider));
-        if (provider.logout) {
-          r.post('/logout', provider.logout.bind(provider));
-        }
-        if (provider.refresh) {
-          r.get('/refresh', provider.refresh.bind(provider));
-          r.post('/refresh', provider.refresh.bind(provider));
-        }
-
-        router.use(`/${providerId}`, r);
-      } catch (e) {
-        assertError(e);
-        if (process.env.NODE_ENV !== 'development') {
-          throw new Error(
-            `Failed to initialize ${providerId} auth provider, ${e.message}`,
-          );
-        }
-
-        logger.warn(`Skipping ${providerId} auth provider, ${e.message}`);
-
-        router.use(`/${providerId}`, () => {
-          // If the user added the provider under auth.providers but the clientId and clientSecret etc. were not found.
-          throw new NotFoundError(
-            `Auth provider registered for '${providerId}' is misconfigured. This could mean the configs under ` +
-              `auth.providers.${providerId} are missing or the environment variables used are not defined. ` +
-              `Check the auth backend plugin logs when the backend starts to see more details.`,
-          );
-        });
-      }
-    } else {
-      router.use(`/${providerId}`, () => {
-        throw new NotFoundError(
-          `No auth provider registered for '${providerId}'`,
-        );
-      });
-    }
-  }
-
-  router.use(
-    createOidcRouter({
-      tokenIssuer,
-      baseUrl: authUrl,
-    }),
-  );
-
+  // Gives a more helpful error message than a plain 404
   router.use('/:provider/', req => {
     const { provider } = req.params;
     throw new NotFoundError(`Unknown auth provider '${provider}'`);
   });
 
   return router;
-}
-
-/** @public */
-export function createOriginFilter(
-  config: Config,
-): (origin: string) => boolean {
-  const appUrl = config.getString('app.baseUrl');
-  const { origin: appOrigin } = new URL(appUrl);
-
-  const allowedOrigins = config.getOptionalStringArray(
-    'auth.experimentalExtraAllowedOrigins',
-  );
-
-  const allowedOriginPatterns =
-    allowedOrigins?.map(
-      pattern => new Minimatch(pattern, { nocase: true, noglobstar: true }),
-    ) ?? [];
-
-  return origin => {
-    if (origin === appOrigin) {
-      return true;
-    }
-    return allowedOriginPatterns.some(pattern => pattern.match(origin));
-  };
 }

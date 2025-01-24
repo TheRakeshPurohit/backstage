@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { JsonObject } from '@backstage/types';
-import { NextCustomFieldValidator } from '../../extensions';
+import { CustomFieldValidator } from '../../../extensions';
 import { createAsyncValidators } from './createAsyncValidators';
 
 describe('createAsyncValidators', () => {
@@ -158,16 +158,13 @@ describe('createAsyncValidators', () => {
       },
     };
 
-    const NameField: NextCustomFieldValidator<string> = (
-      value,
-      { addError },
-    ) => {
+    const NameField: CustomFieldValidator<string> = (value, { addError }) => {
       if (!value) {
         addError('something is broken here!');
       }
     };
 
-    const AddressField: NextCustomFieldValidator<{
+    const AddressField: CustomFieldValidator<{
       street?: string;
       postcode?: string;
     }> = (value, { addError }) => {
@@ -183,8 +180,8 @@ describe('createAsyncValidators', () => {
     const validate = createAsyncValidators(
       schema,
       {
-        NameField: NameField as NextCustomFieldValidator<unknown>,
-        AddressField: AddressField as NextCustomFieldValidator<unknown>,
+        NameField: NameField as CustomFieldValidator<unknown>,
+        AddressField: AddressField as CustomFieldValidator<unknown>,
       },
       {
         apiHolder: { get: jest.fn() },
@@ -298,7 +295,7 @@ describe('createAsyncValidators', () => {
       },
     };
 
-    const AddressField: NextCustomFieldValidator<{
+    const AddressField: CustomFieldValidator<{
       street?: string;
       postcode?: string;
     }> = (value, { addError }) => {
@@ -311,18 +308,15 @@ describe('createAsyncValidators', () => {
       }
     };
 
-    const NameField: NextCustomFieldValidator<string> = (
-      value,
-      { addError },
-    ) => {
+    const NameField: CustomFieldValidator<string> = (value, { addError }) => {
       if (!value) {
         addError('something is broken here!');
       }
     };
 
     const validators = {
-      AddressField: AddressField as NextCustomFieldValidator<unknown>,
-      NameField: NameField as NextCustomFieldValidator<unknown>,
+      AddressField: AddressField as CustomFieldValidator<unknown>,
+      NameField: NameField as CustomFieldValidator<unknown>,
     };
 
     const validate = createAsyncValidators(schema, validators, {
@@ -440,5 +434,63 @@ describe('createAsyncValidators', () => {
     });
 
     expect(validators.CustomLinkField).toHaveBeenCalled();
+  });
+
+  it('should validate field in the dependencies in an array field', async () => {
+    const schema: JsonObject = {
+      title: 'Make a choice',
+      properties: {
+        myArray: {
+          type: 'array',
+          title: 'Array',
+          items: {
+            type: 'object',
+            required: ['selector'],
+            properties: {
+              selector: {
+                title: 'Selector',
+                type: 'string',
+                enum: ['Choice 1', 'Choice 2'],
+              },
+            },
+            dependencies: {
+              selector: {
+                oneOf: [
+                  { properties: { selector: { enum: ['Choice 1'] } } },
+                  {
+                    properties: {
+                      selector: { enum: ['Choice 2'] },
+                      customValidatedField: {
+                        title: 'Custom validated field',
+                        type: 'string',
+                        'ui:field': 'ValidateKebabCase',
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    };
+
+    const validators = { ValidateKebabCase: jest.fn() };
+
+    const validate = createAsyncValidators(schema, validators, {
+      apiHolder: { get: jest.fn() },
+    });
+
+    await validate({
+      myArray: [
+        {
+          selector: 'Choice 2',
+          customValidatedField: 'apple',
+        },
+        { selector: 'Choice 1' },
+      ],
+    });
+
+    expect(validators.ValidateKebabCase).toHaveBeenCalled();
   });
 });

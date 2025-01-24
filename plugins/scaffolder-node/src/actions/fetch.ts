@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { resolveSafeChildPath, UrlReader } from '@backstage/backend-common';
+import { UrlReaderService } from '@backstage/backend-plugin-api';
+import { resolveSafeChildPath } from '@backstage/backend-plugin-api';
 import { InputError } from '@backstage/errors';
 import { ScmIntegrations } from '@backstage/integration';
 import fs from 'fs-extra';
@@ -27,13 +28,21 @@ import path from 'path';
  * @public
  */
 export async function fetchContents(options: {
-  reader: UrlReader;
+  reader: UrlReaderService;
   integrations: ScmIntegrations;
   baseUrl?: string;
   fetchUrl?: string;
   outputPath: string;
+  token?: string;
 }) {
-  const { reader, integrations, baseUrl, fetchUrl = '.', outputPath } = options;
+  const {
+    reader,
+    integrations,
+    baseUrl,
+    fetchUrl = '.',
+    outputPath,
+    token,
+  } = options;
 
   const fetchUrlIsAbsolute = isFetchUrlAbsolute(fetchUrl);
 
@@ -45,7 +54,7 @@ export async function fetchContents(options: {
   } else {
     const readUrl = getReadUrl(fetchUrl, baseUrl, integrations);
 
-    const res = await reader.readTree(readUrl);
+    const res = await reader.readTree(readUrl, { token });
     await fs.ensureDir(outputPath);
     await res.dir({ targetDir: outputPath });
   }
@@ -58,13 +67,21 @@ export async function fetchContents(options: {
  * @public
  */
 export async function fetchFile(options: {
-  reader: UrlReader;
+  reader: UrlReaderService;
   integrations: ScmIntegrations;
   baseUrl?: string;
   fetchUrl?: string;
   outputPath: string;
+  token?: string;
 }) {
-  const { reader, integrations, baseUrl, fetchUrl = '.', outputPath } = options;
+  const {
+    reader,
+    integrations,
+    baseUrl,
+    fetchUrl = '.',
+    outputPath,
+    token,
+  } = options;
 
   const fetchUrlIsAbsolute = isFetchUrlAbsolute(fetchUrl);
 
@@ -76,10 +93,10 @@ export async function fetchFile(options: {
   } else {
     const readUrl = getReadUrl(fetchUrl, baseUrl, integrations);
 
-    const res = await reader.readUrl(readUrl);
+    const res = await reader.readUrl(readUrl, { token });
     await fs.ensureDir(path.dirname(outputPath));
     const buffer = await res.buffer();
-    await fs.outputFile(outputPath, buffer.toString());
+    await fs.outputFile(outputPath, buffer);
   }
 }
 

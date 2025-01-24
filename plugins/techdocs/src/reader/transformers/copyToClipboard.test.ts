@@ -17,8 +17,8 @@
 import { createTestShadowDom } from '../../test-utils';
 import { copyToClipboard } from './copyToClipboard';
 import { lightTheme } from '@backstage/theme';
-import { waitFor } from '@testing-library/react';
-import useCopyToClipboard from 'react-use/lib/useCopyToClipboard';
+import { act, waitFor } from '@testing-library/react';
+import { default as useCopyToClipboardUnmocked } from 'react-use/esm/useCopyToClipboard';
 
 const clipboardSpy = jest.fn();
 Object.defineProperty(window.navigator, 'clipboard', {
@@ -27,24 +27,24 @@ Object.defineProperty(window.navigator, 'clipboard', {
   },
 });
 
-jest.mock('react-use/lib/useCopyToClipboard', () => {
-  const original = jest.requireActual('react-use/lib/useCopyToClipboard');
+const useCopyToClipboard = jest.mocked(useCopyToClipboardUnmocked);
 
-  return {
-    __esModule: true,
-    default: jest.fn().mockImplementation(original.default),
-  };
-});
+jest.mock('react-use/esm/useCopyToClipboard', () =>
+  jest.fn().mockImplementation(() => [{ noUserInteraction: false }, jest.fn()]),
+);
 
 describe('copyToClipboard', () => {
   it('calls navigator.clipboard.writeText when clipboard button has been clicked', async () => {
-    const spy = useCopyToClipboard as jest.Mock;
+    const spy = useCopyToClipboard;
     const copy = jest.fn();
-    spy.mockReturnValue([{}, copy]);
+    spy.mockReturnValue([{ noUserInteraction: false }, copy]);
 
     const expectedClipboard = 'function foo() {return "bar";}';
-    const shadowDom = await createTestShadowDom(
-      `
+
+    let shadowDom: ShadowRoot;
+    await act(async () => {
+      shadowDom = await createTestShadowDom(
+        `
       <!DOCTYPE html>
       <html>
         <body>
@@ -52,13 +52,20 @@ describe('copyToClipboard', () => {
         </body>
       </html>
     `,
-      {
-        preTransformers: [],
-        postTransformers: [copyToClipboard(lightTheme)],
-      },
-    );
+        {
+          preTransformers: [],
+          postTransformers: [copyToClipboard(lightTheme)],
+        },
+      );
+    });
 
-    shadowDom.querySelector('button')?.click();
+    await waitFor(() => {
+      expect(shadowDom.querySelector('button')).not.toBe(null);
+    });
+
+    await act(async () => {
+      shadowDom.querySelector('button')!.click();
+    });
 
     await waitFor(() => {
       const tooltip = document.querySelector('[role="tooltip"]');

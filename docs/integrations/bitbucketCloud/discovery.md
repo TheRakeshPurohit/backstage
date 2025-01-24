@@ -19,50 +19,33 @@ backend. The provider is not installed by default, therefore you have to add a
 dependency to `@backstage/plugin-catalog-backend-module-bitbucket-cloud` to your backend
 package.
 
-```bash
-# From your Backstage root directory
-yarn add --cwd packages/backend @backstage/plugin-catalog-backend-module-bitbucket-cloud
+```bash title="From your Backstage root directory"
+yarn --cwd packages/backend add @backstage/plugin-catalog-backend-module-bitbucket-cloud
 ```
 
-### Installation without Events Support
-
-And then add the entity provider to your catalog builder:
-
-```ts title="packages/backend/src/plugins/catalog.ts"
-/* highlight-add-next-line */
-import { BitbucketCloudEntityProvider } from '@backstage/plugin-catalog-backend-module-bitbucket-cloud';
-
-export default async function createPlugin(
-  env: PluginEnvironment,
-): Promise<Router> {
-  const builder = await CatalogBuilder.create(env);
-  /* highlight-add-start */
-  builder.addEntityProvider(
-    BitbucketCloudEntityProvider.fromConfig(env.config, {
-      logger: env.logger,
-      scheduler: env.scheduler,
-    }),
-  );
-  /* highlight-add-end */
-
-  // ..
-}
-```
-
-Alternatively to the config-based schedule, you can use
+### Installation with New Backend System
 
 ```ts
-/* highlight-remove-next-line */
-scheduler: env.scheduler,
-/* highlight-add-start */
-schedule: env.scheduler.createScheduledTaskRunner({
-  frequency: { minutes: 30 },
-  timeout: { minutes: 3 },
-}),
-/* highlight-add-end */
+// optional if you want HTTP endpoints to receive external events
+// backend.add(import('@backstage/plugin-events-backend'));
+// optional if you want to use AWS SQS instead of HTTP endpoints to receive external events
+// backend.add(import('@backstage/plugin-events-backend-module-aws-sqs'));
+backend.add(import('@backstage/plugin-events-backend-module-bitbucket-cloud'));
+backend.add(import('@backstage/plugin-catalog-backend-module-bitbucket-cloud'));
 ```
 
-### Installation with Events Support
+You need to decide how you want to receive events from external sources like
+
+- [via HTTP endpoint](https://github.com/backstage/backstage/tree/master/plugins/events-backend/README.md)
+- [via an AWS SQS queue](https://github.com/backstage/backstage/tree/master/plugins/events-backend-module-aws-sqs/README.md)
+
+Further documentation:
+
+- <https://github.com/backstage/backstage/tree/master/plugins/events-backend/README.md>
+- <https://github.com/backstage/backstage/tree/master/plugins/events-backend-module-aws-sqs/README.md>
+- <https://github.com/backstage/backstage/tree/master/plugins/events-backend-module-bitbucket-cloud/README.md>
+
+### Installation with Legacy Backend System
 
 Please follow the installation instructions at
 
@@ -90,18 +73,17 @@ export default async function createPlugin(
   env: PluginEnvironment,
 ): Promise<Router> {
   const builder = await CatalogBuilder.create(env);
-  builder.addProcessor(new ScaffolderEntitiesProcessor());
   /* highlight-add-start */
   const bitbucketCloudProvider = BitbucketCloudEntityProvider.fromConfig(
     env.config,
     {
+      auth: env.auth,
       catalogApi: new CatalogClient({ discoveryApi: env.discovery }),
+      events: env.events,
       logger: env.logger,
       scheduler: env.scheduler,
-      tokenManager: env.tokenManager,
     },
   );
-  env.eventBroker.subscribe(bitbucketCloudProvider);
   builder.addEntityProvider(bitbucketCloudProvider);
   /* highlight-add-end */
   const { processingEngine, router } = await builder.build();
@@ -131,7 +113,7 @@ catalog:
         filters: # optional
           projectKey: '^apis-.*$' # optional; RegExp
           repoSlug: '^service-.*$' # optional; RegExp
-        schedule: # optional; same options as in TaskScheduleDefinition
+        schedule: # same options as in SchedulerServiceTaskScheduleDefinition
           # supports cron, ISO duration, "human duration" as used in code
           frequency: { minutes: 30 }
           # supports ISO duration, "human duration" as used in code
@@ -153,7 +135,7 @@ catalog:
     Regular expression used to filter results based on the project key.
   - **`repoSlug`** _(optional)_:
     Regular expression used to filter results based on the repo slug.
-- **`schedule`** _(optional)_:
+- **`schedule`**:
   - **`frequency`**:
     How often you want the task to run. The system does its best to avoid overlapping invocations.
   - **`timeout`**:

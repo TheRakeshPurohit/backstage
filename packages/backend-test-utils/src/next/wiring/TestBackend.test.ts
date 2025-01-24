@@ -26,6 +26,7 @@ import { Router } from 'express';
 import request from 'supertest';
 
 import { startTestBackend } from './TestBackend';
+import { mockCredentials } from '../services';
 
 // This bit makes sure that test backends are cleaned up properly
 let globalTestBackendHasBeenStopped = false;
@@ -33,8 +34,8 @@ beforeAll(async () => {
   await startTestBackend({
     features: [
       createBackendModule({
-        moduleId: 'test.module',
         pluginId: 'test',
+        moduleId: 'test-module',
         register(env) {
           env.registerInit({
             deps: { lifecycle: coreServices.lifecycle },
@@ -70,34 +71,34 @@ describe('TestBackend', () => {
         features: [
           // @ts-expect-error
           [extensionPoint1, { a: 'a' }],
-          createServiceFactory(() => ({
+          createServiceFactory({
             service: serviceRef,
             deps: {},
             // @ts-expect-error
             factory: async () => ({ a: 'a' }),
-          })),
-          createServiceFactory(() => ({
+          }),
+          createServiceFactory({
             service: serviceRef,
             deps: {},
             factory: async () => ({ a: 'a', b: 'b' }),
-          })),
-          createServiceFactory(() => ({
+          }),
+          createServiceFactory({
             service: serviceRef,
             deps: {},
             // @ts-expect-error
             factory: async () => ({ c: 'c' }),
-          })),
-          createServiceFactory(() => ({
+          }),
+          createServiceFactory({
             service: serviceRef,
             deps: {},
             // @ts-expect-error
             factory: async () => ({ a: 'a', c: 'c' }),
-          })),
-          createServiceFactory(() => ({
+          }),
+          createServiceFactory({
             service: serviceRef,
             deps: {},
             factory: async () => ({ a: 'a', b: 'b', c: 'c' }),
-          })),
+          }),
         ],
         extensionPoints: [
           // @ts-expect-error
@@ -128,8 +129,8 @@ describe('TestBackend', () => {
     });
 
     const testModule = createBackendModule({
-      moduleId: 'test.module',
       pluginId: 'test',
+      moduleId: 'test-module',
       register(env) {
         env.registerInit({
           deps: {
@@ -143,7 +144,7 @@ describe('TestBackend', () => {
     });
 
     await startTestBackend({
-      features: [testModule(), sf()],
+      features: [testModule, sf],
     });
 
     expect(testFn).toHaveBeenCalledWith('winning');
@@ -153,8 +154,8 @@ describe('TestBackend', () => {
     const shutdownSpy = jest.fn();
 
     const testModule = createBackendModule({
-      moduleId: 'test.module',
       pluginId: 'test',
+      moduleId: 'test-module',
       register(env) {
         env.registerInit({
           deps: {
@@ -168,7 +169,7 @@ describe('TestBackend', () => {
     });
 
     const backend = await startTestBackend({
-      features: [testModule()],
+      features: [testModule],
     });
 
     expect(shutdownSpy).not.toHaveBeenCalled();
@@ -197,11 +198,12 @@ describe('TestBackend', () => {
             rootLifecycle: coreServices.rootLifecycle,
             rootLogger: coreServices.rootLogger,
             scheduler: coreServices.scheduler,
-            tokenManager: coreServices.tokenManager,
             urlReader: coreServices.urlReader,
+            auth: coreServices.auth,
+            httpAuth: coreServices.httpAuth,
           },
           async init(deps) {
-            expect(Object.keys(deps)).toHaveLength(15);
+            expect(Object.keys(deps)).toHaveLength(16);
             expect(Object.values(deps)).not.toContain(undefined);
           },
         });
@@ -209,7 +211,7 @@ describe('TestBackend', () => {
     });
 
     await startTestBackend({
-      features: [testPlugin()],
+      features: [testPlugin],
     });
   });
 
@@ -230,11 +232,22 @@ describe('TestBackend', () => {
       },
     });
 
-    const { server } = await startTestBackend({ features: [testPlugin()] });
+    const { server } = await startTestBackend({ features: [testPlugin] });
 
-    const res = await request(server).get('/api/test/ping-me');
+    const res = await request(server)
+      .get('/api/test/ping-me')
+      .set('authorization', mockCredentials.user.header());
     expect(res.status).toEqual(200);
     expect(res.body).toEqual({ message: 'pong' });
+  });
+
+  it('should expose health check endpoints', async () => {
+    const { server } = await startTestBackend({ features: [] });
+
+    const res = await request(server).get('/.backstage/health/v1/liveness');
+
+    expect(res.status).toEqual(200);
+    expect(res.body).toEqual({ status: 'ok' });
   });
 
   it('should provide extension point implementations', async () => {
@@ -307,7 +320,7 @@ describe('TestBackend', () => {
         ],
       }),
     ).rejects.toThrow(
-      "Extension point registered for plugin 'testA' may not be used by module for plugin 'testB'",
+      "Illegal dependency: Module 'test' for plugin 'testB' attempted to depend on extension point 'a' for plugin 'testA'. Extension points can only be used within their plugin's scope.",
     );
   });
 
@@ -320,5 +333,79 @@ describe('TestBackend', () => {
     ).rejects.toThrow(
       "Unable to determine the plugin ID of extension point(s) 'a'. Tested extension points must be depended on by one or more tested modules.",
     );
+  });
+
+  it('should forward errors from plugins', async () => {
+    await expect(
+      startTestBackend({
+        features: [
+          createBackendPlugin({
+            pluginId: 'test',
+            register(reg) {
+              reg.registerInit({
+                deps: {},
+                async init() {
+                  throw new Error('nah');
+                },
+              });
+            },
+          }),
+        ],
+      }),
+    ).rejects.toThrow("Plugin 'test' startup failed; caused by Error: nah");
+  });
+
+  it('should forward errors from modules', async () => {
+    await expect(
+      startTestBackend({
+        features: [
+          createBackendModule({
+            pluginId: 'test',
+            moduleId: 'tester',
+            register(reg) {
+              reg.registerInit({
+                deps: {},
+                async init() {
+                  throw new Error('nah');
+                },
+              });
+            },
+          }),
+        ],
+      }),
+    ).rejects.toThrow(
+      "Module 'tester' for plugin 'test' startup failed; caused by Error: nah",
+    );
+  });
+
+  it('should forward errors from plugin register', async () => {
+    await expect(
+      startTestBackend({
+        features: [
+          createBackendPlugin({
+            pluginId: 'test',
+            register() {
+              throw new Error('nah');
+            },
+          }),
+        ],
+      }),
+    ).rejects.toThrow('nah');
+  });
+
+  it('should forward errors from module register', async () => {
+    await expect(
+      startTestBackend({
+        features: [
+          createBackendModule({
+            pluginId: 'test',
+            moduleId: 'tester',
+            register() {
+              throw new Error('nah');
+            },
+          }),
+        ],
+      }),
+    ).rejects.toThrow('nah');
   });
 });

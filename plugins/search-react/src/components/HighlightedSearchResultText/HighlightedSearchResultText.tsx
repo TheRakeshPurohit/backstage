@@ -15,7 +15,10 @@
  */
 
 import React, { useMemo } from 'react';
-import { makeStyles } from '@material-ui/core';
+import { makeStyles } from '@material-ui/core/styles';
+
+/** @public */
+export type HighlightedSearchResultTextClassKey = 'highlight';
 
 const useStyles = makeStyles(
   () => ({

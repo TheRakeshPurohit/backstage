@@ -6,6 +6,10 @@ on:
   pull_request:
     paths:
       - 'microsite/**'
+      - 'beps/**'
+
+permissions:
+  contents: read
 
 jobs:
   # The verify jobs runs all the verification that doesn't require a
@@ -15,10 +19,15 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [16.x, 18.x]
+        node-version: [20.x, 22.x]
 
     name: Verify ${{ matrix.node-version }}
     steps:
+      # - name: Harden Runner
+      #   uses: step-security/harden-runner@8ca2b8b2ece13480cda6dacd3511b49857a23c09 # v2.5.1
+      #   with:
+      #     egress-policy: audit
+
       - run: echo NOOP
 
   test-noop:
@@ -26,8 +35,13 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [16.x, 18.x]
+        node-version: [20.x, 22.x]
 
     name: Test ${{ matrix.node-version }}
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@c95a14d0e5bab51a9f56296a4eb0e416910cd350 # v2.10.3
+        with:
+          egress-policy: audit
+
       - run: echo NOOP

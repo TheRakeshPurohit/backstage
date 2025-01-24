@@ -13,7 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { scaffolderPlugin } from './ScaffolderPlugin';
 
-export * from './modules';
+/** @alpha */
+const _feature = scaffolderPlugin;
+export default _feature;
+
 export * from './service';
-export { scaffolderPlugin } from './ScaffolderPlugin';

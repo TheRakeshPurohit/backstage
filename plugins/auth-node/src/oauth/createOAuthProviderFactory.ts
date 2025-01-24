@@ -29,24 +29,21 @@ import { SignInResolverFactory } from '../sign-in/createSignInResolverFactory';
 /** @public */
 export function createOAuthProviderFactory<TProfile>(options: {
   authenticator: OAuthAuthenticator<unknown, TProfile>;
+  additionalScopes?: string[];
   stateTransform?: OAuthStateTransform;
   profileTransform?: ProfileTransform<OAuthAuthenticatorResult<TProfile>>;
   signInResolver?: SignInResolver<OAuthAuthenticatorResult<TProfile>>;
   signInResolverFactories?: {
-    [name in string]: SignInResolverFactory<
-      OAuthAuthenticatorResult<TProfile>,
-      unknown
-    >;
+    [name in string]: SignInResolverFactory;
   };
 }): AuthProviderFactory {
   return ctx => {
     return OAuthEnvironmentHandler.mapConfig(ctx.config, envConfig => {
       const signInResolver =
-        options.signInResolver ??
         readDeclarativeSignInResolver({
           config: envConfig,
           signInResolverFactories: options.signInResolverFactories ?? {},
-        });
+        }) ?? options.signInResolver;
 
       return createOAuthRouteHandlers<TProfile>({
         authenticator: options.authenticator,
@@ -57,6 +54,7 @@ export function createOAuthProviderFactory<TProfile>(options: {
         cookieConfigurer: ctx.cookieConfigurer,
         providerId: ctx.providerId,
         resolverContext: ctx.resolverContext,
+        additionalScopes: options.additionalScopes,
         stateTransform: options.stateTransform,
         profileTransform: options.profileTransform,
         signInResolver,

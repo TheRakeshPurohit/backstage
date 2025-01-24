@@ -17,7 +17,7 @@
 import fs from 'fs-extra';
 import { createTemplateAction } from '@backstage/plugin-scaffolder-node';
 import * as yaml from 'yaml';
-import { resolveSafeChildPath } from '@backstage/backend-common';
+import { resolveSafeChildPath } from '@backstage/backend-plugin-api';
 import { z } from 'zod';
 import { examples } from './write.examples';
 
@@ -49,13 +49,27 @@ export function createCatalogWriteAction() {
     examples,
     supportsDryRun: true,
     async handler(ctx) {
-      ctx.logStream.write(`Writing catalog-info.yaml`);
       const { filePath, entity } = ctx.input;
+      const entityRef = ctx.templateInfo?.entityRef;
       const path = filePath ?? 'catalog-info.yaml';
+      ctx.logger.info(`Writing ${path}`);
 
-      await fs.writeFile(
+      await fs.outputFile(
         resolveSafeChildPath(ctx.workspacePath, path),
-        yaml.stringify(entity),
+        yaml.stringify({
+          ...entity,
+          metadata: {
+            ...entity.metadata,
+            ...(entityRef
+              ? {
+                  annotations: {
+                    ...entity.metadata.annotations,
+                    'backstage.io/source-template': entityRef,
+                  },
+                }
+              : undefined),
+          },
+        }),
       );
     },
   });

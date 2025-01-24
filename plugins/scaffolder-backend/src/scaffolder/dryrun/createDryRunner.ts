@@ -14,33 +14,43 @@
  * limitations under the License.
  */
 
-import { ScmIntegrations } from '@backstage/integration';
-import { TaskSpec } from '@backstage/plugin-scaffolder-common';
-import { JsonObject } from '@backstage/types';
-import { v4 as uuid } from 'uuid';
-import { pathToFileURL } from 'url';
-import { Logger } from 'winston';
 import {
+  AuditorService,
+  BackstageCredentials,
+} from '@backstage/backend-plugin-api';
+import type { UserEntity } from '@backstage/catalog-model';
+import { ScmIntegrations } from '@backstage/integration';
+import { PermissionEvaluator } from '@backstage/plugin-permission-common';
+import { TaskSpec, TemplateInfo } from '@backstage/plugin-scaffolder-common';
+import {
+  createTemplateAction,
   deserializeDirectoryContents,
   SerializedFile,
   serializeDirectoryContents,
-} from '../../lib/files';
-import { TemplateFilter, TemplateGlobal } from '../../lib';
+  TaskSecrets,
+  TemplateFilter,
+  TemplateGlobal,
+} from '@backstage/plugin-scaffolder-node';
+import { JsonObject } from '@backstage/types';
+import fs from 'fs-extra';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { v4 as uuid } from 'uuid';
+import { Logger } from 'winston';
 import { TemplateActionRegistry } from '../actions';
 import { NunjucksWorkflowRunner } from '../tasks/NunjucksWorkflowRunner';
 import { DecoratedActionsRegistry } from './DecoratedActionsRegistry';
-import fs from 'fs-extra';
-import { resolveSafeChildPath } from '@backstage/backend-common';
-import {
-  createTemplateAction,
-  TaskSecrets,
-} from '@backstage/plugin-scaffolder-node';
-import { PermissionEvaluator } from '@backstage/plugin-permission-common';
 
 interface DryRunInput {
   spec: TaskSpec;
+  templateInfo: TemplateInfo;
   secrets?: TaskSecrets;
   directoryContents: SerializedFile[];
+  credentials: BackstageCredentials;
+  user?: {
+    entity?: UserEntity;
+    ref?: string;
+  };
 }
 
 interface DryRunResult {
@@ -52,6 +62,7 @@ interface DryRunResult {
 /** @internal */
 export type TemplateTesterCreateOptions = {
   logger: Logger;
+  auditor?: AuditorService;
   integrations: ScmIntegrations;
   actionRegistry: TemplateActionRegistry;
   workingDirectory: string;
@@ -86,19 +97,23 @@ export function createDryRunner(options: TemplateTesterCreateOptions) {
       ]),
     });
 
+    // Extracting contentsPath and dryRunId from the baseUrl
+    const baseUrl = input.templateInfo.baseUrl;
+    if (!baseUrl) {
+      throw new Error('baseUrl is required');
+    }
+    const basePath = fileURLToPath(new URL(baseUrl));
+    const contentsPath = path.dirname(basePath);
     const dryRunId = uuid();
+
     const log = new Array<{ body: JsonObject }>();
-    const contentsPath = resolveSafeChildPath(
-      options.workingDirectory,
-      `dry-run-content-${dryRunId}`,
-    );
 
     try {
       await deserializeDirectoryContents(contentsPath, input.directoryContents);
 
       const abortSignal = new AbortController().signal;
-
       const result = await workflowRunner.execute({
+        taskId: dryRunId,
         spec: {
           ...input.spec,
           steps: [
@@ -109,14 +124,10 @@ export function createDryRunner(options: TemplateTesterCreateOptions) {
               action: 'dry-run:extract',
             },
           ],
-          templateInfo: {
-            entityRef: 'template:default/dry-run',
-            baseUrl: pathToFileURL(
-              resolveSafeChildPath(contentsPath, 'template.yaml'),
-            ).toString(),
-          },
+          templateInfo: input.templateInfo,
         },
         secrets: input.secrets,
+        getInitiatorCredentials: () => Promise.resolve(input.credentials),
         // No need to update this at the end of the run, so just hard-code it
         done: false,
         isDryRun: true,

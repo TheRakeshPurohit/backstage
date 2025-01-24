@@ -15,7 +15,7 @@
  */
 
 import { createBackendModule } from '@backstage/backend-plugin-api';
-import { eventsExtensionPoint } from '@backstage/plugin-events-node/alpha';
+import { eventsServiceRef } from '@backstage/plugin-events-node';
 import { GitlabEventRouter } from '../router/GitlabEventRouter';
 
 /**
@@ -27,17 +27,15 @@ import { GitlabEventRouter } from '../router/GitlabEventRouter';
  */
 export const eventsModuleGitlabEventRouter = createBackendModule({
   pluginId: 'events',
-  moduleId: 'gitlabEventRouter',
+  moduleId: 'gitlab-event-router',
   register(env) {
     env.registerInit({
       deps: {
-        events: eventsExtensionPoint,
+        events: eventsServiceRef,
       },
       async init({ events }) {
-        const eventRouter = new GitlabEventRouter();
-
-        events.addPublishers(eventRouter);
-        events.addSubscribers(eventRouter);
+        const eventRouter = new GitlabEventRouter({ events: events });
+        await eventRouter.subscribe();
       },
     });
   },

@@ -14,4 +14,10 @@
  * limitations under the License.
  */
 
-export { eventsModuleAzureDevOpsEventRouter } from './service/eventsModuleAzureDevOpsEventRouter';
+import { eventsModuleAzureDevOpsEventRouter as feature } from './service/eventsModuleAzureDevOpsEventRouter';
+
+/** @alpha */
+const _feature = feature;
+export default _feature;
+/** @alpha */
+export const eventsModuleAzureDevOpsEventRouter = _feature;

@@ -13,65 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { RELATION_OWNED_BY } from '@backstage/catalog-model';
-import { MarkdownContent, UserIcon } from '@backstage/core-components';
-import { IconComponent, useApp } from '@backstage/core-plugin-api';
-import {
-  EntityRefLinks,
-  getEntityRelations,
-} from '@backstage/plugin-catalog-react';
-import { TemplateEntityV1beta3 } from '@backstage/plugin-scaffolder-common';
-import { BackstageTheme } from '@backstage/theme';
-import {
-  Box,
-  Card,
-  CardActions,
-  CardContent,
-  Chip,
-  Divider,
-  Button,
-  Grid,
-  makeStyles,
-} from '@material-ui/core';
-import LanguageIcon from '@material-ui/icons/Language';
-import React from 'react';
-import { CardHeader } from './CardHeader';
-import { CardLink } from './CardLink';
 
-const useStyles = makeStyles<BackstageTheme>(theme => ({
-  box: {
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    display: '-webkit-box',
-    '-webkit-line-clamp': 10,
-    '-webkit-box-orient': 'vertical',
-  },
-  markdown: {
-    /** to make the styles for React Markdown not leak into the description */
-    '& :first-child': {
-      margin: 0,
-    },
-  },
-  label: {
-    color: theme.palette.text.secondary,
-    textTransform: 'uppercase',
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-    lineHeight: 1,
-    fontSize: '0.75rem',
-  },
-  footer: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    flex: 1,
-    alignItems: 'center',
-  },
-  ownedBy: {
-    display: 'flex',
-    alignItems: 'center',
-    flex: 1,
-    color: theme.palette.link,
-  },
+import { RELATION_OWNED_BY } from '@backstage/catalog-model';
+import { IconComponent, useAnalytics } from '@backstage/core-plugin-api';
+import { getEntityRelations } from '@backstage/plugin-catalog-react';
+import { TemplateEntityV1beta3 } from '@backstage/plugin-scaffolder-common';
+import Card from '@material-ui/core/Card';
+import CardActions from '@material-ui/core/CardActions';
+import CardContent from '@material-ui/core/CardContent';
+import Divider from '@material-ui/core/Divider';
+import Grid from '@material-ui/core/Grid';
+import { makeStyles, Theme } from '@material-ui/core/styles';
+import React, { useCallback } from 'react';
+import { CardHeader } from './CardHeader';
+import { usePermission } from '@backstage/plugin-permission-react';
+import { taskCreatePermission } from '@backstage/plugin-scaffolder-common/alpha';
+import { TemplateCardContent } from './TemplateCardContent';
+import { TemplateCardTags } from './TemplateCardTags';
+import { TemplateCardLinks } from './TemplateCardLinks';
+import { TemplateCardActions } from './TemplateCardActions';
+
+const useStyles = makeStyles<Theme>(() => ({
+  actionContainer: { padding: '16px', flex: 1, alignItems: 'flex-end' },
 }));
 
 /**
@@ -85,7 +48,6 @@ export interface TemplateCardProps {
     text: string;
     url: string;
   }[];
-
   onSelected?: (template: TemplateEntityV1beta3) => void;
 }
 
@@ -94,99 +56,52 @@ export interface TemplateCardProps {
  * @alpha
  */
 export const TemplateCard = (props: TemplateCardProps) => {
-  const { template } = props;
+  const { additionalLinks, onSelected, template } = props;
   const styles = useStyles();
+  const analytics = useAnalytics();
   const ownedByRelations = getEntityRelations(template, RELATION_OWNED_BY);
-  const app = useApp();
-  const iconResolver = (key?: string): IconComponent =>
-    key ? app.getSystemIcon(key) ?? LanguageIcon : LanguageIcon;
+  const hasTags = !!template.metadata.tags?.length;
+  const hasLinks =
+    !!additionalLinks?.length || !!template.metadata.links?.length;
+  const displayDefaultDivider = !hasTags && !hasLinks;
+
+  const { allowed: canCreateTask } = usePermission({
+    permission: taskCreatePermission,
+  });
+  const handleChoose = useCallback(() => {
+    analytics.captureEvent('click', `Template has been opened`);
+    onSelected?.(template);
+  }, [analytics, onSelected, template]);
 
   return (
     <Card>
-      <CardHeader template={template} />
+      <CardHeader template={template} data-testid="template-card-header" />
       <CardContent>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <Box className={styles.box}>
-              <MarkdownContent
-                className={styles.markdown}
-                content={template.metadata.description ?? 'No description'}
-              />
-            </Box>
-          </Grid>
-          {(template.metadata.tags?.length ?? 0) > 0 && (
-            <>
-              <Grid item xs={12}>
-                <Divider />
-              </Grid>
-              <Grid item xs={12}>
-                <Grid container spacing={2}>
-                  {template.metadata.tags?.map(tag => (
-                    <Grid item>
-                      <Chip
-                        style={{ margin: 0 }}
-                        size="small"
-                        label={tag}
-                        key={tag}
-                      />
-                    </Grid>
-                  ))}
-                </Grid>
-              </Grid>
-            </>
+        <Grid container spacing={2} data-testid="template-card-content">
+          <TemplateCardContent template={template} />
+          {displayDefaultDivider && (
+            <Grid item xs={12}>
+              <Divider data-testid="template-card-separator" />
+            </Grid>
           )}
-          {(props.additionalLinks || template.metadata.links?.length) && (
-            <>
-              <Grid item xs={12}>
-                <Divider />
-              </Grid>
-              <Grid item xs={12}>
-                <Grid container spacing={2}>
-                  {props.additionalLinks?.map(({ icon, text, url }, index) => (
-                    <Grid className={styles.linkText} item xs={6} key={index}>
-                      <CardLink icon={icon} text={text} url={url} />
-                    </Grid>
-                  ))}
-                  {template.metadata.links?.map(
-                    ({ url, icon, title }, index) => (
-                      <Grid className={styles.linkText} item xs={6} key={index}>
-                        <CardLink
-                          icon={iconResolver(icon)}
-                          text={title || url}
-                          url={url}
-                        />
-                      </Grid>
-                    ),
-                  )}
-                </Grid>
-              </Grid>
-            </>
+          {hasTags && <TemplateCardTags template={template} />}
+          {hasLinks && (
+            <TemplateCardLinks
+              template={template}
+              additionalLinks={additionalLinks}
+            />
           )}
         </Grid>
       </CardContent>
-      <CardActions style={{ padding: '16px', flex: 1, alignItems: 'flex-end' }}>
-        <div className={styles.footer}>
-          <div className={styles.ownedBy}>
-            {ownedByRelations.length > 0 && (
-              <>
-                <UserIcon fontSize="small" />
-                <EntityRefLinks
-                  style={{ marginLeft: '8px' }}
-                  entityRefs={ownedByRelations}
-                  defaultKind="Group"
-                />
-              </>
-            )}
-          </div>
-          <Button
-            size="small"
-            variant="outlined"
-            color="primary"
-            onClick={() => props.onSelected?.(template)}
-          >
-            Choose
-          </Button>
-        </div>
+      <CardActions
+        className={styles.actionContainer}
+        data-testid="template-card-actions"
+      >
+        <TemplateCardActions
+          canCreateTask={canCreateTask}
+          handleChoose={handleChoose}
+          ownedByRelations={ownedByRelations}
+        />
       </CardActions>
     </Card>
   );

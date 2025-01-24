@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The Backstage Authors
+ * Copyright 2024 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,34 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  coreServices,
-  createBackendModule,
-} from '@backstage/backend-plugin-api';
-import { searchEngineRegistryExtensionPoint } from '@backstage/plugin-search-backend-node/alpha';
-import { PgSearchEngine } from './PgSearchEngine';
 
-/**
- * @alpha
- * Search backend module for the Postgres engine.
- */
-export const searchModulePostgresEngine = createBackendModule({
-  moduleId: 'postgresEngine',
-  pluginId: 'search',
-  register(env) {
-    env.registerInit({
-      deps: {
-        searchEngineRegistry: searchEngineRegistryExtensionPoint,
-        database: coreServices.database,
-        config: coreServices.rootConfig,
-      },
-      async init({ searchEngineRegistry, database, config }) {
-        searchEngineRegistry.setSearchEngine(
-          await PgSearchEngine.fromConfig(config, {
-            database: database,
-          }),
-        );
-      },
-    });
-  },
-});
+import { default as feature } from './module';
+
+/** @alpha */
+const _feature = feature;
+export default _feature;

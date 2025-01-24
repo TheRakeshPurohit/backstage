@@ -21,6 +21,7 @@ import {
   resolve as resolvePath,
   relative as relativePath,
 } from 'path';
+import pLimit from 'p-limit';
 import { tmpdir } from 'os';
 import tar, { CreateOptions, FileOptions } from 'tar';
 import partition from 'lodash/partition';
@@ -43,6 +44,7 @@ import {
   PackageGraphNode,
 } from '@backstage/cli-node';
 import { runParallelWorkers } from '../parallel';
+import { createTypeDistProject } from '../typeDistProject';
 
 // These packages aren't safe to pack in parallel since the CLI depends on them
 const UNSAFE_PACKAGES = [
@@ -101,7 +103,18 @@ type Options = {
    * workspace. This ensures correct workspace output at significant cost to
    * command performance.
    */
-  alwaysYarnPack?: boolean;
+  alwaysPack?: boolean;
+
+  /**
+   * If set to true, the TypeScript feature detection will be enabled, which
+   * annotates the package exports field with the `backstage` export type.
+   */
+  enableFeatureDetection?: boolean;
+
+  /**
+   * If set to true, the generated code will be minified.
+   */
+  minify?: boolean;
 };
 
 function prefixLogFunc(prefix: string, out: 'stdout' | 'stderr') {
@@ -204,9 +217,8 @@ export async function createDistWorkspace(
           packageJson: pkg.packageJson,
           outputs: outputs,
           logPrefix: `${chalk.cyan(relativePath(paths.targetRoot, pkg.dir))}: `,
-          // No need to detect these for the backend builds, we assume no minification or types
-          minify: false,
-          useApiExtractor: false,
+          minify: options.minify,
+          workspacePackages: packages,
         });
       }
     }
@@ -230,7 +242,8 @@ export async function createDistWorkspace(
   await moveToDistWorkspace(
     targetDir,
     targets,
-    Boolean(options.alwaysYarnPack),
+    Boolean(options.alwaysPack),
+    Boolean(options.enableFeatureDetection),
   );
 
   const files: FileEntry[] = options.files ?? ['yarn.lock', 'package.json'];
@@ -273,14 +286,20 @@ const FAST_PACK_SCRIPTS = [
 async function moveToDistWorkspace(
   workspaceDir: string,
   localPackages: PackageGraphNode[],
-  alwaysYarnPack: boolean,
+  alwaysPack: boolean,
+  enableFeatureDetection: boolean,
 ): Promise<void> {
   const [fastPackPackages, slowPackPackages] = partition(
     localPackages,
     pkg =>
-      !alwaysYarnPack &&
+      !alwaysPack &&
       FAST_PACK_SCRIPTS.includes(pkg.packageJson.scripts?.prepack),
   );
+
+  const featureDetectionProject =
+    fastPackPackages.length > 0 && enableFeatureDetection
+      ? await createTypeDistProject()
+      : undefined;
 
   // New an improved flow where we avoid calling `yarn pack`
   await Promise.all(
@@ -292,6 +311,7 @@ async function moveToDistWorkspace(
       await productionPack({
         packageDir: target.dir,
         targetDir: absoluteOutputPath,
+        featureDetectionProject,
       });
     }),
   );
@@ -305,10 +325,6 @@ async function moveToDistWorkspace(
     await run('yarn', ['pack', '--filename', archivePath], {
       cwd: target.dir,
     });
-    // TODO(Rugvip): yarn pack doesn't call postpack, once the bug is fixed this can be removed
-    if (target.packageJson?.scripts?.postpack) {
-      await run('yarn', ['postpack'], { cwd: target.dir });
-    }
 
     const outputDir = relativePath(paths.targetRoot, target.dir);
     const absoluteOutputPath = resolvePath(workspaceDir, outputDir);
@@ -353,9 +369,11 @@ async function moveToDistWorkspace(
   }
 
   // Repacking in parallel is much faster and safe for all packages outside of the Backstage repo
+  // Limit concurrency to 10 to avoid resource exhaustion on larger monorepos.
+  const limit = pLimit(10);
   await Promise.all(
-    safePackages.map(async (target, index) =>
-      pack(target, `temp-package-${index}.tgz`),
+    safePackages.map((target, index) =>
+      limit(() => pack(target, `temp-package-${index}.tgz`)),
     ),
   );
 }

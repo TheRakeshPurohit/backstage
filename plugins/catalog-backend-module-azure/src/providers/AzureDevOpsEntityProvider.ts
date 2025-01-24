@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { PluginTaskScheduler, TaskRunner } from '@backstage/backend-tasks';
 import { Config } from '@backstage/config';
 import {
   AzureDevOpsCredentialsProvider,
@@ -29,10 +28,14 @@ import {
 } from '@backstage/plugin-catalog-node';
 import { LocationSpec } from '@backstage/plugin-catalog-common';
 import { readAzureDevOpsConfigs } from './config';
-import { Logger } from 'winston';
 import { AzureDevOpsConfig } from './types';
 import * as uuid from 'uuid';
 import { codeSearch, CodeSearchResultItem } from '../lib';
+import {
+  SchedulerService,
+  SchedulerServiceTaskRunner,
+  LoggerService,
+} from '@backstage/backend-plugin-api';
 
 /**
  * Provider which discovers catalog files within an Azure DevOps repositories.
@@ -42,16 +45,16 @@ import { codeSearch, CodeSearchResultItem } from '../lib';
  * @public
  */
 export class AzureDevOpsEntityProvider implements EntityProvider {
-  private readonly logger: Logger;
+  private readonly logger: LoggerService;
   private readonly scheduleFn: () => Promise<void>;
   private connection?: EntityProviderConnection;
 
   static fromConfig(
     configRoot: Config,
     options: {
-      logger: Logger;
-      schedule?: TaskRunner;
-      scheduler?: PluginTaskScheduler;
+      logger: LoggerService;
+      schedule?: SchedulerServiceTaskRunner;
+      scheduler?: SchedulerService;
     },
   ): AzureDevOpsEntityProvider[] {
     const providerConfigs = readAzureDevOpsConfigs(configRoot);
@@ -98,8 +101,8 @@ export class AzureDevOpsEntityProvider implements EntityProvider {
     private readonly config: AzureDevOpsConfig,
     private readonly integration: AzureIntegration,
     private readonly credentialsProvider: AzureDevOpsCredentialsProvider,
-    logger: Logger,
-    taskRunner: TaskRunner,
+    logger: LoggerService,
+    taskRunner: SchedulerServiceTaskRunner,
   ) {
     this.logger = logger.child({
       target: this.getProviderName(),
@@ -108,7 +111,9 @@ export class AzureDevOpsEntityProvider implements EntityProvider {
     this.scheduleFn = this.createScheduleFn(taskRunner);
   }
 
-  private createScheduleFn(taskRunner: TaskRunner): () => Promise<void> {
+  private createScheduleFn(
+    taskRunner: SchedulerServiceTaskRunner,
+  ): () => Promise<void> {
     return async () => {
       const taskId = `${this.getProviderName()}:refresh`;
       return taskRunner.run({
@@ -123,7 +128,10 @@ export class AzureDevOpsEntityProvider implements EntityProvider {
           try {
             await this.refresh(logger);
           } catch (error) {
-            logger.error(`${this.getProviderName()} refresh failed`, error);
+            logger.error(
+              `${this.getProviderName()} refresh failed, ${error}`,
+              error,
+            );
           }
         },
       });
@@ -141,7 +149,7 @@ export class AzureDevOpsEntityProvider implements EntityProvider {
     await this.scheduleFn();
   }
 
-  async refresh(logger: Logger) {
+  async refresh(logger: LoggerService) {
     if (!this.connection) {
       throw new Error('Not initialized');
     }
@@ -155,6 +163,7 @@ export class AzureDevOpsEntityProvider implements EntityProvider {
       this.config.project,
       this.config.repository,
       this.config.path,
+      this.config.branch || '',
     );
 
     logger.info(`Discovered ${files.length} catalog files`);

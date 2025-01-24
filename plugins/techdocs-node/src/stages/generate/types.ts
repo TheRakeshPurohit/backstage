@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-import { ContainerRunner } from '@backstage/backend-common';
 import { Entity } from '@backstage/catalog-model';
 import { Writable } from 'stream';
 import { Logger } from 'winston';
 import { ParsedLocationAnnotation } from '../../helpers';
+import { LoggerService } from '@backstage/backend-plugin-api';
 
-// Determines where the generator will be run
+/**
+ * Determines where the generator will be run. `'docker'` is a shorthand for running the generator in a container.
+ * If no {@link GeneratorOptions.containerRunner} is specified, the internal `DockerContainerRunner` will be used.
+ */
 export type GeneratorRunInType = 'docker' | 'local';
 
 /**
@@ -28,8 +31,8 @@ export type GeneratorRunInType = 'docker' | 'local';
  * @public
  */
 export type GeneratorOptions = {
-  containerRunner?: ContainerRunner;
-  logger: Logger;
+  logger: LoggerService;
+  containerRunner?: TechDocsContainerRunner;
 };
 
 /**
@@ -64,6 +67,7 @@ export type GeneratorRunOptions = {
   logger: Logger;
   logStream?: Writable;
   siteOptions?: { name?: string };
+  runAsDefaultUser?: boolean;
 };
 
 /**
@@ -98,3 +102,39 @@ export type DefaultMkdocsContent = {
   docs_dir: string;
   plugins: String[];
 };
+
+/**
+ * Handles the running of containers to generate TechDocs.
+ *
+ * Custom implementations, e.g. for Kubernetes or other execution environments, can be inspired by the internal default
+ * implementation `DockerContainerRunner`.
+ *
+ * @public
+ */
+export interface TechDocsContainerRunner {
+  /**
+   * Runs a container image to completion.
+   */
+  runContainer(opts: {
+    imageName: string;
+    command?: string | string[];
+    args: string[];
+    logStream?: Writable;
+    mountDirs?: Record<string, string>;
+    workingDir?: string;
+    envVars?: Record<string, string>;
+    pullImage?: boolean;
+    defaultUser?: boolean;
+    pullOptions?: {
+      authconfig?: {
+        username?: string;
+        password?: string;
+        auth?: string;
+        email?: string;
+        serveraddress?: string;
+        [key: string]: unknown;
+      };
+      [key: string]: unknown;
+    };
+  }): Promise<void>;
+}

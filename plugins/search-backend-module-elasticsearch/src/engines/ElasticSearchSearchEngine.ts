@@ -18,19 +18,21 @@ import {
   IndexableDocument,
   IndexableResult,
   IndexableResultSet,
-  SearchEngine,
   SearchQuery,
 } from '@backstage/plugin-search-common';
+import { SearchEngine } from '@backstage/plugin-search-backend-node';
 import { isEmpty, isNumber, isNaN as nan } from 'lodash';
 
 import { AwsSigv4Signer } from '@opensearch-project/opensearch/aws';
 import { RequestSigner } from 'aws4';
 import { Config } from '@backstage/config';
-import { ElasticSearchClientOptions } from './ElasticSearchClientOptions';
+import {
+  ElasticSearchClientOptions,
+  OpenSearchElasticSearchClientOptions,
+} from './ElasticSearchClientOptions';
 import { ElasticSearchClientWrapper } from './ElasticSearchClientWrapper';
 import { ElasticSearchCustomIndexTemplate } from './types';
 import { ElasticSearchSearchEngineIndexer } from './ElasticSearchSearchEngineIndexer';
-import { Logger } from 'winston';
 import { MissingIndexError } from '@backstage/plugin-search-backend-node';
 import esb from 'elastic-builder';
 import { v4 as uuid } from 'uuid';
@@ -74,7 +76,7 @@ export type ElasticSearchQueryTranslator = (
  * @public
  */
 export type ElasticSearchOptions = {
-  logger: Logger | LoggerService;
+  logger: LoggerService;
   config: Config;
   aliasPostfix?: string;
   indexPrefix?: string;
@@ -128,7 +130,7 @@ export class ElasticSearchSearchEngine implements SearchEngine {
     private readonly elasticSearchClientOptions: ElasticSearchClientOptions,
     private readonly aliasPostfix: string,
     private readonly indexPrefix: string,
-    private readonly logger: Logger | LoggerService,
+    private readonly logger: LoggerService,
     private readonly batchSize: number,
     highlightOptions?: ElasticSearchHighlightOptions,
   ) {
@@ -244,18 +246,40 @@ export class ElasticSearchSearchEngine implements SearchEngine {
           'Failed to add filters to query. Unrecognized filter type',
         );
       });
-    const esbQuery = isBlank(term)
-      ? esb.matchAllQuery()
-      : esb
-          .multiMatchQuery(['*'], term)
-          .fuzziness('auto')
-          .minimumShouldMatch(1);
+
+    const esbQueries = [];
+    // https://regex101.com/r/Lr0MqS/1
+    const phraseTerms = term.match(/"[^"]*"/g);
+
+    if (isBlank(term)) {
+      const esbQuery = esb.matchAllQuery();
+      esbQueries.push(esbQuery);
+    } else if (phraseTerms && phraseTerms.length > 0) {
+      let restTerm = term;
+      for (const phraseTerm of phraseTerms) {
+        restTerm = restTerm.replace(phraseTerm, '');
+        const esbPhraseQuery = esb
+          .multiMatchQuery(['*'], phraseTerm.replace(/"/g, ''))
+          .type('phrase');
+        esbQueries.push(esbPhraseQuery);
+      }
+      if (restTerm?.length > 0) {
+        const esbRestQuery = esb
+          .multiMatchQuery(['*'], restTerm.trim())
+          .fuzziness('auto');
+        esbQueries.push(esbRestQuery);
+      }
+    } else {
+      const esbQuery = esb.multiMatchQuery(['*'], term).fuzziness('auto');
+      esbQueries.push(esbQuery);
+    }
+
     const pageSize = query.pageLimit || 25;
     const { page } = decodePageCursor(pageCursor);
 
     let esbRequestBodySearch = esb
       .requestBodySearch()
-      .query(esb.boolQuery().filter(filter).must([esbQuery]))
+      .query(esb.boolQuery().filter(filter).should(esbQueries))
       .from(page * pageSize)
       .size(pageSize);
 
@@ -302,10 +326,15 @@ export class ElasticSearchSearchEngine implements SearchEngine {
       elasticSearchClientWrapper: this.elasticSearchClientWrapper,
       logger: indexerLogger,
       batchSize: this.batchSize,
+      skipRefresh:
+        (
+          this
+            .elasticSearchClientOptions as OpenSearchElasticSearchClientOptions
+        )?.service === 'aoss',
     });
 
     // Attempt cleanup upon failure.
-    // todo(@backstage/discoverability-maintainers): Consider introducing a more
+    // todo(@backstage/search-maintainers): Consider introducing a more
     // formal mechanism for handling such errors in BatchSearchEngineIndexer and
     // replacing this handler with it. See: #17291
     indexer.on('error', async e => {
@@ -337,6 +366,7 @@ export class ElasticSearchSearchEngine implements SearchEngine {
 
           attempts++;
         }
+        done();
       });
 
       if (cleanupError) {
@@ -473,6 +503,8 @@ export class ElasticSearchSearchEngine implements SearchEngine {
       return {
         provider: 'aws',
         node: config.getString('node'),
+        region: config.getOptionalString('region'),
+        service,
         ...(sslConfig
           ? {
               ssl: {

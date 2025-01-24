@@ -19,6 +19,8 @@ import {
   createBackendPlugin,
 } from '@backstage/backend-plugin-api';
 import {
+  authOwnershipResolutionExtensionPoint,
+  AuthOwnershipResolver,
   AuthProviderFactory,
   authProvidersExtensionPoint,
 } from '@backstage/plugin-auth-node';
@@ -34,6 +36,7 @@ export const authPlugin = createBackendPlugin({
   pluginId: 'auth',
   register(reg) {
     const providers = new Map<string, AuthProviderFactory>();
+    let ownershipResolver: AuthOwnershipResolver | undefined = undefined;
 
     reg.registerExtensionPoint(authProvidersExtensionPoint, {
       registerProvider({ providerId, factory }) {
@@ -46,6 +49,15 @@ export const authPlugin = createBackendPlugin({
       },
     });
 
+    reg.registerExtensionPoint(authOwnershipResolutionExtensionPoint, {
+      setAuthOwnershipResolver(resolver) {
+        if (ownershipResolver) {
+          throw new Error('Auth ownership resolver is already set');
+        }
+        ownershipResolver = resolver;
+      },
+    });
+
     reg.registerInit({
       deps: {
         httpRouter: coreServices.httpRouter,
@@ -53,7 +65,8 @@ export const authPlugin = createBackendPlugin({
         config: coreServices.rootConfig,
         database: coreServices.database,
         discovery: coreServices.discovery,
-        tokenManager: coreServices.tokenManager,
+        auth: coreServices.auth,
+        httpAuth: coreServices.httpAuth,
         catalogApi: catalogServiceRef,
       },
       async init({
@@ -62,7 +75,8 @@ export const authPlugin = createBackendPlugin({
         config,
         database,
         discovery,
-        tokenManager,
+        auth,
+        httpAuth,
         catalogApi,
       }) {
         const router = await createRouter({
@@ -70,10 +84,16 @@ export const authPlugin = createBackendPlugin({
           config,
           database,
           discovery,
-          tokenManager,
+          auth,
+          httpAuth,
           catalogApi,
           providerFactories: Object.fromEntries(providers),
           disableDefaultProviderFactories: true,
+          ownershipResolver,
+        });
+        httpRouter.addAuthPolicy({
+          path: '/',
+          allow: 'unauthenticated',
         });
         httpRouter.use(router);
       },

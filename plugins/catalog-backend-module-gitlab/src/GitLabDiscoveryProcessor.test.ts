@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-import { getVoidLogger } from '@backstage/backend-common';
-import { setupRequestMockHandlers } from '@backstage/backend-test-utils';
+import {
+  mockServices,
+  registerMswTestHooks,
+} from '@backstage/backend-test-utils';
 import { ConfigReader } from '@backstage/config';
 import { LocationSpec } from '@backstage/plugin-catalog-node';
 import { rest, RestRequest } from 'msw';
@@ -148,14 +150,14 @@ function getProcessor({
   return GitLabDiscoveryProcessor.fromConfig(
     new ConfigReader(config || getConfig()),
     {
-      logger: getVoidLogger(),
+      logger: mockServices.logger.mock(),
       ...options,
     },
   );
 }
 
 describe('GitlabDiscoveryProcessor', () => {
-  setupRequestMockHandlers(server);
+  registerMswTestHooks(server);
 
   beforeAll(() => {
     jest.useFakeTimers();
@@ -236,14 +238,6 @@ describe('GitlabDiscoveryProcessor', () => {
                   last_activity_at: '2021-08-05T11:03:05.774Z',
                   web_url: 'https://gitlab.fake/3',
                   path_with_namespace: '3',
-                },
-                {
-                  id: 4,
-                  archived: true, // ARCHIVED
-                  default_branch: 'master',
-                  last_activity_at: '2021-08-05T11:03:05.774Z',
-                  web_url: 'https://gitlab.fake/4',
-                  path_with_namespace: '4',
                 },
                 {
                   id: 5,

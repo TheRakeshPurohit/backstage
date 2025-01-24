@@ -23,10 +23,11 @@ import {
   printFileSizesAfterBuild,
 } from 'react-dev-utils/FileSizeReporter';
 import formatWebpackMessages from 'react-dev-utils/formatWebpackMessages';
-import { createConfig, resolveBaseUrl } from './config';
+import { createConfig } from './config';
 import { BuildOptions } from './types';
-import { resolveBundlingPaths } from './paths';
+import { resolveBundlingPaths, resolveOptionalBundlingPaths } from './paths';
 import chalk from 'chalk';
+import { createDetectedModulesEntryPoint } from './packageDetection';
 
 // TODO(Rugvip): Limits from CRA, we might want to tweak these though.
 const WARN_AFTER_BUNDLE_GZIP_SIZE = 512 * 1024;
@@ -37,20 +38,62 @@ function applyContextToError(error: string, moduleName: string): string {
 }
 
 export async function buildBundle(options: BuildOptions) {
-  const { statsJsonEnabled, schema: configSchema } = options;
+  const { statsJsonEnabled, schema: configSchema, rspack } = options;
 
   const paths = resolveBundlingPaths(options);
-  const config = await createConfig(paths, {
+  const publicPaths = await resolveOptionalBundlingPaths({
+    targetDir: options.targetDir,
+    entry: 'src/index-public-experimental',
+    dist: 'dist/public',
+  });
+
+  const commonConfigOptions = {
     ...options,
     checksEnabled: false,
     isDev: false,
-    baseUrl: resolveBaseUrl(options.frontendConfig),
     getFrontendAppConfigs: () => options.frontendAppConfigs,
-  });
+  };
+
+  const configs: webpack.Configuration[] = [];
+
+  if (options.moduleFederation?.mode === 'remote') {
+    // Package detection is disabled for remote bundles
+    configs.push(await createConfig(paths, commonConfigOptions));
+  } else {
+    const detectedModulesEntryPoint = await createDetectedModulesEntryPoint({
+      config: options.fullConfig,
+      targetPath: paths.targetPath,
+    });
+
+    configs.push(
+      await createConfig(paths, {
+        ...commonConfigOptions,
+        additionalEntryPoints: detectedModulesEntryPoint,
+        appMode: publicPaths ? 'protected' : 'public',
+      }),
+    );
+
+    if (publicPaths) {
+      console.log(
+        chalk.yellow(
+          `⚠️  WARNING: The app /public entry point is an experimental feature that may receive immediate breaking changes.`,
+        ),
+      );
+      configs.push(
+        await createConfig(publicPaths, {
+          ...commonConfigOptions,
+          appMode: 'public',
+        }),
+      );
+    }
+  }
 
   const isCi = yn(process.env.CI, { default: false });
 
   const previousFileSizes = await measureFileSizesBeforeBuild(paths.targetDist);
+  const previousAuthSizes = publicPaths
+    ? await measureFileSizesBeforeBuild(publicPaths.targetDist)
+    : undefined;
   await fs.emptyDir(paths.targetDist);
 
   if (paths.targetPublic) {
@@ -58,6 +101,14 @@ export async function buildBundle(options: BuildOptions) {
       dereference: true,
       filter: file => file !== paths.targetHtml,
     });
+
+    // If we've got a separate public index entry point, copy public content there too
+    if (publicPaths) {
+      await fs.copy(paths.targetPublic, publicPaths.targetDist, {
+        dereference: true,
+        filter: file => file !== paths.targetHtml,
+      });
+    }
   }
 
   if (configSchema) {
@@ -68,33 +119,55 @@ export async function buildBundle(options: BuildOptions) {
     );
   }
 
-  const { stats } = await build(config, isCi);
+  if (rspack) {
+    console.log(
+      chalk.yellow(`⚠️  WARNING: Using experimental RSPack bundler.`),
+    );
+  }
+
+  const { stats } = await build(configs, isCi, rspack);
 
   if (!stats) {
     throw new Error('No stats returned');
   }
+  const [mainStats, authStats] = stats.stats;
 
   if (statsJsonEnabled) {
     // No @types/bfj
     await require('bfj').write(
       resolvePath(paths.targetDist, 'bundle-stats.json'),
-      stats.toJson(),
+      mainStats.toJson(),
     );
   }
 
   printFileSizesAfterBuild(
-    stats,
+    mainStats,
     previousFileSizes,
     paths.targetDist,
     WARN_AFTER_BUNDLE_GZIP_SIZE,
     WARN_AFTER_CHUNK_GZIP_SIZE,
   );
+  if (publicPaths && previousAuthSizes) {
+    printFileSizesAfterBuild(
+      authStats,
+      previousAuthSizes,
+      publicPaths.targetDist,
+      WARN_AFTER_BUNDLE_GZIP_SIZE,
+      WARN_AFTER_CHUNK_GZIP_SIZE,
+    );
+  }
 }
 
-async function build(config: webpack.Configuration, isCi: boolean) {
-  const stats = await new Promise<webpack.Stats | undefined>(
+async function build(
+  configs: webpack.Configuration[],
+  isCi: boolean,
+  rspack?: typeof import('@rspack/core').rspack,
+) {
+  const bundler = (rspack ?? webpack) as typeof webpack;
+
+  const stats = await new Promise<webpack.MultiStats | undefined>(
     (resolve, reject) => {
-      webpack(config, (err, buildStats) => {
+      bundler(configs, (err, buildStats) => {
         if (err) {
           if (err.message) {
             const { errors } = formatWebpackMessages({

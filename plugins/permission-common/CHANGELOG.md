@@ -1,5 +1,227 @@
 # @backstage/plugin-permission-common
 
+## 0.8.4
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/types@1.2.1
+  - @backstage/config@1.3.2
+  - @backstage/errors@1.2.7
+
+## 0.8.4-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/types@1.2.1-next.0
+  - @backstage/config@1.3.2-next.0
+  - @backstage/errors@1.2.7-next.0
+
+## 0.8.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.2.6
+  - @backstage/config@1.3.1
+  - @backstage/types@1.2.0
+
+## 0.8.3-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.2.6-next.0
+  - @backstage/config@1.3.1-next.0
+  - @backstage/types@1.2.0
+
+## 0.8.2
+
+### Patch Changes
+
+- 4e58bc7: Upgrade to uuid v11 internally
+- Updated dependencies
+  - @backstage/config@1.3.0
+  - @backstage/types@1.2.0
+  - @backstage/errors@1.2.5
+
+## 0.8.1
+
+### Patch Changes
+
+- df784fe: Add the MetadataResponse type from @backstage/plugin-permission-node, since this
+  type might be used in frontend code.
+- 137fa34: Add the MetadataResponseSerializedRule type from @backstage/plugin-permission-node, since this type might be used in frontend code.
+- Updated dependencies
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.8.1-next.1
+
+### Patch Changes
+
+- df784fe: Add the MetadataResponse type from @backstage/plugin-permission-node, since this
+  type might be used in frontend code.
+- Updated dependencies
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.8.1-next.0
+
+### Patch Changes
+
+- 137fa34: Add the MetadataResponseSerializedRule type from @backstage/plugin-permission-node, since this type might be used in frontend code.
+- Updated dependencies
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.8.0
+
+### Minor Changes
+
+- f4085b8: **BREAKING**: Removed the deprecated and unused `token` option from `EvaluatorRequestOptions`. The `PermissionsClient` now has its own `PermissionClientRequestOptions` type that declares the `token` option instead.
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.7.14
+
+### Patch Changes
+
+- d44a20a: Added additional plugin metadata to `package.json`.
+- Updated dependencies
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.7.14-next.0
+
+### Patch Changes
+
+- d44a20a: Added additional plugin metadata to `package.json`.
+- Updated dependencies
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.7.13
+
+### Patch Changes
+
+- 0502d82: The `token` option of the `PermissionEvaluator` methods is now deprecated. The options that only apply to backend implementations have been moved to `PermissionsService` from `@backstage/backend-plugin-api` instead.
+- 0fb419b: Updated dependency `uuid` to `^9.0.0`.
+  Updated dependency `@types/uuid` to `^9.0.0`.
+- Updated dependencies
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.7.13-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@1.2.0-next.1
+  - @backstage/errors@1.2.4-next.0
+  - @backstage/types@1.1.1
+
+## 0.7.13-next.0
+
+### Patch Changes
+
+- 0502d82: The `token` option of the `PermissionEvaluator` methods is now deprecated. The options that only apply to backend implementations have been moved to `PermissionsService` from `@backstage/backend-plugin-api` instead.
+- 0fb419b: Updated dependency `uuid` to `^9.0.0`.
+  Updated dependency `@types/uuid` to `^9.0.0`.
+- Updated dependencies
+  - @backstage/errors@1.2.4-next.0
+  - @backstage/config@1.1.2-next.0
+  - @backstage/types@1.1.1
+
+## 0.7.12
+
+### Patch Changes
+
+- b1acd9b: Updated README
+- Updated dependencies
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/types@1.1.1
+
+## 0.7.11
+
+### Patch Changes
+
+- 0cbb03b: Fixing regular expression ReDoS with zod packages. Upgrading to latest. ref: https://security.snyk.io/vuln/SNYK-JS-ZOD-5925617
+- Updated dependencies
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/types@1.1.1
+
+## 0.7.10
+
+### Patch Changes
+
+- 4aa43f62aa: Updated dependency `cross-fetch` to `^4.0.0`.
+- Updated dependencies
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/types@1.1.1
+
+## 0.7.9
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.2.3
+  - @backstage/config@1.1.1
+  - @backstage/types@1.1.1
+
+## 0.7.9-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.2.3-next.0
+  - @backstage/config@1.1.1-next.0
+  - @backstage/types@1.1.1
+
+## 0.7.8
+
+### Patch Changes
+
+- 406b786a2a2c: Mark package as being free of side effects, allowing more optimized Webpack builds.
+- Updated dependencies
+  - @backstage/config@1.1.0
+  - @backstage/errors@1.2.2
+  - @backstage/types@1.1.1
+
+## 0.7.8-next.2
+
+### Patch Changes
+
+- 406b786a2a2c: Mark package as being free of side effects, allowing more optimized Webpack builds.
+- Updated dependencies
+  - @backstage/config@1.1.0-next.2
+  - @backstage/errors@1.2.2-next.0
+  - @backstage/types@1.1.1-next.0
+
+## 0.7.8-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@1.1.0-next.1
+  - @backstage/errors@1.2.1
+  - @backstage/types@1.1.0
+
 ## 0.7.8-next.0
 
 ### Patch Changes

@@ -16,11 +16,8 @@
 
 import {
   DatabaseManager,
-  getVoidLogger,
-  PluginDatabaseManager,
-  UrlReaders,
+  loggerToWinstonLogger,
 } from '@backstage/backend-common';
-import { CatalogApi } from '@backstage/catalog-client';
 import { ConfigReader } from '@backstage/config';
 import { TemplateEntityV1beta3 } from '@backstage/plugin-scaffolder-common';
 import express from 'express';
@@ -38,16 +35,23 @@ import {
   stringifyEntityRef,
   UserEntity,
 } from '@backstage/catalog-model';
-import { createRouter, DatabaseTaskStore, TaskBroker } from '../index';
+import { createRouter, DatabaseTaskStore } from '../index';
+import { TaskBroker } from '@backstage/plugin-scaffolder-node';
 import { StorageTaskBroker } from '../scaffolder/tasks/StorageTaskBroker';
-import {
-  IdentityApiGetIdentityRequest,
-  BackstageIdentityResponse,
-} from '@backstage/plugin-auth-node';
 import {
   AuthorizeResult,
   PermissionEvaluator,
 } from '@backstage/plugin-permission-common';
+import {
+  mockCredentials,
+  mockErrorHandler,
+  mockServices,
+} from '@backstage/backend-test-utils';
+import { AutocompleteHandler } from '@backstage/plugin-scaffolder-node/alpha';
+import { UrlReaders } from '@backstage/backend-defaults/urlReader';
+import { catalogServiceMock } from '@backstage/plugin-catalog-node/testUtils';
+import { EventsService } from '@backstage/plugin-events-node';
+import { DatabaseService } from '@backstage/backend-plugin-api';
 
 const mockAccess = jest.fn();
 
@@ -64,7 +68,7 @@ jest.mock('fs-extra', () => ({
   remove: jest.fn(),
 }));
 
-function createDatabase(): PluginDatabaseManager {
+function createDatabase(): DatabaseService {
   return DatabaseManager.fromConfig(
     new ConfigReader({
       backend: {
@@ -78,21 +82,33 @@ function createDatabase(): PluginDatabaseManager {
 }
 
 const mockUrlReader = UrlReaders.default({
-  logger: getVoidLogger(),
+  logger: mockServices.logger.mock(),
   config: new ConfigReader({}),
 });
 
-const getIdentity = jest.fn();
+const config = new ConfigReader({});
 
 describe('createRouter', () => {
   let app: express.Express;
   let loggerSpy: jest.SpyInstance;
   let taskBroker: TaskBroker;
-  const catalogClient = { getEntityByRef: jest.fn() } as unknown as CatalogApi;
+  const catalogClient = catalogServiceMock.mock();
   const permissionApi = {
     authorize: jest.fn(),
     authorizeConditional: jest.fn(),
   } as unknown as PermissionEvaluator;
+  const auth = mockServices.auth();
+  const httpAuth = mockServices.httpAuth();
+  const discovery = mockServices.discovery();
+  const events = {
+    publish: jest.fn(),
+  } as unknown as EventsService;
+
+  const credentials = mockCredentials.user();
+  const token = mockCredentials.service.token({
+    onBehalfOf: credentials,
+    targetPluginId: 'catalog',
+  });
 
   const getMockTemplate = (): TemplateEntityV1beta3 => ({
     apiVersion: 'scaffolder.backstage.io/v1beta3',
@@ -176,11 +192,11 @@ describe('createRouter', () => {
 
   describe('not providing an identity api', () => {
     beforeEach(async () => {
-      const logger = getVoidLogger();
+      const logger = loggerToWinstonLogger(mockServices.logger.mock());
       const databaseTaskStore = await DatabaseTaskStore.create({
         database: createDatabase(),
       });
-      taskBroker = new StorageTaskBroker(databaseTaskStore, logger);
+      taskBroker = new StorageTaskBroker(databaseTaskStore, logger, config);
 
       jest.spyOn(taskBroker, 'dispatch');
       jest.spyOn(taskBroker, 'get');
@@ -196,24 +212,26 @@ describe('createRouter', () => {
         reader: mockUrlReader,
         taskBroker,
         permissions: permissionApi,
+        auth,
+        httpAuth,
+        discovery,
+        events,
       });
       app = express().use(router);
 
-      jest
-        .spyOn(catalogClient, 'getEntityByRef')
-        .mockImplementation(async ref => {
-          const { kind } = parseEntityRef(ref);
+      catalogClient.getEntityByRef.mockImplementation(async ref => {
+        const { kind } = parseEntityRef(ref);
 
-          if (kind.toLocaleLowerCase() === 'template') {
-            return getMockTemplate();
-          }
+        if (kind.toLocaleLowerCase() === 'template') {
+          return getMockTemplate();
+        }
 
-          if (kind.toLocaleLowerCase() === 'user') {
-            return mockUser;
-          }
+        if (kind.toLocaleLowerCase() === 'user') {
+          return mockUser;
+        }
 
-          throw new Error(`no mock found for kind: ${kind}`);
-        });
+        throw new Error(`no mock found for kind: ${kind}`);
+      });
 
       jest
         .spyOn(permissionApi, 'authorizeConditional')
@@ -225,10 +243,15 @@ describe('createRouter', () => {
             result: AuthorizeResult.ALLOW,
           },
         ]);
+      jest.spyOn(permissionApi, 'authorize').mockImplementation(async () => [
+        {
+          result: AuthorizeResult.ALLOW,
+        },
+      ]);
     });
 
     afterEach(() => {
-      jest.resetAllMocks();
+      jest.clearAllMocks();
     });
 
     describe('GET /v2/actions', () => {
@@ -284,8 +307,7 @@ describe('createRouter', () => {
       it('should call the broker with a correct spec', async () => {
         const broker =
           taskBroker.dispatch as jest.Mocked<TaskBroker>['dispatch'];
-        const mockToken =
-          'blob.eyJzdWIiOiJ1c2VyOmRlZmF1bHQvZ3Vlc3QiLCJuYW1lIjoiSm9obiBEb2UifQ.blob';
+        const mockToken = mockCredentials.user.token();
         const mockTemplate = getMockTemplate();
 
         await request(app)
@@ -301,11 +323,13 @@ describe('createRouter', () => {
               requiredParameter2: 'required-value-2',
             },
           });
+
         expect(broker).toHaveBeenCalledWith(
           expect.objectContaining({
-            createdBy: 'user:default/guest',
+            createdBy: 'user:default/mock',
             secrets: {
-              backstageToken: mockToken,
+              backstageToken: token,
+              __initiatorCredentials: JSON.stringify(credentials),
             },
 
             spec: {
@@ -322,7 +346,7 @@ describe('createRouter', () => {
               },
               user: {
                 entity: mockUser,
-                ref: 'user:default/guest',
+                ref: 'user:default/mock',
               },
               templateInfo: {
                 entityRef: stringifyEntityRef({
@@ -337,117 +361,11 @@ describe('createRouter', () => {
               },
             },
           }),
-        );
-      });
-
-      it('should not throw when an invalid authorization header is passed', async () => {
-        const broker =
-          taskBroker.dispatch as jest.Mocked<TaskBroker>['dispatch'];
-        const mockToken = 'blob.eyJzdWIiOiIiLCJuYW1lIjoiSm9obiBEb2UifQ.blob';
-        const mockTemplate = getMockTemplate();
-
-        await request(app)
-          .post('/v2/tasks')
-          .set('Authorization', `Bearer ${mockToken}`)
-          .send({
-            templateRef: stringifyEntityRef({
-              kind: 'template',
-              name: 'create-react-app-template',
-            }),
-            values: {
-              requiredParameter1: 'required-value-1',
-              requiredParameter2: 'required-value-2',
-            },
-          });
-        expect(broker).toHaveBeenCalledWith(
-          expect.objectContaining({
-            createdBy: undefined,
-            secrets: {
-              backstageToken: undefined,
-            },
-
-            spec: {
-              apiVersion: mockTemplate.apiVersion,
-              steps: mockTemplate.spec.steps.map((step, index) => ({
-                ...step,
-                id: step.id ?? `step-${index + 1}`,
-                name: step.name ?? step.action,
-              })),
-              output: mockTemplate.spec.output ?? {},
-              parameters: {
-                requiredParameter1: 'required-value-1',
-                requiredParameter2: 'required-value-2',
-              },
-              user: {
-                entity: undefined,
-                ref: undefined,
-              },
-              templateInfo: {
-                entityRef: stringifyEntityRef({
-                  kind: 'Template',
-                  namespace: 'Default',
-                  name: mockTemplate.metadata?.name,
-                }),
-                baseUrl: 'https://dev.azure.com',
-                entity: {
-                  metadata: mockTemplate.metadata,
-                },
-              },
-            },
-          }),
-        );
-      });
-
-      it('should not decorate a user when no backstage auth is passed', async () => {
-        const broker =
-          taskBroker.dispatch as jest.Mocked<TaskBroker>['dispatch'];
-
-        await request(app)
-          .post('/v2/tasks')
-          .send({
-            templateRef: stringifyEntityRef({
-              kind: 'template',
-              name: 'create-react-app-template',
-            }),
-            values: {
-              requiredParameter1: 'required-value-1',
-              requiredParameter2: 'required-value-2',
-            },
-          });
-
-        expect(broker).toHaveBeenCalledWith(
-          expect.objectContaining({
-            createdBy: undefined,
-            spec: expect.objectContaining({
-              user: { entity: undefined, ref: undefined },
-            }),
-          }),
-        );
-      });
-
-      it('should emit auditlog containing without user identifier when no backstage auth is passed', async () => {
-        await request(app)
-          .post('/v2/tasks')
-          .send({
-            templateRef: stringifyEntityRef({
-              kind: 'template',
-              name: 'create-react-app-template',
-            }),
-            values: {
-              requiredParameter1: 'required-value-1',
-              requiredParameter2: 'required-value-2',
-            },
-          });
-
-        expect(loggerSpy).toHaveBeenCalledTimes(1);
-        expect(loggerSpy).toHaveBeenCalledWith(
-          'Scaffolding task for template:default/create-react-app-template',
         );
       });
 
       it('should emit auditlog containing user identifier when backstage auth is passed', async () => {
-        const mockToken =
-          'blob.eyJzdWIiOiJ1c2VyOmRlZmF1bHQvZ3Vlc3QiLCJuYW1lIjoiSm9obiBEb2UifQ.blob';
+        const mockToken = mockCredentials.user.token();
 
         await request(app)
           .post('/v2/tasks')
@@ -465,7 +383,7 @@ describe('createRouter', () => {
 
         expect(loggerSpy).toHaveBeenCalledTimes(1);
         expect(loggerSpy).toHaveBeenCalledWith(
-          'Scaffolding task for template:default/create-react-app-template created by user:default/guest',
+          'Scaffolding task for template:default/create-react-app-template created by user:default/mock',
         );
       });
     });
@@ -484,11 +402,13 @@ describe('createRouter', () => {
               createdBy: '',
             },
           ],
+          totalTasks: 1,
         });
 
         const response = await request(app).get(`/v2/tasks`);
         expect(taskBroker.list).toHaveBeenCalledWith({
-          createdBy: undefined,
+          filters: {},
+          pagination: {},
         });
         expect(response.status).toEqual(200);
         expect(response.body).toStrictEqual({
@@ -501,6 +421,7 @@ describe('createRouter', () => {
               createdBy: '',
             },
           ],
+          totalTasks: 1,
         });
       });
 
@@ -517,14 +438,12 @@ describe('createRouter', () => {
               createdBy: 'user:default/foo',
             },
           ],
+          totalTasks: 1,
         });
 
         const response = await request(app).get(
-          `/v2/tasks?createdBy=user:default/foo`,
+          `/v2/tasks?createdBy=user:default/foo&createdBy=user:default/bar&status=completed&status=open&limit=1&offset=0&order=desc:created_at`,
         );
-        expect(taskBroker.list).toHaveBeenCalledWith({
-          createdBy: 'user:default/foo',
-        });
 
         expect(response.status).toEqual(200);
         expect(response.body).toStrictEqual({
@@ -537,6 +456,18 @@ describe('createRouter', () => {
               createdBy: 'user:default/foo',
             },
           ],
+          totalTasks: 1,
+        });
+        expect(taskBroker.list).toHaveBeenCalledWith({
+          filters: {
+            createdBy: ['user:default/foo', 'user:default/bar'],
+            status: ['completed', 'open'],
+          },
+          pagination: {
+            limit: 1,
+            offset: 0,
+          },
+          order: [{ order: 'desc', field: 'created_at' }],
         });
       });
     });
@@ -548,7 +479,10 @@ describe('createRouter', () => {
           spec: {} as any,
           status: 'completed',
           createdAt: '',
-          secrets: { backstageToken: 'secret' },
+          secrets: {
+            backstageToken: token,
+            __initiatorCredentials: JSON.stringify(credentials),
+          },
           createdBy: '',
         });
 
@@ -778,38 +712,47 @@ data: {"id":1,"taskId":"a-random-id","type":"completion","createdAt":"","body":{
         expect(subscriber!.closed).toBe(true);
       });
     });
+
+    describe('POST /v2/dry-run', () => {
+      it('should get user entity', async () => {
+        const mockToken = mockCredentials.user.token();
+        const mockTemplate = getMockTemplate();
+
+        await request(app)
+          .post('/v2/dry-run')
+          .set('Authorization', `Bearer ${mockToken}`)
+          .send({
+            template: mockTemplate,
+            values: {
+              requiredParameter1: 'required-value-1',
+              requiredParameter2: 'required-value-2',
+            },
+            directoryContents: [],
+          });
+
+        expect(catalogClient.getEntityByRef).toHaveBeenCalledTimes(1);
+
+        expect(catalogClient.getEntityByRef).toHaveBeenCalledWith(
+          'user:default/mock',
+          expect.anything(),
+        );
+      });
+    });
   });
 
   describe('providing an identity api', () => {
     beforeEach(async () => {
-      const logger = getVoidLogger();
+      const logger = loggerToWinstonLogger(mockServices.logger.mock());
       const databaseTaskStore = await DatabaseTaskStore.create({
         database: createDatabase(),
       });
-      taskBroker = new StorageTaskBroker(databaseTaskStore, logger);
+      taskBroker = new StorageTaskBroker(databaseTaskStore, logger, config);
 
       jest.spyOn(taskBroker, 'dispatch');
       jest.spyOn(taskBroker, 'get');
       jest.spyOn(taskBroker, 'list');
       jest.spyOn(taskBroker, 'event$');
       loggerSpy = jest.spyOn(logger, 'info');
-
-      getIdentity.mockImplementation(
-        async ({
-          request: _request,
-        }: IdentityApiGetIdentityRequest): Promise<
-          BackstageIdentityResponse | undefined
-        > => {
-          return {
-            identity: {
-              userEntityRef: 'user:default/guest',
-              ownershipEntityRefs: [],
-              type: 'user',
-            },
-            token: 'token',
-          };
-        },
-      );
 
       const router = await createRouter({
         logger: logger,
@@ -818,25 +761,25 @@ data: {"id":1,"taskId":"a-random-id","type":"completion","createdAt":"","body":{
         catalogClient,
         reader: mockUrlReader,
         taskBroker,
-        identity: { getIdentity },
         permissions: permissionApi,
+        auth,
+        httpAuth,
+        discovery,
       });
       app = express().use(router);
 
-      jest
-        .spyOn(catalogClient, 'getEntityByRef')
-        .mockImplementation(async ref => {
-          const { kind } = parseEntityRef(ref);
+      catalogClient.getEntityByRef.mockImplementation(async ref => {
+        const { kind } = parseEntityRef(ref);
 
-          if (kind.toLocaleLowerCase() === 'template') {
-            return getMockTemplate();
-          }
+        if (kind.toLocaleLowerCase() === 'template') {
+          return getMockTemplate();
+        }
 
-          if (kind.toLocaleLowerCase() === 'user') {
-            return mockUser;
-          }
-          throw new Error(`no mock found for kind: ${kind}`);
-        });
+        if (kind.toLocaleLowerCase() === 'user') {
+          return mockUser;
+        }
+        throw new Error(`no mock found for kind: ${kind}`);
+      });
 
       jest
         .spyOn(permissionApi, 'authorizeConditional')
@@ -848,6 +791,11 @@ data: {"id":1,"taskId":"a-random-id","type":"completion","createdAt":"","body":{
             result: AuthorizeResult.ALLOW,
           },
         ]);
+      jest.spyOn(permissionApi, 'authorize').mockImplementation(async () => [
+        {
+          result: AuthorizeResult.ALLOW,
+        },
+      ]);
     });
 
     afterEach(() => {
@@ -1029,9 +977,10 @@ data: {"id":1,"taskId":"a-random-id","type":"completion","createdAt":"","body":{
           });
         expect(broker).toHaveBeenCalledWith(
           expect.objectContaining({
-            createdBy: 'user:default/guest',
+            createdBy: 'user:default/mock',
             secrets: {
-              backstageToken: 'token',
+              backstageToken: token,
+              __initiatorCredentials: JSON.stringify(credentials),
             },
 
             spec: {
@@ -1044,7 +993,7 @@ data: {"id":1,"taskId":"a-random-id","type":"completion","createdAt":"","body":{
               },
               user: {
                 entity: mockUser,
-                ref: 'user:default/guest',
+                ref: 'user:default/mock',
               },
               templateInfo: {
                 entityRef: stringifyEntityRef({
@@ -1098,9 +1047,10 @@ data: {"id":1,"taskId":"a-random-id","type":"completion","createdAt":"","body":{
           });
         expect(broker).toHaveBeenCalledWith(
           expect.objectContaining({
-            createdBy: 'user:default/guest',
+            createdBy: 'user:default/mock',
             secrets: {
-              backstageToken: 'token',
+              backstageToken: token,
+              __initiatorCredentials: JSON.stringify(credentials),
             },
 
             spec: {
@@ -1125,7 +1075,7 @@ data: {"id":1,"taskId":"a-random-id","type":"completion","createdAt":"","body":{
               },
               user: {
                 entity: mockUser,
-                ref: 'user:default/guest',
+                ref: 'user:default/mock',
               },
               templateInfo: {
                 entityRef: stringifyEntityRef({
@@ -1186,9 +1136,10 @@ data: {"id":1,"taskId":"a-random-id","type":"completion","createdAt":"","body":{
           });
         expect(broker).toHaveBeenCalledWith(
           expect.objectContaining({
-            createdBy: 'user:default/guest',
+            createdBy: 'user:default/mock',
             secrets: {
-              backstageToken: 'token',
+              backstageToken: token,
+              __initiatorCredentials: JSON.stringify(credentials),
             },
 
             spec: {
@@ -1205,7 +1156,7 @@ data: {"id":1,"taskId":"a-random-id","type":"completion","createdAt":"","body":{
               },
               user: {
                 entity: mockUser,
-                ref: 'user:default/guest',
+                ref: 'user:default/mock',
               },
               templateInfo: {
                 entityRef: stringifyEntityRef({
@@ -1221,96 +1172,6 @@ data: {"id":1,"taskId":"a-random-id","type":"completion","createdAt":"","body":{
             },
           }),
         );
-      });
-
-      describe('when the identity api throws an error', () => {
-        beforeEach(() => {
-          getIdentity.mockImplementation(
-            async ({
-              request: _request,
-            }: IdentityApiGetIdentityRequest): Promise<
-              BackstageIdentityResponse | undefined
-            > => {
-              throw new Error('whoops!');
-            },
-          );
-        });
-        it('return an error', async () => {
-          const response = await request(app)
-            .post('/v2/tasks')
-            .send({
-              templateRef: stringifyEntityRef({
-                kind: 'template',
-                name: 'create-react-app-template',
-              }),
-              values: {
-                requiredParameter1: 'required-value-1',
-                requiredParameter2: 'required-value-2',
-              },
-            });
-          expect(response.status).not.toEqual(201);
-        });
-      });
-
-      describe('no auth is provided', () => {
-        beforeEach(() => {
-          getIdentity.mockImplementation(
-            async ({
-              request: _request,
-            }: IdentityApiGetIdentityRequest): Promise<
-              BackstageIdentityResponse | undefined
-            > => {
-              return undefined;
-            },
-          );
-        });
-
-        it('should not decorate a user when no backstage auth is passed', async () => {
-          const broker =
-            taskBroker.dispatch as jest.Mocked<TaskBroker>['dispatch'];
-
-          await request(app)
-            .post('/v2/tasks')
-            .send({
-              templateRef: stringifyEntityRef({
-                kind: 'template',
-                name: 'create-react-app-template',
-              }),
-              values: {
-                requiredParameter1: 'required-value-1',
-                requiredParameter2: 'required-value-2',
-              },
-            });
-
-          expect(broker).toHaveBeenCalledWith(
-            expect.objectContaining({
-              createdBy: undefined,
-              spec: expect.objectContaining({
-                user: { entity: undefined, ref: undefined },
-              }),
-            }),
-          );
-        });
-
-        it('should emit auditlog containing without user identifier when no backstage auth is passed', async () => {
-          await request(app)
-            .post('/v2/tasks')
-            .send({
-              templateRef: stringifyEntityRef({
-                kind: 'template',
-                name: 'create-react-app-template',
-              }),
-              values: {
-                requiredParameter1: 'required-value-1',
-                requiredParameter2: 'required-value-2',
-              },
-            });
-
-          expect(loggerSpy).toHaveBeenCalledTimes(1);
-          expect(loggerSpy).toHaveBeenCalledWith(
-            'Scaffolding task for template:default/create-react-app-template',
-          );
-        });
       });
 
       it('should emit auditlog containing user identifier when backstage auth is passed', async () => {
@@ -1329,7 +1190,7 @@ data: {"id":1,"taskId":"a-random-id","type":"completion","createdAt":"","body":{
 
         expect(loggerSpy).toHaveBeenCalledTimes(1);
         expect(loggerSpy).toHaveBeenCalledWith(
-          'Scaffolding task for template:default/create-react-app-template created by user:default/guest',
+          'Scaffolding task for template:default/create-react-app-template created by user:default/mock',
         );
       });
     });
@@ -1348,11 +1209,13 @@ data: {"id":1,"taskId":"a-random-id","type":"completion","createdAt":"","body":{
               createdBy: '',
             },
           ],
+          totalTasks: 1,
         });
 
         const response = await request(app).get(`/v2/tasks`);
         expect(taskBroker.list).toHaveBeenCalledWith({
-          createdBy: undefined,
+          pagination: {},
+          filters: {},
         });
         expect(response.status).toEqual(200);
         expect(response.body).toStrictEqual({
@@ -1365,6 +1228,7 @@ data: {"id":1,"taskId":"a-random-id","type":"completion","createdAt":"","body":{
               createdBy: '',
             },
           ],
+          totalTasks: 1,
         });
       });
 
@@ -1381,13 +1245,17 @@ data: {"id":1,"taskId":"a-random-id","type":"completion","createdAt":"","body":{
               createdBy: 'user:default/foo',
             },
           ],
+          totalTasks: 1,
         });
 
         const response = await request(app).get(
           `/v2/tasks?createdBy=user:default/foo`,
         );
         expect(taskBroker.list).toHaveBeenCalledWith({
-          createdBy: 'user:default/foo',
+          filters: {
+            createdBy: ['user:default/foo'],
+          },
+          pagination: {},
         });
 
         expect(response.status).toEqual(200);
@@ -1401,6 +1269,7 @@ data: {"id":1,"taskId":"a-random-id","type":"completion","createdAt":"","body":{
               createdBy: 'user:default/foo',
             },
           ],
+          totalTasks: 1,
         });
       });
     });
@@ -1412,7 +1281,10 @@ data: {"id":1,"taskId":"a-random-id","type":"completion","createdAt":"","body":{
           spec: {} as any,
           status: 'completed',
           createdAt: '',
-          secrets: { backstageToken: 'secret' },
+          secrets: {
+            backstageToken: token,
+            __initiatorCredentials: JSON.stringify(credentials),
+          },
           createdBy: '',
         });
 
@@ -1640,6 +1512,74 @@ data: {"id":1,"taskId":"a-random-id","type":"completion","createdAt":"","body":{
           after: 10,
         });
         expect(subscriber!.closed).toBe(true);
+      });
+    });
+
+    describe('GET /v2/autocomplete/:provider/:resource', () => {
+      let handleAutocompleteRequest: AutocompleteHandler;
+
+      beforeEach(async () => {
+        handleAutocompleteRequest = jest.fn().mockResolvedValue({
+          results: [{ title: 'blob' }],
+        });
+
+        const router = await createRouter({
+          logger: loggerToWinstonLogger(mockServices.logger.mock()),
+          config: new ConfigReader({}),
+          database: createDatabase(),
+          catalogClient,
+          reader: mockUrlReader,
+          taskBroker,
+          permissions: permissionApi,
+          auth,
+          httpAuth,
+          discovery,
+          autocompleteHandlers: {
+            'test-provider': handleAutocompleteRequest,
+          },
+        });
+
+        app = express().use(router).use(mockErrorHandler());
+      });
+
+      it('should throw an error when the provider is not registered', async () => {
+        const response = await request(app)
+          .post('/v2/autocomplete/unknown-provider/resource')
+          .send({
+            token: 'token',
+            context: {},
+          });
+
+        expect(response.status).toEqual(400);
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            error: {
+              message: 'Unsupported provider: unknown-provider',
+              name: 'InputError',
+            },
+          }),
+        );
+      });
+
+      it('should call the autocomplete handler', async () => {
+        const context = { mock: 'context' };
+        const mockToken = 'mocktoken';
+
+        const response = await request(app)
+          .post('/v2/autocomplete/test-provider/resource')
+          .send({
+            token: mockToken,
+            context,
+          });
+
+        expect(response.status).toEqual(200);
+
+        expect(response.body).toEqual({ results: [{ title: 'blob' }] });
+        expect(handleAutocompleteRequest).toHaveBeenCalledWith({
+          token: mockToken,
+          context,
+          resource: 'resource',
+        });
       });
     });
   });

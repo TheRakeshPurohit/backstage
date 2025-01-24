@@ -21,18 +21,14 @@ import {
   stringifyEntityRef,
 } from '@backstage/catalog-model';
 import { catalogApiRef, useEntity } from '@backstage/plugin-catalog-react';
-import {
-  Box,
-  createStyles,
-  Grid,
-  makeStyles,
-  Switch,
-  Theme,
-  Typography,
-} from '@material-ui/core';
+import Box from '@material-ui/core/Box';
+import Grid from '@material-ui/core/Grid';
+import Switch from '@material-ui/core/Switch';
+import Typography from '@material-ui/core/Typography';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Pagination from '@material-ui/lab/Pagination';
 import React, { useState } from 'react';
-import useAsync from 'react-use/lib/useAsync';
+import useAsync from 'react-use/esm/useAsync';
 
 import {
   Avatar,
@@ -48,20 +44,30 @@ import {
   removeDuplicateEntitiesFrom,
 } from '../../../../helpers/helpers';
 import { EntityRefLink } from '@backstage/plugin-catalog-react';
+import { EntityRelationAggregation } from '../../types';
 
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    card: {
-      border: `1px solid ${theme.palette.divider}`,
-      boxShadow: theme.shadows[2],
-      borderRadius: '4px',
-      overflow: 'visible',
-      position: 'relative',
-      margin: theme.spacing(4, 1, 1),
-      flex: '1',
-      minWidth: '0px',
-    },
-  }),
+/** @public */
+export type MemberComponentClassKey = 'card' | 'avatar';
+
+const useStyles = makeStyles(
+  (theme: Theme) =>
+    createStyles({
+      card: {
+        border: `1px solid ${theme.palette.divider}`,
+        boxShadow: theme.shadows[2],
+        borderRadius: '4px',
+        overflow: 'visible',
+        position: 'relative',
+        margin: theme.spacing(4, 1, 1),
+        flex: '1',
+        minWidth: '0px',
+      },
+      avatar: {
+        position: 'absolute',
+        top: '-2rem',
+      },
+    }),
+  { name: 'PluginOrgMemberComponent' },
 );
 
 const MemberComponent = (props: { member: UserEntity }) => {
@@ -73,63 +79,90 @@ const MemberComponent = (props: { member: UserEntity }) => {
   const displayName = profile?.displayName ?? metaName;
 
   return (
-    <Grid item container xs={12} sm={6} md={4} xl={2}>
-      <Box className={classes.card}>
+    <Box className={classes.card}>
+      <Box
+        display="flex"
+        flexDirection="column"
+        m={3}
+        alignItems="center"
+        justifyContent="center"
+      >
+        <Avatar
+          displayName={displayName}
+          picture={profile?.picture}
+          classes={classes}
+        />
         <Box
-          display="flex"
-          flexDirection="column"
-          m={3}
-          alignItems="center"
-          justifyContent="center"
+          pt={2}
+          sx={{
+            width: '100%',
+          }}
+          textAlign="center"
         >
-          <Avatar
-            displayName={displayName}
-            picture={profile?.picture}
-            customStyles={{
-              position: 'absolute',
-              top: '-2rem',
-            }}
-          />
-          <Box
-            pt={2}
-            sx={{
-              width: '100%',
-            }}
-            textAlign="center"
-          >
-            <Typography variant="h6">
-              <EntityRefLink
-                data-testid="user-link"
-                entityRef={props.member}
-                title={displayName}
-              />
+          <Typography variant="h6">
+            <EntityRefLink
+              data-testid="user-link"
+              entityRef={props.member}
+              title={displayName}
+            />
+          </Typography>
+          {profile?.email && (
+            <Link to={`mailto:${profile.email}`}>
+              <OverflowTooltip text={profile.email} />
+            </Link>
+          )}
+          {description && (
+            <Typography variant="subtitle2">
+              <OverflowTooltip text={description} line={5} />
             </Typography>
-            {profile?.email && (
-              <Link to={`mailto:${profile.email}`}>
-                <OverflowTooltip text={profile.email} />
-              </Link>
-            )}
-            {description && (
-              <Typography variant="subtitle2">{description}</Typography>
-            )}
-          </Box>
+          )}
         </Box>
       </Box>
-    </Grid>
+    </Box>
   );
 };
+
+/** @public */
+export type MembersListCardClassKey = 'root' | 'cardContent' | 'memberList';
+
+const useListStyles = makeStyles(
+  theme => ({
+    root: {
+      height: '100%',
+    },
+    cardContent: {
+      overflow: 'auto',
+    },
+    memberList: {
+      display: 'grid',
+      gap: theme.spacing(1.5),
+      gridTemplateColumns: `repeat(auto-fit, minmax(auto, ${theme.spacing(
+        34,
+      )}px))`,
+    },
+  }),
+  { name: 'PluginOrgMembersListCardComponent' },
+);
 
 /** @public */
 export const MembersListCard = (props: {
   memberDisplayTitle?: string;
   pageSize?: number;
   showAggregateMembersToggle?: boolean;
+  relationType?: string;
+  /** @deprecated Please use `relationAggregation` instead */
+  relationsType?: EntityRelationAggregation;
+  relationAggregation?: EntityRelationAggregation;
 }) => {
   const {
     memberDisplayTitle = 'Members',
     pageSize = 50,
     showAggregateMembersToggle,
+    relationType = 'memberof',
   } = props;
+  const relationAggregation =
+    props.relationAggregation ?? props.relationsType ?? 'direct';
+  const classes = useListStyles();
 
   const { entity: groupEntity } = useEntity<GroupEntity>();
   const {
@@ -147,19 +180,22 @@ export const MembersListCard = (props: {
     setPage(pageIndex);
   };
 
-  const [showAggregateMembers, setShowAggregateMembers] = useState(false);
+  const [showAggregateMembers, setShowAggregateMembers] = useState(
+    relationAggregation === 'aggregated',
+  );
 
   const { loading: loadingDescendantMembers, value: descendantMembers } =
     useAsync(async () => {
-      if (!showAggregateMembersToggle) {
+      if (!showAggregateMembers) {
         return [] as UserEntity[];
       }
 
       return await getAllDesendantMembersForGroupEntity(
         groupEntity,
         catalogApi,
+        relationType,
       );
-    }, [catalogApi, groupEntity, showAggregateMembersToggle]);
+    }, [catalogApi, groupEntity, showAggregateMembers]);
   const {
     loading,
     error,
@@ -168,7 +204,7 @@ export const MembersListCard = (props: {
     const membersList = await catalogApi.getEntities({
       filter: {
         kind: 'User',
-        'relations.memberof': [
+        [`relations.${relationType.toLocaleLowerCase('en-US')}`]: [
           stringifyEntityRef({
             kind: 'group',
             namespace: groupNamespace.toLocaleLowerCase('en-US'),
@@ -209,14 +245,35 @@ export const MembersListCard = (props: {
     />
   );
 
+  let memberList: React.JSX.Element;
+  if (members && members.length > 0) {
+    memberList = (
+      <Box className={classes.memberList}>
+        {members.slice(pageSize * (page - 1), pageSize * page).map(member => (
+          <MemberComponent member={member} key={stringifyEntityRef(member)} />
+        ))}
+      </Box>
+    );
+  } else {
+    memberList = (
+      <Box p={2}>
+        <Typography>
+          This group has no {memberDisplayTitle.toLocaleLowerCase()}.
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
-    <Grid item>
+    <Grid item className={classes.root}>
       <InfoCard
         title={`${memberDisplayTitle} (${
           members?.length || 0
         }${paginationLabel})`}
         subheader={`of ${displayName}`}
         {...(nbPages <= 1 ? {} : { actions: pagination })}
+        className={classes.root}
+        cardClassName={classes.cardContent}
       >
         {showAggregateMembersToggle && (
           <>
@@ -235,21 +292,7 @@ export const MembersListCard = (props: {
         {showAggregateMembers && loadingDescendantMembers ? (
           <Progress />
         ) : (
-          <Grid container spacing={3}>
-            {members && members.length > 0 ? (
-              members
-                .slice(pageSize * (page - 1), pageSize * page)
-                .map(member => (
-                  <MemberComponent member={member} key={member.metadata.uid} />
-                ))
-            ) : (
-              <Box p={2}>
-                <Typography>
-                  This group has no {memberDisplayTitle.toLocaleLowerCase()}.
-                </Typography>
-              </Box>
-            )}
-          </Grid>
+          memberList
         )}
       </InfoCard>
     </Grid>

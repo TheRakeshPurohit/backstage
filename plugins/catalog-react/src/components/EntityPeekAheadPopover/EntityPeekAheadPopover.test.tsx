@@ -20,36 +20,32 @@ import React from 'react';
 import { EntityPeekAheadPopover } from './EntityPeekAheadPopover';
 import { ApiProvider } from '@backstage/core-app-api';
 import { TestApiRegistry, renderInTestApp } from '@backstage/test-utils';
+import { catalogApiMock } from '@backstage/plugin-catalog-react/testUtils';
 import { catalogApiRef } from '../../api';
-import { Entity } from '@backstage/catalog-model';
-import { CatalogApi } from '@backstage/catalog-client';
-import { Button } from '@material-ui/core';
+import Button from '@material-ui/core/Button';
 import { entityRouteRef } from '../../routes';
 
-const catalogApi: Partial<CatalogApi> = {
-  getEntityByRef: async (entityRef: string): Promise<Entity | undefined> => {
-    if (entityRef === 'component:default/service1') {
-      return {
-        apiVersion: '',
-        kind: 'Component',
-        metadata: {
-          namespace: 'default',
-          name: 'service1',
-        },
-        spec: {
-          tags: ['java'],
-        },
-      };
-    }
-    return undefined;
-  },
-};
+const catalogApi = catalogApiMock({
+  entities: [
+    {
+      apiVersion: '',
+      kind: 'Component',
+      metadata: {
+        namespace: 'default',
+        name: 'service1',
+      },
+      spec: {
+        tags: ['java'],
+      },
+    },
+  ],
+});
 
 const apis = TestApiRegistry.from([catalogApiRef, catalogApi]);
 
 describe('<EntityPeekAheadPopover/>', () => {
   it('renders all owners', async () => {
-    renderInTestApp(
+    await renderInTestApp(
       <ApiProvider apis={apis}>
         <EntityPeekAheadPopover entityRef="component:default/service1">
           <Button data-testid="popover1">s1</Button>
@@ -66,12 +62,12 @@ describe('<EntityPeekAheadPopover/>', () => {
     );
     expect(screen.getByText('s1')).toBeInTheDocument();
     expect(screen.queryByText('service1')).toBeNull();
-    user.hover(screen.getByTestId('popover1'));
+    await user.hover(screen.getByTestId('popover1'));
     expect(await screen.findByText('service1')).toBeInTheDocument();
 
     expect(screen.getByText('s2')).toBeInTheDocument();
     expect(screen.queryByText('service2')).toBeNull();
-    user.hover(screen.getByTestId('popover2'));
+    await user.hover(screen.getByTestId('popover2'));
     expect(
       await screen.findByText('Error: component:default/service2 not found'),
     ).toBeInTheDocument();

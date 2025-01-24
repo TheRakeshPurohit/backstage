@@ -14,24 +14,29 @@
  * limitations under the License.
  */
 import {
-  TaskRunner,
-  readTaskScheduleDefinitionFromConfig,
-} from '@backstage/backend-tasks';
-import {
   DeferredEntity,
   EntityProvider,
   EntityProviderConnection,
 } from '@backstage/plugin-catalog-node';
-
-import { Logger } from 'winston';
 import * as container from '@google-cloud/container';
 import {
   ANNOTATION_KUBERNETES_API_SERVER,
   ANNOTATION_KUBERNETES_API_SERVER_CA,
   ANNOTATION_KUBERNETES_AUTH_PROVIDER,
+  ANNOTATION_KUBERNETES_DASHBOARD_APP,
+  ANNOTATION_KUBERNETES_DASHBOARD_PARAMETERS,
 } from '@backstage/plugin-kubernetes-common';
 import { Config } from '@backstage/config';
-import { SchedulerService } from '@backstage/backend-plugin-api';
+import {
+  LoggerService,
+  SchedulerService,
+  SchedulerServiceTaskRunner,
+  readSchedulerServiceTaskScheduleDefinitionFromConfig,
+} from '@backstage/backend-plugin-api';
+import {
+  ANNOTATION_LOCATION,
+  ANNOTATION_ORIGIN_LOCATION,
+} from '@backstage/catalog-model';
 
 /**
  * Catalog provider to ingest GKE clusters
@@ -39,15 +44,15 @@ import { SchedulerService } from '@backstage/backend-plugin-api';
  * @public
  */
 export class GkeEntityProvider implements EntityProvider {
-  private readonly logger: Logger;
+  private readonly logger: LoggerService;
   private readonly scheduleFn: () => Promise<void>;
   private readonly gkeParents: string[];
   private readonly clusterManagerClient: container.v1.ClusterManagerClient;
   private connection?: EntityProviderConnection;
 
   private constructor(
-    logger: Logger,
-    taskRunner: TaskRunner,
+    logger: LoggerService,
+    taskRunner: SchedulerServiceTaskRunner,
     gkeParents: string[],
     clusterManagerClient: container.v1.ClusterManagerClient,
   ) {
@@ -62,7 +67,7 @@ export class GkeEntityProvider implements EntityProvider {
     scheduler,
     config,
   }: {
-    logger: Logger;
+    logger: LoggerService;
     scheduler: SchedulerService;
     config: Config;
   }) {
@@ -80,13 +85,13 @@ export class GkeEntityProvider implements EntityProvider {
     config,
     clusterManagerClient,
   }: {
-    logger: Logger;
+    logger: LoggerService;
     scheduler: SchedulerService;
     config: Config;
     clusterManagerClient: container.v1.ClusterManagerClient;
   }) {
     const gkeProviderConfig = config.getConfig('catalog.providers.gcp.gke');
-    const schedule = readTaskScheduleDefinitionFromConfig(
+    const schedule = readSchedulerServiceTaskScheduleDefinitionFromConfig(
       gkeProviderConfig.getConfig('schedule'),
     );
     return new GkeEntityProvider(
@@ -120,10 +125,16 @@ export class GkeEntityProvider implements EntityProvider {
 
   private clusterToResource(
     cluster: container.protos.google.container.v1.ICluster,
+    project: string,
   ): DeferredEntity | undefined {
     const location = `${this.getProviderName()}:${cluster.location}`;
 
-    if (!cluster.name || !cluster.selfLink || !location || !cluster.endpoint) {
+    if (
+      !cluster.name ||
+      !cluster.selfLink ||
+      !cluster.endpoint ||
+      !cluster.location
+    ) {
       this.logger.warn(
         `ignoring partial cluster, one of name=${cluster.name}, endpoint=${cluster.endpoint}, selfLink=${cluster.selfLink} or location=${cluster.location} is missing`,
       );
@@ -138,12 +149,18 @@ export class GkeEntityProvider implements EntityProvider {
         kind: 'Resource',
         metadata: {
           annotations: {
-            [ANNOTATION_KUBERNETES_API_SERVER]: cluster.endpoint,
+            [ANNOTATION_KUBERNETES_API_SERVER]: `https://${cluster.endpoint}`,
             [ANNOTATION_KUBERNETES_API_SERVER_CA]:
               cluster.masterAuth?.clusterCaCertificate || '',
             [ANNOTATION_KUBERNETES_AUTH_PROVIDER]: 'google',
-            'backstage.io/managed-by-location': location,
-            'backstage.io/managed-by-origin-location': location,
+            [ANNOTATION_KUBERNETES_DASHBOARD_APP]: 'gke',
+            [ANNOTATION_LOCATION]: location,
+            [ANNOTATION_ORIGIN_LOCATION]: location,
+            [ANNOTATION_KUBERNETES_DASHBOARD_PARAMETERS]: JSON.stringify({
+              projectId: project,
+              region: cluster.location,
+              clusterName: cluster.name,
+            }),
           },
           name: cluster.name,
           namespace: 'default',
@@ -156,7 +173,9 @@ export class GkeEntityProvider implements EntityProvider {
     };
   }
 
-  private createScheduleFn(taskRunner: TaskRunner): () => Promise<void> {
+  private createScheduleFn(
+    taskRunner: SchedulerServiceTaskRunner,
+  ): () => Promise<void> {
     return async () => {
       const taskId = `${this.getProviderName()}:refresh`;
       return taskRunner.run({
@@ -172,18 +191,22 @@ export class GkeEntityProvider implements EntityProvider {
     };
   }
 
-  private async getClusters(): Promise<
-    container.protos.google.container.v1.ICluster[]
-  > {
+  private async getClusters(): Promise<DeferredEntity[]> {
     const clusters = await Promise.all(
       this.gkeParents.map(async parent => {
+        const project = parent.split('/')[1];
         const request = {
           parent: parent,
         };
         const [response] = await this.clusterManagerClient.listClusters(
           request,
         );
-        return response.clusters?.filter(this.filterOutUndefinedCluster) ?? [];
+        return (
+          response.clusters
+            ?.filter(this.filterOutUndefinedCluster)
+            .map(c => this.clusterToResource(c, project))
+            .filter(this.filterOutUndefinedDeferredEntity) ?? []
+        );
       }),
     );
     return clusters.flat();
@@ -196,18 +219,14 @@ export class GkeEntityProvider implements EntityProvider {
 
     this.logger.info('Discovering GKE clusters');
 
-    let clusters: container.protos.google.container.v1.ICluster[];
+    let resources: DeferredEntity[];
 
     try {
-      clusters = await this.getClusters();
+      resources = await this.getClusters();
     } catch (e) {
       this.logger.error('error fetching GKE clusters', e);
       return;
     }
-    const resources =
-      clusters
-        .map(c => this.clusterToResource(c))
-        .filter(this.filterOutUndefinedDeferredEntity) ?? [];
 
     this.logger.info(
       `Ingesting GKE clusters [${resources

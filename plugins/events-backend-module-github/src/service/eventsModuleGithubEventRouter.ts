@@ -15,7 +15,7 @@
  */
 
 import { createBackendModule } from '@backstage/backend-plugin-api';
-import { eventsExtensionPoint } from '@backstage/plugin-events-node/alpha';
+import { eventsServiceRef } from '@backstage/plugin-events-node';
 import { GithubEventRouter } from '../router/GithubEventRouter';
 
 /**
@@ -27,17 +27,15 @@ import { GithubEventRouter } from '../router/GithubEventRouter';
  */
 export const eventsModuleGithubEventRouter = createBackendModule({
   pluginId: 'events',
-  moduleId: 'githubEventRouter',
+  moduleId: 'github-event-router',
   register(env) {
     env.registerInit({
       deps: {
-        events: eventsExtensionPoint,
+        events: eventsServiceRef,
       },
       async init({ events }) {
-        const eventRouter = new GithubEventRouter();
-
-        events.addPublishers(eventRouter);
-        events.addSubscribers(eventRouter);
+        const eventRouter = new GithubEventRouter({ events });
+        await eventRouter.subscribe();
       },
     });
   },

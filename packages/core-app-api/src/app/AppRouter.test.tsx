@@ -18,7 +18,6 @@ import React from 'react';
 import {
   AppComponents,
   configApiRef,
-  IdentityApi,
   identityApiRef,
   SignInPageProps,
   useApi,
@@ -28,9 +27,9 @@ import { MemoryRouter } from 'react-router-dom';
 import { AppIdentityProxy } from '../apis/implementations/IdentityApi/AppIdentityProxy';
 import { render, screen } from '@testing-library/react';
 import { AppRouter } from './AppRouter';
-import useAsync from 'react-use/lib/useAsync';
+import useAsync from 'react-use/esm/useAsync';
 import { AppContextProvider } from './AppContext';
-import { TestApiProvider } from '@backstage/test-utils';
+import { mockApis, TestApiProvider } from '@backstage/test-utils';
 import { ConfigReader } from '@backstage/config';
 
 function UserRefDisplay() {
@@ -78,13 +77,7 @@ describe('AppRouter', () => {
     const appIdentityProxy = new AppIdentityProxy();
 
     const SignInPage = (props: SignInPageProps) => {
-      props.onSignInSuccess({
-        getBackstageIdentity: async () => ({
-          type: 'user',
-          userEntityRef: 'user:default/test',
-          ownershipEntityRefs: ['user:default/test'],
-        }),
-      } as IdentityApi);
+      props.onSignInSuccess(mockApis.identity());
       return null;
     };
 

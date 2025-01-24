@@ -39,7 +39,7 @@ export interface Config {
        *
        * If no credential is specified anonymous access is used.
        *
-       * @visibility secret
+       * @deepVisibility secret
        * @deprecated Use `credentials` instead.
        */
       credential?: {
@@ -54,7 +54,7 @@ export interface Config {
        * If not organization matches the first credential without an organization is used.
        *
        * If no credentials are specified at all, either a default credential (for Azure DevOps) or anonymous access (for Azure DevOps Server) is used.
-       * @visibility secret
+       * @deepVisibility secret
        */
       credentials?: {
         clientId?: string;
@@ -151,6 +151,11 @@ export interface Config {
        * @visibility frontend
        */
       baseUrl?: string;
+      /**
+       * The gitiles base url.
+       * @visibility frontend
+       */
+      gitilesBaseUrl: string;
       /**
        * The base url for cloning repos.
        * @visibility frontend
@@ -344,6 +349,24 @@ export interface Config {
        * @visibility secret
        */
       password?: string;
+    }>;
+    /** Integration configuration for Harness Code */
+    harness?: Array<{
+      /**
+       * The hostname of the given Harness Code instance
+       * @visibility frontend
+       */
+      host: string;
+      /**
+       * The apikey to use for authenticated requests.
+       * @visibility secret
+       */
+      apiKey?: string;
+      /**
+       * Harness Code token used to authenticate requests. This can be either a generated access token.
+       * @visibility secret
+       */
+      token?: string;
     }>;
   };
 }

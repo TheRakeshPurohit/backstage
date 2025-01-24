@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-import { TaskScheduleDefinition } from '@backstage/backend-tasks';
+import { SchedulerServiceTaskScheduleDefinition } from '@backstage/backend-plugin-api';
 import { mockServices, startTestBackend } from '@backstage/backend-test-utils';
 import { catalogProcessingExtensionPoint } from '@backstage/plugin-catalog-node/alpha';
-import { Duration } from 'luxon';
 import { catalogModuleGerritEntityProvider } from './catalogModuleGerritEntityProvider';
 import { GerritEntityProvider } from '../providers/GerritEntityProvider';
 
 describe('catalogModuleGerritEntityProvider', () => {
   it('should register provider at the catalog extension point', async () => {
     let addedProviders: Array<GerritEntityProvider> | undefined;
-    let usedSchedule: TaskScheduleDefinition | undefined;
+    let usedSchedule: SchedulerServiceTaskScheduleDefinition | undefined;
 
     const extensionPoint = {
       addEntityProvider: (providers: any) => {
@@ -69,15 +68,15 @@ describe('catalogModuleGerritEntityProvider', () => {
     await startTestBackend({
       extensionPoints: [[catalogProcessingExtensionPoint, extensionPoint]],
       features: [
-        catalogModuleGerritEntityProvider(),
+        catalogModuleGerritEntityProvider,
         mockServices.rootConfig.factory({ data: config }),
         mockServices.logger.factory(),
         scheduler.factory,
       ],
     });
 
-    expect(usedSchedule?.frequency).toEqual(Duration.fromISO('P1M'));
-    expect(usedSchedule?.timeout).toEqual(Duration.fromISO('PT3M'));
+    expect(usedSchedule?.frequency).toEqual({ months: 1 });
+    expect(usedSchedule?.timeout).toEqual({ minutes: 3 });
     expect(addedProviders?.length).toEqual(1);
     expect(addedProviders?.pop()?.getProviderName()).toEqual(
       'gerrit-provider:test',

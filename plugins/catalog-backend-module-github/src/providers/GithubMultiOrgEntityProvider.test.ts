@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-import { getVoidLogger } from '@backstage/backend-common';
 import { GroupEntity, UserEntity } from '@backstage/catalog-model';
 import { ConfigReader } from '@backstage/config';
-import {
-  GithubCredentialsProvider,
-  GithubIntegrationConfig,
-} from '@backstage/integration';
+import { GithubCredentialsProvider } from '@backstage/integration';
 import { EntityProviderConnection } from '@backstage/plugin-catalog-node';
-import { EventSubscriber } from '@backstage/plugin-events-node';
+import {
+  DefaultEventsService,
+  EventsService,
+} from '@backstage/plugin-events-node';
 import { graphql } from '@octokit/graphql';
 import {
   GithubMultiOrgEntityProvider,
   withLocations,
 } from './GithubMultiOrgEntityProvider';
+import { LoggerService } from '@backstage/backend-plugin-api';
+import { mockServices } from '@backstage/backend-test-utils';
 
 jest.mock('@octokit/graphql');
 
@@ -43,10 +44,47 @@ jest.mock('@backstage/integration', () => ({
 
 describe('GithubMultiOrgEntityProvider', () => {
   describe('read', () => {
+    let mockClient: jest.Mock<any, any, any>;
+    let entityProviderConnection: EntityProviderConnection;
+    let logger: LoggerService;
+    let gitHubConfig: { host: string };
+    let mockGetCredentials: jest.Mock<any, any, any>;
+    let entityProvider: GithubMultiOrgEntityProvider;
+
+    beforeEach(() => {
+      mockClient = jest.fn();
+      (graphql.defaults as jest.Mock).mockReturnValue(mockClient);
+
+      entityProviderConnection = {
+        applyMutation: jest.fn(),
+        refresh: jest.fn(),
+      };
+
+      logger = mockServices.logger.mock();
+
+      gitHubConfig = { host: 'github.com' };
+
+      mockGetCredentials = jest.fn().mockReturnValue({
+        headers: { token: 'blah' },
+        type: 'app',
+      });
+    });
+
     afterEach(() => jest.resetAllMocks());
 
     it('should read specified orgs', async () => {
-      const mockClient = jest.fn();
+      entityProvider = new GithubMultiOrgEntityProvider({
+        id: 'my-id',
+        gitHubConfig,
+        githubCredentialsProvider: {
+          getCredentials: mockGetCredentials,
+        },
+        githubUrl: 'https://github.com',
+        logger,
+        orgs: ['orgA', 'orgB'],
+      });
+
+      await entityProvider.connect(entityProviderConnection);
 
       mockClient
         .mockResolvedValueOnce({
@@ -154,36 +192,6 @@ describe('GithubMultiOrgEntityProvider', () => {
         });
 
       (graphql.defaults as jest.Mock).mockReturnValue(mockClient);
-
-      const entityProviderConnection: EntityProviderConnection = {
-        applyMutation: jest.fn(),
-        refresh: jest.fn(),
-      };
-
-      const logger = getVoidLogger();
-      const gitHubConfig: GithubIntegrationConfig = {
-        host: 'github.com',
-      };
-
-      const mockGetCredentials = jest.fn().mockReturnValue({
-        headers: { token: 'blah' },
-        type: 'app',
-      });
-
-      const githubCredentialsProvider: GithubCredentialsProvider = {
-        getCredentials: mockGetCredentials,
-      };
-
-      const entityProvider = new GithubMultiOrgEntityProvider({
-        id: 'my-id',
-        gitHubConfig,
-        githubCredentialsProvider,
-        githubUrl: 'https://github.com',
-        logger,
-        orgs: ['orgA', 'orgB'],
-      });
-
-      entityProvider.connect(entityProviderConnection);
 
       await entityProvider.read();
 
@@ -338,6 +346,19 @@ describe('GithubMultiOrgEntityProvider', () => {
     });
 
     it('should read every accessible org', async () => {
+      entityProvider = new GithubMultiOrgEntityProvider({
+        id: 'my-id',
+        gitHubConfig,
+        githubCredentialsProvider: {
+          getCredentials: mockGetCredentials,
+        },
+        githubUrl: 'https://github.com',
+        logger,
+        orgs: ['orgA', 'orgB'],
+      });
+
+      await entityProvider.connect(entityProviderConnection);
+
       getAllInstallationsMock.mockResolvedValue([
         {
           target_type: 'Organization',
@@ -352,8 +373,6 @@ describe('GithubMultiOrgEntityProvider', () => {
           },
         },
       ]);
-
-      const mockClient = jest.fn();
 
       mockClient
         .mockResolvedValueOnce({
@@ -462,26 +481,11 @@ describe('GithubMultiOrgEntityProvider', () => {
 
       (graphql.defaults as jest.Mock).mockReturnValue(mockClient);
 
-      const entityProviderConnection: EntityProviderConnection = {
-        applyMutation: jest.fn(),
-        refresh: jest.fn(),
-      };
-
-      const logger = getVoidLogger();
-      const gitHubConfig: GithubIntegrationConfig = {
-        host: 'github.com',
-      };
-
-      const mockGetCredentials = jest.fn().mockReturnValue({
-        headers: { token: 'blah' },
-        type: 'app',
-      });
-
       const githubCredentialsProvider: GithubCredentialsProvider = {
         getCredentials: mockGetCredentials,
       };
 
-      const entityProvider = new GithubMultiOrgEntityProvider({
+      entityProvider = new GithubMultiOrgEntityProvider({
         id: 'my-id',
         gitHubConfig,
         githubCredentialsProvider,
@@ -642,6 +646,293 @@ describe('GithubMultiOrgEntityProvider', () => {
         type: 'full',
       });
     });
+
+    it('should use the default namespace if options.alwaysUseDefaultNamespace is provided', async () => {
+      mockClient
+        .mockResolvedValueOnce({
+          organization: {
+            membersWithRole: {
+              pageInfo: { hasNextPage: false },
+              nodes: [
+                {
+                  login: 'a',
+                  name: 'b',
+                  bio: 'c',
+                  email: 'd',
+                  avatarUrl: 'e',
+                },
+                {
+                  login: 'x',
+                  name: 'y',
+                  bio: 'z',
+                  email: 'w',
+                  avatarUrl: 'v',
+                },
+              ],
+            },
+          },
+        })
+        .mockResolvedValueOnce({
+          organization: {
+            teams: {
+              pageInfo: { hasNextPage: false },
+              nodes: [
+                {
+                  slug: 'team',
+                  combinedSlug: 'orgC/team',
+                  name: 'Team',
+                  description: 'The one and only team',
+                  avatarUrl: 'http://example.com/team.jpeg',
+                  parentTeam: {
+                    slug: 'parent',
+                    combinedSlug: '',
+                    members: { pageInfo: { hasNextPage: false }, nodes: [] },
+                  },
+                  members: {
+                    pageInfo: { hasNextPage: false },
+                    nodes: [{ login: 'a' }, { login: 'x' }],
+                  },
+                },
+              ],
+            },
+          },
+        })
+        .mockResolvedValueOnce({
+          organization: {
+            membersWithRole: {
+              pageInfo: { hasNextPage: false },
+              nodes: [
+                {
+                  login: 'a',
+                  name: 'b',
+                  bio: 'c',
+                  email: 'd',
+                  avatarUrl: 'e',
+                },
+                {
+                  login: 'x',
+                  name: 'y',
+                  bio: 'z',
+                  email: 'w',
+                  avatarUrl: 'v',
+                },
+                {
+                  login: 'q',
+                  name: 'r',
+                  bio: 's',
+                  email: 't',
+                  avatarUrl: 'u',
+                },
+              ],
+            },
+          },
+        })
+        .mockResolvedValueOnce({
+          organization: {
+            teams: {
+              pageInfo: { hasNextPage: false },
+              nodes: [
+                {
+                  slug: 'team',
+                  combinedSlug: 'orgD/team',
+                  name: 'Team',
+                  description: 'The one and only team',
+                  avatarUrl: 'http://example.com/team.jpeg',
+                  parentTeam: {
+                    slug: 'parent',
+                    combinedSlug: '',
+                    members: { pageInfo: { hasNextPage: false }, nodes: [] },
+                  },
+                  members: {
+                    pageInfo: { hasNextPage: false },
+                    nodes: [{ login: 'a' }, { login: 'q' }],
+                  },
+                },
+              ],
+            },
+          },
+        });
+
+      (graphql.defaults as jest.Mock).mockReturnValue(mockClient);
+
+      entityProvider = new GithubMultiOrgEntityProvider({
+        id: 'my-id',
+        gitHubConfig,
+        githubCredentialsProvider: {
+          getCredentials: mockGetCredentials,
+        },
+        githubUrl: 'https://github.com',
+        logger,
+        orgs: ['orgA', 'orgB'],
+        alwaysUseDefaultNamespace: true,
+      });
+
+      await entityProvider.connect(entityProviderConnection);
+      await entityProvider.read();
+
+      expect(entityProviderConnection.applyMutation).toHaveBeenCalledWith({
+        entities: [
+          {
+            entity: {
+              apiVersion: 'backstage.io/v1alpha1',
+              kind: 'User',
+              metadata: {
+                annotations: {
+                  'backstage.io/managed-by-location':
+                    'url:https://github.com/a',
+                  'backstage.io/managed-by-origin-location':
+                    'url:https://github.com/a',
+                  'github.com/user-login': 'a',
+                },
+                description: 'c',
+                name: 'a',
+              },
+              spec: {
+                memberOf: ['team'],
+                profile: {
+                  displayName: 'b',
+                  email: 'd',
+                  picture: 'e',
+                },
+              },
+            },
+            locationKey: 'github-multi-org-provider:my-id',
+          },
+          {
+            entity: {
+              apiVersion: 'backstage.io/v1alpha1',
+              kind: 'User',
+              metadata: {
+                annotations: {
+                  'backstage.io/managed-by-location':
+                    'url:https://github.com/x',
+                  'backstage.io/managed-by-origin-location':
+                    'url:https://github.com/x',
+                  'github.com/user-login': 'x',
+                },
+                description: 'z',
+                name: 'x',
+              },
+              spec: {
+                memberOf: ['team'],
+                profile: {
+                  displayName: 'y',
+                  email: 'w',
+                  picture: 'v',
+                },
+              },
+            },
+            locationKey: 'github-multi-org-provider:my-id',
+          },
+          {
+            entity: {
+              apiVersion: 'backstage.io/v1alpha1',
+              kind: 'User',
+              metadata: {
+                annotations: {
+                  'backstage.io/managed-by-location':
+                    'url:https://github.com/q',
+                  'backstage.io/managed-by-origin-location':
+                    'url:https://github.com/q',
+                  'github.com/user-login': 'q',
+                },
+                description: 's',
+                name: 'q',
+              },
+              spec: {
+                memberOf: ['team'],
+                profile: {
+                  displayName: 'r',
+                  email: 't',
+                  picture: 'u',
+                },
+              },
+            },
+            locationKey: 'github-multi-org-provider:my-id',
+          },
+          {
+            entity: {
+              apiVersion: 'backstage.io/v1alpha1',
+              kind: 'Group',
+              metadata: {
+                annotations: {
+                  'backstage.io/managed-by-location':
+                    'url:https://github.com/orgs/orgC/teams/team',
+                  'backstage.io/managed-by-origin-location':
+                    'url:https://github.com/orgs/orgC/teams/team',
+                  'github.com/team-slug': 'orgC/team',
+                },
+                name: 'team',
+                description: 'The one and only team',
+              },
+              spec: {
+                children: [],
+                parent: 'parent',
+                profile: {
+                  displayName: 'Team',
+                  picture: 'http://example.com/team.jpeg',
+                },
+                type: 'team',
+                members: ['default/a', 'default/x'],
+              },
+            },
+            locationKey: 'github-multi-org-provider:my-id',
+          },
+          {
+            entity: {
+              apiVersion: 'backstage.io/v1alpha1',
+              kind: 'Group',
+              metadata: {
+                annotations: {
+                  'backstage.io/managed-by-location':
+                    'url:https://github.com/orgs/orgD/teams/team',
+                  'backstage.io/managed-by-origin-location':
+                    'url:https://github.com/orgs/orgD/teams/team',
+                  'github.com/team-slug': 'orgD/team',
+                },
+                name: 'team',
+                description: 'The one and only team',
+              },
+              spec: {
+                children: [],
+                parent: 'parent',
+                profile: {
+                  displayName: 'Team',
+                  picture: 'http://example.com/team.jpeg',
+                },
+                type: 'team',
+                members: ['default/a', 'default/q'],
+              },
+            },
+            locationKey: 'github-multi-org-provider:my-id',
+          },
+        ],
+        type: 'full',
+      });
+    });
+
+    it('should not call applyMutation if an error is thrown', async () => {
+      entityProvider = new GithubMultiOrgEntityProvider({
+        id: 'my-id',
+        gitHubConfig,
+        githubCredentialsProvider: {
+          getCredentials: mockGetCredentials,
+        },
+        githubUrl: 'https://github.com',
+        logger,
+        orgs: ['orgA', 'orgB'],
+      });
+
+      await entityProvider.connect(entityProviderConnection);
+
+      mockClient.mockImplementationOnce(() => {
+        throw new Error('Network Error');
+      });
+
+      await expect(entityProvider.read()).rejects.toThrow('Network Error');
+
+      expect(entityProviderConnection.applyMutation).not.toHaveBeenCalled();
+    });
   });
 
   describe('withLocations', () => {
@@ -717,15 +1008,16 @@ describe('GithubMultiOrgEntityProvider', () => {
   });
 
   describe('events', () => {
-    let onEvent: Function;
+    let events: EventsService;
 
     const entityProviderConnection: EntityProviderConnection = {
       applyMutation: jest.fn(),
       refresh: jest.fn(),
     };
 
-    beforeEach(() => {
-      const logger = getVoidLogger();
+    beforeEach(async () => {
+      const logger = mockServices.logger.mock();
+      events = DefaultEventsService.create({ logger });
       const config = new ConfigReader({
         integrations: {
           github: [
@@ -745,29 +1037,22 @@ describe('GithubMultiOrgEntityProvider', () => {
         getCredentials: mockGetCredentials,
       };
 
-      const mockEventBroker = {
-        publish: async () => {},
-        subscribe: (subscriber: EventSubscriber) => {
-          onEvent = subscriber.onEvent;
-        },
-      };
-
       const entityProvider = GithubMultiOrgEntityProvider.fromConfig(config, {
+        events,
         id: 'my-id',
         githubCredentialsProvider,
         githubUrl: 'https://github.com',
         logger,
         orgs: ['orgA', 'orgB'],
-        eventBroker: mockEventBroker,
       });
 
-      entityProvider.connect(entityProviderConnection);
+      await entityProvider.connect(entityProviderConnection);
     });
 
     afterEach(() => jest.resetAllMocks());
 
     it('should ignore events from non-applicable orgs', async () => {
-      await onEvent({
+      await events.publish({
         topic: 'github.organization',
         eventPayload: {
           action: 'member_added',
@@ -787,7 +1072,7 @@ describe('GithubMultiOrgEntityProvider', () => {
 
       expect(entityProviderConnection.applyMutation).not.toHaveBeenCalled();
 
-      await onEvent({
+      await events.publish({
         topic: 'github.installation',
         eventPayload: {
           action: 'created',
@@ -901,7 +1186,7 @@ describe('GithubMultiOrgEntityProvider', () => {
 
         (graphql.defaults as jest.Mock).mockReturnValue(mockClient);
 
-        await onEvent({
+        await events.publish({
           topic: 'github.installation',
           eventPayload: {
             action: 'created',
@@ -1033,7 +1318,7 @@ describe('GithubMultiOrgEntityProvider', () => {
 
         (graphql.defaults as jest.Mock).mockReturnValue(mockClient);
 
-        await onEvent({
+        await events.publish({
           topic: 'github.organization',
           eventPayload: {
             action: 'member_added',
@@ -1103,7 +1388,7 @@ describe('GithubMultiOrgEntityProvider', () => {
 
         (graphql.defaults as jest.Mock).mockReturnValue(mockClient);
 
-        await onEvent({
+        await events.publish({
           topic: 'github.organization',
           eventPayload: {
             action: 'member_removed',
@@ -1198,7 +1483,7 @@ describe('GithubMultiOrgEntityProvider', () => {
 
         (graphql.defaults as jest.Mock).mockReturnValue(mockClient);
 
-        await onEvent({
+        await events.publish({
           topic: 'github.organization',
           eventPayload: {
             action: 'member_removed',
@@ -1253,7 +1538,7 @@ describe('GithubMultiOrgEntityProvider', () => {
 
     describe('team', () => {
       it('should create a new group from a new team', async () => {
-        await onEvent({
+        await events.publish({
           topic: 'github.team',
           eventPayload: {
             action: 'created',
@@ -1311,8 +1596,64 @@ describe('GithubMultiOrgEntityProvider', () => {
         });
       });
 
+      it('should create a new group from a new team without parent', async () => {
+        await events.publish({
+          topic: 'github.team',
+          eventPayload: {
+            action: 'created',
+            organization: {
+              login: 'orgB',
+            },
+            team: {
+              name: 'New Team',
+              slug: 'new-team',
+              description: 'description from the new team',
+              html_url: 'https://github.com/orgs/orgB/teams/new-team',
+              parent: null,
+            },
+          },
+        });
+
+        expect(entityProviderConnection.applyMutation).toHaveBeenCalledTimes(1);
+        expect(entityProviderConnection.applyMutation).toHaveBeenCalledWith({
+          type: 'delta',
+          added: [
+            {
+              entity: {
+                apiVersion: 'backstage.io/v1alpha1',
+                kind: 'Group',
+                metadata: {
+                  name: 'new-team',
+                  namespace: 'orgb',
+                  description: 'description from the new team',
+                  annotations: {
+                    'backstage.io/edit-url':
+                      'https://github.com/orgs/orgB/teams/new-team/edit',
+                    'backstage.io/managed-by-location':
+                      'url:https://github.com/orgs/orgB/teams/new-team',
+                    'backstage.io/managed-by-origin-location':
+                      'url:https://github.com/orgs/orgB/teams/new-team',
+                    'github.com/team-slug': 'orgB/new-team',
+                  },
+                },
+                spec: {
+                  type: 'team',
+                  children: [],
+                  members: [],
+                  profile: {
+                    displayName: 'New Team',
+                  },
+                },
+              },
+              locationKey: 'github-multi-org-provider:my-id',
+            },
+          ],
+          removed: [],
+        });
+      });
+
       it('should remove a group from a deleted team', async () => {
-        await onEvent({
+        await events.publish({
           topic: 'github.team',
           eventPayload: {
             action: 'deleted',
@@ -1467,7 +1808,7 @@ describe('GithubMultiOrgEntityProvider', () => {
 
         (graphql.defaults as jest.Mock).mockReturnValue(mockClient);
 
-        await onEvent({
+        await events.publish({
           topic: 'github.team',
           eventPayload: {
             action: 'edited',
@@ -1584,6 +1925,170 @@ describe('GithubMultiOrgEntityProvider', () => {
           ],
         });
       });
+
+      it('should update group without parent', async () => {
+        const mockClient = jest.fn();
+
+        mockClient
+          .mockResolvedValueOnce({
+            organization: {
+              team: {
+                slug: 'team',
+                combinedSlug: 'orgA/team',
+                name: 'TeamA',
+                description: 'The one and only team',
+                avatarUrl: 'http://example.com/team.jpeg',
+                editTeamUrl: 'https://example.com',
+                parentTeam: null,
+                members: {
+                  pageInfo: { hasNextPage: false },
+                  nodes: [],
+                },
+              },
+            },
+          })
+          .mockResolvedValueOnce({
+            organization: {
+              membersWithRole: {
+                pageInfo: { hasNextPage: false },
+                nodes: [],
+              },
+            },
+          })
+          .mockResolvedValueOnce({
+            organization: {
+              teams: {
+                pageInfo: { hasNextPage: false },
+                nodes: [
+                  {
+                    slug: 'team',
+                    combinedSlug: 'orgA/team',
+                    name: 'TeamA',
+                    description: 'The one and only team',
+                    avatarUrl: 'http://example.com/team.jpeg',
+                    editTeamUrl: 'https://example.com',
+                    parentTeam: null,
+                    members: {
+                      pageInfo: { hasNextPage: false },
+                      nodes: [],
+                    },
+                  },
+                ],
+              },
+            },
+          })
+          .mockResolvedValueOnce({
+            organization: {
+              teams: {
+                pageInfo: { hasNextPage: false },
+                nodes: [
+                  {
+                    slug: 'team',
+                    combinedSlug: 'orgB/team',
+                    name: 'TeamB',
+                    description: 'The one and only team',
+                    avatarUrl: 'http://example.com/team.jpeg',
+                    editTeamUrl: 'https://example.com',
+                    parentTeam: null,
+                    members: {
+                      pageInfo: { hasNextPage: false },
+                      nodes: [],
+                    },
+                  },
+                ],
+              },
+            },
+          });
+
+        (graphql.defaults as jest.Mock).mockReturnValue(mockClient);
+
+        await events.publish({
+          topic: 'github.team',
+          eventPayload: {
+            action: 'edited',
+            changes: {
+              name: {
+                from: 'oldName',
+              },
+              description: {
+                from: 'oldDescription',
+              },
+            },
+            team: {
+              slug: 'team',
+              parent: null,
+            },
+            organization: {
+              login: 'orgA',
+            },
+          },
+        });
+
+        expect(entityProviderConnection.applyMutation).toHaveBeenCalledTimes(1);
+        expect(entityProviderConnection.applyMutation).toHaveBeenCalledWith({
+          type: 'delta',
+          added: [
+            {
+              entity: {
+                apiVersion: 'backstage.io/v1alpha1',
+                kind: 'Group',
+                metadata: {
+                  annotations: {
+                    'backstage.io/edit-url': 'https://example.com',
+                    'backstage.io/managed-by-location':
+                      'url:https://github.com/orgs/orgA/teams/team',
+                    'backstage.io/managed-by-origin-location':
+                      'url:https://github.com/orgs/orgA/teams/team',
+                    'github.com/team-slug': 'orgA/team',
+                  },
+                  namespace: 'orga',
+                  name: 'team',
+                  description: 'The one and only team',
+                },
+                spec: {
+                  children: [],
+                  profile: {
+                    displayName: 'TeamA',
+                    picture: 'http://example.com/team.jpeg',
+                  },
+                  type: 'team',
+                  members: [],
+                },
+              },
+              locationKey: 'github-multi-org-provider:my-id',
+            },
+          ],
+          removed: [
+            {
+              entity: {
+                apiVersion: 'backstage.io/v1alpha1',
+                kind: 'Group',
+                metadata: {
+                  annotations: {
+                    'backstage.io/managed-by-location':
+                      'url:https://github.com/orgs/orgA/teams/oldname',
+                    'backstage.io/managed-by-origin-location':
+                      'url:https://github.com/orgs/orgA/teams/oldname',
+                    'github.com/team-slug': 'orgA/oldname',
+                  },
+                  namespace: 'orga',
+                  name: 'oldname',
+                  description: 'oldDescription',
+                },
+                spec: {
+                  children: [],
+                  profile: {
+                    displayName: 'oldName',
+                  },
+                  type: 'team',
+                  members: [],
+                },
+              },
+              locationKey: 'github-multi-org-provider:my-id',
+            },
+          ],
+        });
+      });
     });
 
     describe('membership', () => {
@@ -1676,7 +2181,7 @@ describe('GithubMultiOrgEntityProvider', () => {
 
         (graphql.defaults as jest.Mock).mockReturnValue(mockClient);
 
-        await onEvent({
+        await events.publish({
           topic: 'github.membership',
           eventPayload: {
             action: 'added',
@@ -1699,31 +2204,6 @@ describe('GithubMultiOrgEntityProvider', () => {
         expect(entityProviderConnection.applyMutation).toHaveBeenCalledWith({
           type: 'delta',
           added: [
-            {
-              entity: {
-                apiVersion: 'backstage.io/v1alpha1',
-                kind: 'User',
-                metadata: {
-                  annotations: {
-                    'backstage.io/managed-by-location':
-                      'url:https://github.com/a',
-                    'backstage.io/managed-by-origin-location':
-                      'url:https://github.com/a',
-                    'github.com/user-login': 'a',
-                  },
-                  name: 'a',
-                },
-                spec: {
-                  memberOf: ['orga/team', 'orgb/team'],
-                  profile: {
-                    displayName: 'a',
-                    email: 'user1@test.com',
-                    picture: 'https://avatars.githubusercontent.com/u/83820368',
-                  },
-                },
-              },
-              locationKey: 'github-multi-org-provider:my-id',
-            },
             {
               entity: {
                 apiVersion: 'backstage.io/v1alpha1',
@@ -1750,6 +2230,31 @@ describe('GithubMultiOrgEntityProvider', () => {
                   },
                   type: 'team',
                   members: ['default/a'],
+                },
+              },
+              locationKey: 'github-multi-org-provider:my-id',
+            },
+            {
+              entity: {
+                apiVersion: 'backstage.io/v1alpha1',
+                kind: 'User',
+                metadata: {
+                  annotations: {
+                    'backstage.io/managed-by-location':
+                      'url:https://github.com/a',
+                    'backstage.io/managed-by-origin-location':
+                      'url:https://github.com/a',
+                    'github.com/user-login': 'a',
+                  },
+                  name: 'a',
+                },
+                spec: {
+                  memberOf: ['orga/team', 'orgb/team'],
+                  profile: {
+                    displayName: 'a',
+                    email: 'user1@test.com',
+                    picture: 'https://avatars.githubusercontent.com/u/83820368',
+                  },
                 },
               },
               locationKey: 'github-multi-org-provider:my-id',
@@ -1848,7 +2353,7 @@ describe('GithubMultiOrgEntityProvider', () => {
 
         (graphql.defaults as jest.Mock).mockReturnValue(mockClient);
 
-        await onEvent({
+        await events.publish({
           topic: 'github.membership',
           eventPayload: {
             action: 'removed',
@@ -1871,31 +2376,6 @@ describe('GithubMultiOrgEntityProvider', () => {
         expect(entityProviderConnection.applyMutation).toHaveBeenCalledWith({
           type: 'delta',
           added: [
-            {
-              entity: {
-                apiVersion: 'backstage.io/v1alpha1',
-                kind: 'User',
-                metadata: {
-                  annotations: {
-                    'backstage.io/managed-by-location':
-                      'url:https://github.com/a',
-                    'backstage.io/managed-by-origin-location':
-                      'url:https://github.com/a',
-                    'github.com/user-login': 'a',
-                  },
-                  name: 'a',
-                },
-                spec: {
-                  memberOf: ['orgb/team'],
-                  profile: {
-                    displayName: 'a',
-                    email: 'user1@test.com',
-                    picture: 'https://avatars.githubusercontent.com/u/83820368',
-                  },
-                },
-              },
-              locationKey: 'github-multi-org-provider:my-id',
-            },
             {
               entity: {
                 apiVersion: 'backstage.io/v1alpha1',
@@ -1922,6 +2402,31 @@ describe('GithubMultiOrgEntityProvider', () => {
                   },
                   type: 'team',
                   members: [],
+                },
+              },
+              locationKey: 'github-multi-org-provider:my-id',
+            },
+            {
+              entity: {
+                apiVersion: 'backstage.io/v1alpha1',
+                kind: 'User',
+                metadata: {
+                  annotations: {
+                    'backstage.io/managed-by-location':
+                      'url:https://github.com/a',
+                    'backstage.io/managed-by-origin-location':
+                      'url:https://github.com/a',
+                    'github.com/user-login': 'a',
+                  },
+                  name: 'a',
+                },
+                spec: {
+                  memberOf: ['orgb/team'],
+                  profile: {
+                    displayName: 'a',
+                    email: 'user1@test.com',
+                    picture: 'https://avatars.githubusercontent.com/u/83820368',
+                  },
                 },
               },
               locationKey: 'github-multi-org-provider:my-id',

@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
+import { BackstageCredentials } from '@backstage/backend-plugin-api';
 import { TaskSpec } from '@backstage/plugin-scaffolder-common';
-import { JsonObject, Observable } from '@backstage/types';
+import { JsonObject, JsonValue, Observable } from '@backstage/types';
 
 /**
  * TaskSecrets
@@ -58,6 +59,7 @@ export type SerializedTask = {
   lastHeartbeatAt?: string;
   createdBy?: string;
   secrets?: TaskSecrets;
+  state?: JsonObject;
 };
 
 /**
@@ -65,7 +67,7 @@ export type SerializedTask = {
  *
  * @public
  */
-export type TaskEventType = 'completion' | 'log' | 'cancelled';
+export type TaskEventType = 'completion' | 'log' | 'cancelled' | 'recovered';
 
 /**
  * SerializedTaskEvent
@@ -74,6 +76,7 @@ export type TaskEventType = 'completion' | 'log' | 'cancelled';
  */
 export type SerializedTaskEvent = {
   id: number;
+  isTaskRecoverable?: boolean;
   taskId: string;
   body: JsonObject;
   type: TaskEventType;
@@ -107,6 +110,7 @@ export type TaskBrokerDispatchOptions = {
  * @public
  */
 export interface TaskContext {
+  taskId?: string;
   cancelSignal: AbortSignal;
   spec: TaskSpec;
   secrets?: TaskSecrets;
@@ -118,7 +122,39 @@ export interface TaskContext {
 
   emitLog(message: string, logMetadata?: JsonObject): Promise<void>;
 
+  getTaskState?(): Promise<
+    | {
+        state?: JsonObject;
+      }
+    | undefined
+  >;
+
+  updateCheckpoint?(
+    options:
+      | {
+          key: string;
+          status: 'success';
+          value: JsonValue;
+        }
+      | {
+          key: string;
+          status: 'failed';
+          reason: string;
+        },
+  ): Promise<void>;
+
+  serializeWorkspace?(options: { path: string }): Promise<void>;
+
+  cleanWorkspace?(): Promise<void>;
+
+  rehydrateWorkspace?(options: {
+    taskId: string;
+    targetPath: string;
+  }): Promise<void>;
+
   getWorkspaceName(): Promise<string>;
+
+  getInitiatorCredentials(): Promise<BackstageCredentials>;
 }
 
 /**
@@ -129,7 +165,11 @@ export interface TaskContext {
 export interface TaskBroker {
   cancel?(taskId: string): Promise<void>;
 
+  retry?(taskId: string): Promise<void>;
+
   claim(): Promise<TaskContext>;
+
+  recoverTasks?(): Promise<void>;
 
   dispatch(
     options: TaskBrokerDispatchOptions,
@@ -144,5 +184,23 @@ export interface TaskBroker {
 
   get(taskId: string): Promise<SerializedTask>;
 
-  list?(options?: { createdBy?: string }): Promise<{ tasks: SerializedTask[] }>;
+  list?(options?: {
+    filters?: {
+      createdBy?: string | string[];
+      status?: TaskStatus | TaskStatus[];
+    };
+    pagination?: {
+      limit?: number;
+      offset?: number;
+    };
+    order?: { order: 'asc' | 'desc'; field: string }[];
+  }): Promise<{ tasks: SerializedTask[]; totalTasks?: number }>;
+
+  /**
+   * @deprecated Make sure to pass `createdBy` and `status` in the `filters` parameter instead
+   */
+  list?(options: {
+    createdBy?: string;
+    status?: TaskStatus;
+  }): Promise<{ tasks: SerializedTask[]; totalTasks?: number }>;
 }

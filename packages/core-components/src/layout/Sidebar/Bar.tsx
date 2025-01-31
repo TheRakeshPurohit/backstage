@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-import { BackstageTheme } from '@backstage/theme';
 import Box from '@material-ui/core/Box';
 import Button from '@material-ui/core/Button';
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles, Theme } from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 import classnames from 'classnames';
 import React, { useContext, useRef, useState } from 'react';
@@ -35,10 +34,12 @@ import { MobileSidebar } from './MobileSidebar';
 import { useContent } from './Page';
 import { SidebarOpenStateProvider } from './SidebarOpenStateContext';
 import { useSidebarPinState } from './SidebarPinStateContext';
+import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
+import { coreComponentsTranslationRef } from '../../translation';
 
 /** @public */
 export type SidebarClassKey = 'drawer' | 'drawerOpen';
-const useStyles = makeStyles<BackstageTheme, { sidebarConfig: SidebarConfig }>(
+const useStyles = makeStyles<Theme, { sidebarConfig: SidebarConfig }>(
   theme => ({
     drawer: {
       display: 'flex',
@@ -133,7 +134,7 @@ const DesktopSidebar = (props: DesktopSidebarProps) => {
   } = props;
 
   const classes = useStyles({ sidebarConfig });
-  const isSmallScreen = useMediaQuery<BackstageTheme>(
+  const isSmallScreen = useMediaQuery<Theme>(
     theme => theme.breakpoints.down('md'),
     { noSsr: true },
   );
@@ -251,6 +252,7 @@ function A11ySkipSidebar() {
   const { sidebarConfig } = useContext(SidebarConfigContext);
   const { focusContent, contentRef } = useContent();
   const classes = useStyles({ sidebarConfig });
+  const { t } = useTranslationRef(coreComponentsTranslationRef);
 
   if (!contentRef?.current) {
     return null;
@@ -261,7 +263,7 @@ function A11ySkipSidebar() {
       variant="contained"
       className={classnames(classes.visuallyHidden)}
     >
-      Skip to content
+      {t('skipToContent')}
     </Button>
   );
 }

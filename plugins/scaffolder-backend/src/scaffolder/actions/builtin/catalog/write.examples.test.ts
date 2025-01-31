@@ -20,24 +20,16 @@ jest.mock('fs-extra');
 
 const fsMock = fs as jest.Mocked<typeof fs>;
 
-import { PassThrough } from 'stream';
-import os from 'os';
-import { getVoidLogger } from '@backstage/backend-common';
+import { createMockActionContext } from '@backstage/plugin-scaffolder-node-test-utils';
 import { createCatalogWriteAction } from './write';
 import { resolve as resolvePath } from 'path';
 import * as yaml from 'yaml';
 import { examples } from './write.examples';
+import os from 'os';
 
 describe('catalog:write', () => {
   const action = createCatalogWriteAction();
-
-  const mockContext = {
-    workspacePath: os.tmpdir(),
-    logger: getVoidLogger(),
-    logStream: new PassThrough(),
-    output: jest.fn(),
-    createTemporaryDirectory: jest.fn(),
-  };
+  const mockContext = createMockActionContext({ workspacePath: os.tmpdir() });
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -63,8 +55,8 @@ describe('catalog:write', () => {
       input: yaml.parse(examples[0].example).steps[0].input,
     });
 
-    expect(fsMock.writeFile).toHaveBeenCalledTimes(1);
-    expect(fsMock.writeFile).toHaveBeenCalledWith(
+    expect(fsMock.outputFile).toHaveBeenCalledTimes(1);
+    expect(fsMock.outputFile).toHaveBeenCalledWith(
       resolvePath(mockContext.workspacePath, 'catalog-info.yaml'),
       yaml.stringify(entity),
     );

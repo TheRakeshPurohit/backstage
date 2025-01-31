@@ -1,35 +1,32 @@
 ---
 id: new-backend-system
 title: New Backend System
-description: Details of the upcoming backend system
+description: Details of the new backend system
 ---
-
-> **DISCLAIMER: The new backend system is in alpha, and still under active development. While we have reviewed the interfaces carefully, they may still be iterated on before the stable release.**
 
 ## Status
 
-The new backend system is in alpha, and only a small number of plugins have been migrated so far. It is possible to try it out, but it is not recommended to use this new system in production yet.
+The new backend system is released and ready for production use, and many plugins and modules have already been migrated. We recommend all plugins and deployments to migrate to the new system.
 
-You can find an example backend setup in [the backend-next package](https://github.com/backstage/backstage/tree/master/packages/backend-next).
+You can find an example backend setup in [the backend package](https://github.com/backstage/backstage/tree/master/packages/backend).
 
 ## Overview
 
-The new Backstage backend system is being built to help make it simpler to install backend plugins and to keep projects up to date. It also changes the foundation to one that makes it a lot easier to evolve plugins and the system itself with minimal disruption or cause for breaking changes. You can read more about the reasoning in the [original RFC](https://github.com/backstage/backstage/issues/11611).
+The new Backstage backend system was built to help make it simpler to install backend plugins and to keep projects up to date. It also changed the foundation to one that makes it a lot easier to evolve plugins and the system itself with minimal disruption or cause for breaking changes. You can read more about the reasoning in the [original RFC](https://github.com/backstage/backstage/issues/11611).
 
 One of the goals of the new system was to reduce the code needed for setting up a Backstage backend and installing plugins. This is an example of how you create, add features, and start up your backend in the new system:
 
 ```ts
 import { createBackend } from '@backstage/backend-defaults';
-import { catalogPlugin } from '@backstage/plugin-catalog-backend';
 
 // Create your backend instance
 const backend = createBackend();
 
 // Install all desired features
-backend.add(catalogPlugin());
+backend.add(import('@backstage/plugin-catalog-backend'));
 
 // Start up the backend
-await backend.start();
+backend.start();
 ```
 
 One notable change that helped achieve this much slimmer backend setup is the introduction of a system for dependency injection, which is very similar to the one in the Backstage frontend.
@@ -104,7 +101,7 @@ export const examplePlugin = createBackendPlugin({
 The plugin can then be installed in the backend using the returned plugin factory function:
 
 ```ts
-backend.add(examplePlugin());
+backend.add(examplePlugin);
 ```
 
 If we wanted our plugin to accept options as well, we'd accept the options as the second parameter of the register method:
@@ -149,8 +146,8 @@ import { catalogProcessingExtensionPoint } from '@backstage/plugin-catalog-node'
 import { MyCustomProcessor } from './processor';
 
 export const exampleCustomProcessorCatalogModule = createBackendModule({
-  moduleId: 'exampleCustomProcessor',
   pluginId: 'catalog',
+  moduleId: 'example-custom-processor',
   register(env) {
     env.registerInit({
       deps: {
@@ -266,12 +263,10 @@ class GoogleCloudLogger implements LoggerService {
 }
 
 // packages/backend/src/index.ts
-const backend = createBackend({
-  services: [
-    // supplies additional or replacement services to the backend
-    GoogleCloudLogger.factory(),
-  ],
-});
+const backend = createBackend();
+
+// supplies additional or replacement services to the backend
+backend.add(GoogleCloudLogger.factory);
 ```
 
 ## Testing

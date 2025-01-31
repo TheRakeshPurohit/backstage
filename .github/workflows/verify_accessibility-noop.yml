@@ -7,7 +7,7 @@ on:
     branches: [master]
     paths-ignore:
       - 'lighthouserc.js'
-      - '.github/workflows/verify_accessibility_core.yml'
+      - '.github/workflows/verify_accessibility.yml'
       - 'plugins/catalog/src/**'
       - 'plugins/catalog-react/src/**'
       - 'plugins/techdocs/src/**'
@@ -17,9 +17,17 @@ on:
       - 'plugins/search/src/**'
       - 'plugins/search-react/src/**'
 
+permissions:
+  contents: read
+
 jobs:
   noop:
     name: Accessibility
     runs-on: ubuntu-latest
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@cb605e52c26070c328afc4562f0b4ada7618a84e # v2.10.4
+        with:
+          egress-policy: audit
+
       - run: echo NOOP

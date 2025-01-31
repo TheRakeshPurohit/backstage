@@ -15,8 +15,11 @@
  */
 
 import { InputError } from '@backstage/errors';
-import { EntitiesSearchFilter, EntityFilter } from '../../catalog';
 import { parseStringsParam } from './common';
+import {
+  EntitiesSearchFilter,
+  EntityFilter,
+} from '@backstage/plugin-catalog-node';
 
 /**
  * Parses the filtering part of a query, like
@@ -33,12 +36,17 @@ export function parseEntityFilterParams(
 
   // Outer array: "any of the inner ones"
   // Inner arrays: "all of these must match"
-  const filters = filterStrings.map(parseEntityFilterString).filter(Boolean);
+  const filters = filterStrings
+    .map(parseEntityFilterString)
+    .filter((r): r is EntitiesSearchFilter[] => Boolean(r));
   if (!filters.length) {
     return undefined;
   }
 
-  return { anyOf: filters.map(f => ({ allOf: f! })) };
+  const outer = filters.map(inner =>
+    inner.length === 1 ? inner[0] : { allOf: inner },
+  );
+  return outer.length === 1 ? outer[0] : { anyOf: outer };
 }
 
 /**
@@ -57,7 +65,7 @@ export function parseEntityFilterString(
     return undefined;
   }
 
-  const filtersByKey: Record<string, EntitiesSearchFilter> = {};
+  const filtersByKey = new Map<string, EntitiesSearchFilter>();
 
   for (const statement of statements) {
     const equalsIndex = statement.indexOf('=');
@@ -76,8 +84,11 @@ export function parseEntityFilterString(
       );
     }
 
-    const f =
-      key in filtersByKey ? filtersByKey[key] : (filtersByKey[key] = { key });
+    let f = filtersByKey.get(key);
+    if (!f) {
+      f = { key };
+      filtersByKey.set(key, f);
+    }
 
     if (value !== undefined) {
       f.values = f.values || [];
@@ -85,5 +96,5 @@ export function parseEntityFilterString(
     }
   }
 
-  return Object.values(filtersByKey);
+  return Array.from(filtersByKey.values());
 }

@@ -15,13 +15,11 @@
  */
 
 import express from 'express';
-import { Logger } from 'winston';
 import { z } from 'zod';
-import { errorHandler } from '@backstage/backend-common';
+import { createLegacyAuthAdapters } from '@backstage/backend-common';
 import { InputError } from '@backstage/errors';
 import { Config } from '@backstage/config';
 import { JsonObject, JsonValue } from '@backstage/types';
-import { getBearerTokenFromAuthorizationHeader } from '@backstage/plugin-auth-node';
 import {
   PermissionAuthorizer,
   PermissionEvaluator,
@@ -32,9 +30,16 @@ import {
   IndexableResultSet,
   SearchResultSet,
 } from '@backstage/plugin-search-common';
-import { SearchEngine } from '@backstage/plugin-search-common';
+import { SearchEngine } from '@backstage/plugin-search-backend-node';
 import { AuthorizedSearchEngine } from './AuthorizedSearchEngine';
-import { createOpenApiRouter } from '../schema/openapi.generated';
+import { createOpenApiRouter } from '../schema/openapi';
+import {
+  AuthService,
+  DiscoveryService,
+  HttpAuthService,
+  LoggerService,
+} from '@backstage/backend-plugin-api';
+import { HostDiscovery } from '@backstage/backend-defaults/discovery';
 
 const jsonObjectSchema: z.ZodSchema<JsonObject> = z.lazy(() => {
   const jsonValueSchema: z.ZodSchema<JsonValue> = z.lazy(() =>
@@ -53,32 +58,63 @@ const jsonObjectSchema: z.ZodSchema<JsonObject> = z.lazy(() => {
 
 /**
  * @public
+ * @deprecated Please migrate to the new backend system as this will be removed in the future.
  */
 export type RouterOptions = {
   engine: SearchEngine;
   types: Record<string, DocumentTypeInfo>;
+  discovery?: DiscoveryService;
   permissions: PermissionEvaluator | PermissionAuthorizer;
   config: Config;
-  logger: Logger;
+  logger: LoggerService;
+  // TODO: Make "auth" and "httpAuth" required once we remove the usage of "tokenManager"
+  auth?: AuthService;
+  httpAuth?: HttpAuthService;
 };
 
 const defaultMaxPageLimit = 100;
+const defaultMaxTermLength = 100;
 const allowedLocationProtocols = ['http:', 'https:'];
 
 /**
  * @public
+ * @deprecated Please migrate to the new backend system as this will be removed in the future.
  */
 export async function createRouter(
   options: RouterOptions,
 ): Promise<express.Router> {
   const router = await createOpenApiRouter();
-  const { engine: inputEngine, types, permissions, config, logger } = options;
+  const {
+    engine: inputEngine,
+    types,
+    permissions,
+    config,
+    logger,
+    discovery = HostDiscovery.fromConfig(config),
+  } = options;
+
+  // TODO: stop using this adapter when the "tokenManager" is removed
+  const { auth, httpAuth } = createLegacyAuthAdapters({
+    ...options,
+    discovery,
+  });
 
   const maxPageLimit =
     config.getOptionalNumber('search.maxPageLimit') ?? defaultMaxPageLimit;
 
+  const maxTermLength =
+    config.getOptionalNumber('search.maxTermLength') ?? defaultMaxTermLength;
+
   const requestSchema = z.object({
-    term: z.string().default(''),
+    term: z
+      .string()
+      .refine(
+        term => term.length <= maxTermLength,
+        term => ({
+          message: `The term length "${term.length}" is greater than "${maxTermLength}"`,
+        }),
+      )
+      .default(''),
     filters: jsonObjectSchema.optional(),
     types: z
       .array(z.string().refine(type => Object.keys(types).includes(type)))
@@ -110,6 +146,7 @@ export async function createRouter(
         inputEngine,
         types,
         permissionEvaluator,
+        auth,
         config,
       )
     : inputEngine;
@@ -157,12 +194,16 @@ export async function createRouter(
       }`,
     );
 
-    const token = getBearerTokenFromAuthorizationHeader(
-      req.header('authorization'),
-    );
-
     try {
-      const resultSet = await engine?.query(query, { token });
+      const credentials = await httpAuth.credentials(req);
+      const { token } = await auth.getPluginRequestToken({
+        onBehalfOf: credentials,
+        targetPluginId: 'search',
+      });
+      const resultSet = await engine?.query(query, {
+        token,
+        credentials,
+      });
 
       res.json(filterResultSet(toSearchResults(resultSet)));
     } catch (error) {
@@ -176,8 +217,6 @@ export async function createRouter(
       );
     }
   });
-
-  router.use(errorHandler());
 
   return router;
 }

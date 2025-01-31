@@ -4,14 +4,14 @@ import { rest } from 'msw';
 import { setupServer } from 'msw/node';
 import { screen } from '@testing-library/react';
 import {
-  setupRequestMockHandlers,
+  registerMswTestHooks,
   renderInTestApp,
-} from "@backstage/test-utils";
+} from '@backstage/test-utils';
 
 describe('ExampleComponent', () => {
   const server = setupServer();
   // Enable sane handlers for network requests
-  setupRequestMockHandlers(server);
+  registerMswTestHooks(server);
 
   // setup mock response
   beforeEach(() => {
@@ -22,6 +22,8 @@ describe('ExampleComponent', () => {
 
   it('should render', async () => {
     await renderInTestApp(<ExampleComponent />);
-    expect(screen.getByText('Welcome to {{ id }}!')).toBeInTheDocument();
+    expect(
+      screen.getByText('Welcome to {{ id }}!'),
+    ).toBeInTheDocument();
   });
 });

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The Backstage Authors
+ * Copyright 2024 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,69 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  coreServices,
-  createBackendModule,
-  createExtensionPoint,
-} from '@backstage/backend-plugin-api';
-import { searchEngineRegistryExtensionPoint } from '@backstage/plugin-search-backend-node/alpha';
-import {
-  ElasticSearchQueryTranslator,
-  ElasticSearchSearchEngine,
-} from '@backstage/plugin-search-backend-module-elasticsearch';
+
+import { default as feature } from './module';
 
 /** @alpha */
-export interface ElasticSearchQueryTranslatorExtensionPoint {
-  setTranslator(translator: ElasticSearchQueryTranslator): void;
-}
-
-/**
- * Extension point used to customize the ElasticSearch query translator.
- *
- * @alpha
- */
-export const elasticsearchTranslatorExtensionPoint =
-  createExtensionPoint<ElasticSearchQueryTranslatorExtensionPoint>({
-    id: 'search.elasticsearchEngine.translator',
-  });
-
-/**
- * Search backend module for the Elasticsearch engine.
- *
- * @alpha
- */
-export const searchModuleElasticsearchEngine = createBackendModule({
-  moduleId: 'elasticsearchEngine',
-  pluginId: 'search',
-  register(env) {
-    let translator: ElasticSearchQueryTranslator | undefined;
-
-    env.registerExtensionPoint(elasticsearchTranslatorExtensionPoint, {
-      setTranslator(newTranslator) {
-        if (translator) {
-          throw new Error(
-            'ElasticSearch query translator may only be set once',
-          );
-        }
-        translator = newTranslator;
-      },
-    });
-
-    env.registerInit({
-      deps: {
-        searchEngineRegistry: searchEngineRegistryExtensionPoint,
-        logger: coreServices.logger,
-        config: coreServices.rootConfig,
-      },
-      async init({ searchEngineRegistry, logger, config }) {
-        searchEngineRegistry.setSearchEngine(
-          await ElasticSearchSearchEngine.fromConfig({
-            logger,
-            config,
-            translator,
-          }),
-        );
-      },
-    });
-  },
-});
+const _feature = feature;
+export default _feature;

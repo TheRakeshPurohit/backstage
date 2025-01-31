@@ -1,5 +1,471 @@
 # @backstage/integration-react
 
+## 1.2.4-next.0
+
+### Patch Changes
+
+- 58ec9e7: Removed older versions of React packages as a preparatory step for upgrading to React 19. This commit does not introduce any functional changes, but removes dependencies on previous React versions, allowing for a cleaner upgrade path in subsequent commits.
+- Updated dependencies
+  - @backstage/core-plugin-api@1.10.4-next.0
+  - @backstage/config@1.3.2
+  - @backstage/integration@1.16.1
+
+## 1.2.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.10.3
+  - @backstage/integration@1.16.1
+  - @backstage/config@1.3.2
+
+## 1.2.3-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.10.3-next.0
+  - @backstage/config@1.3.2-next.0
+  - @backstage/integration@1.16.1-next.0
+
+## 1.2.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.16.0
+  - @backstage/config@1.3.1
+  - @backstage/core-plugin-api@1.10.2
+
+## 1.2.2-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@1.3.1-next.0
+  - @backstage/core-plugin-api@1.10.2-next.0
+  - @backstage/integration@1.16.0-next.1
+
+## 1.2.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.16.0-next.0
+  - @backstage/config@1.3.0
+  - @backstage/core-plugin-api@1.10.1
+
+## 1.2.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@1.3.0
+  - @backstage/core-plugin-api@1.10.1
+  - @backstage/integration@1.15.2
+
+## 1.2.0
+
+### Minor Changes
+
+- a11495a: Added new ScmAuth method `forBitbucketServer` that uses correct OAuth scopes by default. Also updated `forBitbucket` method to allow overriding the default OAuth scopes.
+
+### Patch Changes
+
+- e969dc7: Move `@types/react` to a peer dependency.
+- 3dbac17: Revert of change #26430
+- Updated dependencies
+  - @backstage/core-plugin-api@1.10.0
+  - @backstage/integration@1.15.1
+  - @backstage/config@1.2.0
+
+## 1.2.0-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.15.1-next.1
+  - @backstage/config@1.2.0
+  - @backstage/core-plugin-api@1.10.0-next.1
+
+## 1.2.0-next.1
+
+### Minor Changes
+
+- a11495a: Added new ScmAuth method `forBitbucketServer` that uses correct OAuth scopes by default. Also updated `forBitbucket` method to allow overriding the default OAuth scopes.
+
+### Patch Changes
+
+- e969dc7: Move `@types/react` to a peer dependency.
+- 3dbac17: Revert of change #26430
+- Updated dependencies
+  - @backstage/core-plugin-api@1.10.0-next.1
+  - @backstage/integration@1.15.1-next.0
+  - @backstage/config@1.2.0
+
+## 1.1.32-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.10.0-next.0
+  - @backstage/config@1.2.0
+  - @backstage/integration@1.15.0
+
+## 1.1.31
+
+### Patch Changes
+
+- 8a9d797: Remove unnecessary broad permissions from Gitlab `SCMAuth`
+
+  Newer versions of Gitlab (after 2019) do not require the broad api permissions to write to repos.
+
+- Updated dependencies
+  - @backstage/integration@1.15.0
+  - @backstage/core-plugin-api@1.9.4
+  - @backstage/config@1.2.0
+
+## 1.1.31-next.0
+
+### Patch Changes
+
+- 8a9d797: Remove unnecessary broad permissions from Gitlab `SCMAuth`
+
+  Newer versions of Gitlab (after 2019) do not require the broad api permissions to write to repos.
+
+- Updated dependencies
+  - @backstage/integration@1.15.0-next.0
+  - @backstage/core-plugin-api@1.9.4-next.0
+  - @backstage/config@1.2.0
+
+## 1.1.30
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.14.0
+  - @backstage/config@1.2.0
+  - @backstage/core-plugin-api@1.9.3
+
+## 1.1.30-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.14.0-next.0
+  - @backstage/config@1.2.0
+  - @backstage/core-plugin-api@1.9.3
+
+## 1.1.29
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.13.0
+  - @backstage/config@1.2.0
+  - @backstage/core-plugin-api@1.9.3
+
+## 1.1.29-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.13.0-next.0
+  - @backstage/core-plugin-api@1.9.3
+  - @backstage/config@1.2.0
+
+## 1.1.28
+
+### Patch Changes
+
+- 23ee9ab: Fix AWS CodeCommit integration by allowing to change the host
+- Updated dependencies
+  - @backstage/integration@1.12.0
+  - @backstage/core-plugin-api@1.9.3
+  - @backstage/config@1.2.0
+
+## 1.1.28-next.1
+
+### Patch Changes
+
+- 23ee9ab: Fix AWS CodeCommit integration by allowing to change the host
+- Updated dependencies
+  - @backstage/integration@1.12.0-next.1
+  - @backstage/config@1.2.0
+  - @backstage/core-plugin-api@1.9.3-next.0
+
+## 1.1.28-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.9.3-next.0
+  - @backstage/integration@1.12.0-next.0
+  - @backstage/config@1.2.0
+
+## 1.1.27
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.11.0
+
+## 1.1.27-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.11.0-next.0
+
+## 1.1.26
+
+### Patch Changes
+
+- cb1e3b0: Updated dependency `@testing-library/dom` to `^10.0.0`.
+- Updated dependencies
+  - @backstage/core-plugin-api@1.9.2
+  - @backstage/integration@1.10.0
+  - @backstage/config@1.2.0
+
+## 1.1.26-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.10.0-next.0
+  - @backstage/config@1.2.0
+  - @backstage/core-plugin-api@1.9.1
+
+## 1.1.25
+
+### Patch Changes
+
+- b38dc55: Updated `microsoftAuthApi` scopes for Azure DevOps to be fully qualified.
+- Updated dependencies
+  - @backstage/integration@1.9.1
+  - @backstage/config@1.2.0
+  - @backstage/core-plugin-api@1.9.1
+
+## 1.1.25-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.9.1-next.2
+  - @backstage/config@1.2.0-next.1
+  - @backstage/core-plugin-api@1.9.1-next.1
+
+## 1.1.25-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@1.2.0-next.1
+  - @backstage/core-plugin-api@1.9.1-next.1
+  - @backstage/integration@1.9.1-next.1
+
+## 1.1.25-next.0
+
+### Patch Changes
+
+- b38dc55: Updated `microsoftAuthApi` scopes for Azure DevOps to be fully qualified.
+- Updated dependencies
+  - @backstage/config@1.1.2-next.0
+  - @backstage/core-plugin-api@1.9.1-next.0
+  - @backstage/integration@1.9.1-next.0
+
+## 1.1.24
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.9.0
+  - @backstage/core-plugin-api@1.9.0
+  - @backstage/config@1.1.1
+
+## 1.1.24-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.9.0-next.1
+  - @backstage/config@1.1.1
+  - @backstage/core-plugin-api@1.9.0-next.1
+
+## 1.1.24-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.9.0-next.1
+  - @backstage/config@1.1.1
+  - @backstage/integration@1.9.0-next.0
+
+## 1.1.24-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.8.3-next.0
+  - @backstage/integration@1.9.0-next.0
+  - @backstage/config@1.1.1
+
+## 1.1.23
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.8.2
+  - @backstage/config@1.1.1
+  - @backstage/integration@1.8.0
+
+## 1.1.23-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.8.2-next.0
+  - @backstage/integration@1.8.0
+  - @backstage/config@1.1.1
+
+## 1.1.22
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.8.1
+  - @backstage/integration@1.8.0
+  - @backstage/config@1.1.1
+
+## 1.1.22-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.8.1-next.1
+  - @backstage/integration@1.8.0-next.1
+  - @backstage/config@1.1.1
+
+## 1.1.22-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.8.1-next.0
+  - @backstage/integration@1.8.0-next.0
+  - @backstage/config@1.1.1
+
+## 1.1.21
+
+### Patch Changes
+
+- 6c2b872153: Add official support for React 18.
+- Updated dependencies
+  - @backstage/integration@1.7.2
+  - @backstage/core-plugin-api@1.8.0
+  - @backstage/config@1.1.1
+
+## 1.1.21-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.7.2-next.0
+  - @backstage/config@1.1.1
+  - @backstage/core-plugin-api@1.8.0-next.0
+
+## 1.1.21-next.0
+
+### Patch Changes
+
+- 6c2b872153: Add official support for React 18.
+- Updated dependencies
+  - @backstage/core-plugin-api@1.8.0-next.0
+  - @backstage/integration@1.7.1
+  - @backstage/config@1.1.1
+
+## 1.1.20
+
+### Patch Changes
+
+- 0b55f773a7: Removed some unused dependencies
+- 9a1fce352e: Updated dependency `@testing-library/jest-dom` to `^6.0.0`.
+- f95af4e540: Updated dependency `@testing-library/dom` to `^9.0.0`.
+- Updated dependencies
+  - @backstage/integration@1.7.1
+  - @backstage/core-plugin-api@1.7.0
+  - @backstage/config@1.1.1
+
+## 1.1.20-next.2
+
+### Patch Changes
+
+- 0b55f773a7: Removed some unused dependencies
+- Updated dependencies
+  - @backstage/core-plugin-api@1.7.0-next.1
+  - @backstage/integration@1.7.1-next.1
+  - @backstage/config@1.1.1-next.0
+
+## 1.1.20-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.13.6-next.1
+  - @backstage/core-plugin-api@1.7.0-next.0
+  - @backstage/config@1.1.0
+  - @backstage/integration@1.7.1-next.0
+  - @backstage/theme@0.4.2
+
+## 1.1.20-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.7.1-next.0
+  - @backstage/core-plugin-api@1.7.0-next.0
+  - @backstage/core-components@0.13.6-next.0
+  - @backstage/config@1.1.0
+  - @backstage/theme@0.4.2
+
+## 1.1.19
+
+### Patch Changes
+
+- 482bb5c0bbf8: Moved `@types/react` to be a regular dependency
+- 406b786a2a2c: Mark package as being free of side effects, allowing more optimized Webpack builds.
+- 8cec7664e146: Removed `@types/node` dependency
+- Updated dependencies
+  - @backstage/core-components@0.13.5
+  - @backstage/config@1.1.0
+  - @backstage/core-plugin-api@1.6.0
+  - @backstage/integration@1.7.0
+  - @backstage/theme@0.4.2
+
+## 1.1.19-next.3
+
+### Patch Changes
+
+- 406b786a2a2c: Mark package as being free of side effects, allowing more optimized Webpack builds.
+- Updated dependencies
+  - @backstage/config@1.1.0-next.2
+  - @backstage/core-components@0.13.5-next.3
+  - @backstage/core-plugin-api@1.6.0-next.3
+  - @backstage/integration@1.7.0-next.3
+  - @backstage/theme@0.4.2-next.0
+
+## 1.1.19-next.2
+
+### Patch Changes
+
+- 8cec7664e146: Removed `@types/node` dependency
+- Updated dependencies
+  - @backstage/core-components@0.13.5-next.2
+  - @backstage/core-plugin-api@1.6.0-next.2
+  - @backstage/config@1.1.0-next.1
+  - @backstage/integration@1.7.0-next.2
+  - @backstage/theme@0.4.1
+
 ## 1.1.19-next.1
 
 ### Patch Changes

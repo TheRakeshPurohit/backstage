@@ -17,10 +17,11 @@
 import chalk from 'chalk';
 import { paths } from '../../paths';
 import { addCodeownersEntry, getCodeownersFilePath } from '../../codeowners';
-import { createFactory, CreateContext } from '../types';
+import { CreateContext, createFactory } from '../types';
 import { Task } from '../../tasks';
 import { ownerPrompt, pluginIdPrompt } from './common/prompts';
 import { executePluginPackageTemplate } from './common/tasks';
+import { resolvePackageName } from './common/util';
 
 type Options = {
   id: string;
@@ -38,9 +39,11 @@ export const pluginWeb = createFactory<Options>({
   async create(options: Options, ctx: CreateContext) {
     const { id } = options;
     const suffix = `${id}-react`;
-    const name = ctx.scope
-      ? `@${ctx.scope}/plugin-${suffix}`
-      : `backstage-plugin-${suffix}`;
+    const name = resolvePackageName({
+      baseName: suffix,
+      scope: ctx.scope,
+      plugin: true,
+    });
 
     Task.log();
     Task.log(`Creating web plugin library ${chalk.cyan(name)}`);
@@ -58,6 +61,7 @@ export const pluginWeb = createFactory<Options>({
         privatePackage: ctx.private,
         npmRegistry: ctx.npmRegistry,
         pluginVersion: ctx.defaultVersion,
+        license: ctx.license,
       },
     });
 

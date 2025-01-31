@@ -15,6 +15,7 @@
  */
 
 import { AppConfig } from '@backstage/config';
+import { JsonObject } from '@backstage/types';
 
 /**
  * The data returned by {@link ConfigSource.readConfigData}.
@@ -38,7 +39,7 @@ export interface ReadConfigDataOptions {
 }
 
 /**
- * The the generator returned by {@link ConfigSource.readConfigData}.
+ * The generator returned by {@link ConfigSource.readConfigData}.
  *
  * @public
  */
@@ -89,3 +90,18 @@ export interface ConfigSource {
  * @public
  */
 export type SubstitutionFunc = (name: string) => Promise<string | undefined>;
+
+/**
+ * A custom function to be used for parsing configuration content.
+ *
+ * @remarks
+ *
+ * The default parsing function will parse configuration content as yaml.
+ *
+ * @public
+ */
+export type Parser = ({
+  contents,
+}: {
+  contents: string;
+}) => Promise<{ result?: JsonObject }>;

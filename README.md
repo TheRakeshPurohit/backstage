@@ -2,20 +2,20 @@
 
 # [Backstage](https://backstage.io)
 
+English \| [한국어](README-ko_kr.md) \| [中文版](README-zh_Hans.md) \| [Français](README-fr_FR.md)
+
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CNCF Status](https://img.shields.io/badge/cncf%20status-incubation-blue.svg)](https://www.cncf.io/projects)
-[![Main CI Build](https://github.com/backstage/backstage/workflows/Main%20Master%20Build/badge.svg)](https://github.com/backstage/backstage/actions?query=workflow%3A%22Main+Master+Build%22)
-[![Discord](https://img.shields.io/discord/687207715902193673)](https://discord.gg/backstage-687207715902193673)
+[![Discord](https://img.shields.io/discord/687207715902193673?logo=discord&label=Discord&color=5865F2&logoColor=white)](https://discord.gg/backstage-687207715902193673)
 ![Code style](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)
 [![Codecov](https://img.shields.io/codecov/c/github/backstage/backstage)](https://codecov.io/gh/backstage/backstage)
 [![](https://img.shields.io/github/v/release/backstage/backstage)](https://github.com/backstage/backstage/releases)
-[![Uffizzi](https://img.shields.io/endpoint?url=https%3A%2F%2Fapp.uffizzi.com%2Fapi%2Fv1%2Fpublic%2Fshields%2Fgithub.com%2Fbackstage%2Fbackstage)](https://app.uffizzi.com/ephemeral-environments/backstage/backstage)
 [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7678/badge)](https://bestpractices.coreinfrastructure.org/projects/7678)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/backstage/backstage/badge)](https://securityscorecards.dev/viewer/?uri=github.com/backstage/backstage)
 
 ## What is Backstage?
 
-[Backstage](https://backstage.io/) is an open platform for building developer portals. Powered by a centralized software catalog, Backstage restores order to your microservices and infrastructure and enables your product teams to ship high-quality code quickly without compromising autonomy.
+[Backstage](https://backstage.io/) is an open source framework for building developer portals. Powered by a centralized software catalog, Backstage restores order to your microservices and infrastructure and enables your product teams to ship high-quality code quickly without compromising autonomy.
 
 Backstage unifies all your infrastructure tooling, services, and documentation to create a streamlined development environment from end to end.
 
@@ -55,7 +55,7 @@ To engage with our community, you can use the following resources:
 - [Discord chatroom](https://discord.gg/backstage-687207715902193673) - Get support or discuss the project
 - [Contributing to Backstage](https://github.com/backstage/backstage/blob/master/CONTRIBUTING.md) - Start here if you want to contribute
 - [RFCs](https://github.com/backstage/backstage/labels/rfc) - Help shape the technical direction
-- [FAQ](https://backstage.io/docs/FAQ) - Frequently Asked Questions
+- [FAQ](https://backstage.io/docs/faq) - Frequently Asked Questions
 - [Code of Conduct](CODE_OF_CONDUCT.md) - This is how we roll
 - [Adopters](ADOPTERS.md) - Companies already using Backstage
 - [Blog](https://backstage.io/blog/) - Announcements and updates
@@ -63,9 +63,13 @@ To engage with our community, you can use the following resources:
 - [Backstage Community Sessions](https://github.com/backstage/community) - Join monthly meetups and explore Backstage community
 - Give us a star ⭐️ - If you are using Backstage or think it is an interesting project, we would love a star ❤️
 
+## Governance
+
+See the [GOVERNANCE.md](https://github.com/backstage/community/blob/main/GOVERNANCE.md) document in the [backstage/community](https://github.com/backstage/community) repository.
+
 ## License
 
-Copyright 2020-2022 © The Backstage Authors. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our Trademark Usage page: https://www.linuxfoundation.org/trademark-usage
+Copyright 2020-2024 © The Backstage Authors. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our Trademark Usage page: https://www.linuxfoundation.org/trademark-usage
 
 Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
 

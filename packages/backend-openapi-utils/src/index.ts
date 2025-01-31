@@ -22,5 +22,18 @@
 import * as internal from './types';
 
 export { internal };
-export type { ApiRouter } from './router';
-export { createValidatedOpenApiRouter } from './stub';
+export type {
+  Request,
+  Response,
+  QueryParameters,
+  HeaderParameters,
+  CookieParameters,
+  PathParameters,
+} from './utility';
+export type { ApiRouter, TypedRouter } from './router';
+export type { PathTemplate } from './types/common';
+export {
+  createValidatedOpenApiRouter,
+  getOpenApiSpecRoute,
+  createValidatedOpenApiRouterFromGeneratedEndpointMap,
+} from './stub';

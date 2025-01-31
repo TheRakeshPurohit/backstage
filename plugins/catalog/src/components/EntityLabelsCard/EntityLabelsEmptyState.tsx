@@ -14,17 +14,23 @@
  * limitations under the License.
  */
 
-import { BackstageTheme } from '@backstage/theme';
-import { Button, makeStyles, Typography } from '@material-ui/core';
+import Button from '@material-ui/core/Button';
+import Typography from '@material-ui/core/Typography';
+import { makeStyles } from '@material-ui/core/styles';
 import React from 'react';
 import { CodeSnippet } from '@backstage/core-components';
+import { catalogTranslationRef } from '../../alpha/translation';
+import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 
 const ENTITY_YAML = `metadata:
   name: example
   labels:
     javaVersion: 1.2.3`;
 
-const useStyles = makeStyles<BackstageTheme>(
+/** @public */
+export type EntityLabelsEmptyStateClassKey = 'code';
+
+const useStyles = makeStyles(
   theme => ({
     code: {
       borderRadius: 6,
@@ -38,12 +44,12 @@ const useStyles = makeStyles<BackstageTheme>(
 
 export function EntityLabelsEmptyState() {
   const classes = useStyles();
+  const { t } = useTranslationRef(catalogTranslationRef);
 
   return (
     <>
       <Typography variant="body1">
-        No labels defined for this entity. You can add labels to your entity
-        YAML as shown in the highlighted example below:
+        {t('entityLabelsCard.emptyDescription')}
       </Typography>
       <div className={classes.code}>
         <CodeSnippet
@@ -60,7 +66,7 @@ export function EntityLabelsEmptyState() {
         target="_blank"
         href="https://backstage.io/docs/features/software-catalog/descriptor-format#labels-optional"
       >
-        Read more
+        {t('entityLabelsCard.readMoreButtonTitle')}
       </Button>
     </>
   );

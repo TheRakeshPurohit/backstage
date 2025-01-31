@@ -18,7 +18,7 @@ import { ApiEntity } from '@backstage/catalog-model';
 import { TableColumn } from '@backstage/core-components';
 import { EntityTable } from '@backstage/plugin-catalog-react';
 import ExtensionIcon from '@material-ui/icons/Extension';
-import { ToggleButton } from '@material-ui/lab';
+import ToggleButton from '@material-ui/lab/ToggleButton';
 import React, { useState } from 'react';
 import { ApiTypeTitle } from '../ApiDefinitionCard';
 import { ApiDefinitionDialog } from '../ApiDefinitionDialog';
@@ -33,10 +33,13 @@ export function createSpecApiTypeColumn(): TableColumn<ApiEntity> {
 
 const ApiDefinitionButton = ({ apiEntity }: { apiEntity: ApiEntity }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
-
   return (
     <>
-      <ToggleButton onClick={() => setDialogOpen(!dialogOpen)}>
+      <ToggleButton
+        aria-label="Toggle API Definition Dialog"
+        onClick={() => setDialogOpen(!dialogOpen)}
+        value={dialogOpen}
+      >
         <ExtensionIcon />
       </ToggleButton>
       <ApiDefinitionDialog

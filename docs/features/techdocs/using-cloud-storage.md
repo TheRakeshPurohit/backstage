@@ -120,6 +120,36 @@ techdocs:
 Your Backstage app is now ready to use Google Cloud Storage for TechDocs, to
 store and read the static generated documentation files.
 
+### Extending default Storage configuration
+
+If you need a non-standard configuration of Google Cloud Storage client,
+`TechdocsPublisherExtensionPoint` is something you should look at.
+You can register custom `StorageOptions` that will be used to configure the client. To do so, you
+need to register publisher settings inside your module init, like in the following example:
+
+```typescript
+export const gcsPublisherCustomizer = createBackendModule({
+  pluginId: 'techdocs',
+  moduleId: 'gcs-publisher-customizer',
+  register(reg) {
+    reg.registerInit({
+      deps: {
+        techdocsExtensionPoint: techdocsPublisherExtensionPoint,
+      },
+      async init({ techdocsExtensionPoint }) {
+        const customOptions: StorageOptions = {
+          userAgent: 'my-custom-user-agent',
+        };
+        techdocsExtensionPoint.registerPublisherSettings(
+          'googleGcs',
+          customOptions,
+        );
+      },
+    });
+  },
+});
+```
+
 ## Configuring AWS S3 Bucket with TechDocs
 
 **1. Set `techdocs.publisher.type` config in your `app-config.yaml`**
@@ -169,17 +199,21 @@ permissions to:
 - `s3:ListBucket` - To retrieve bucket metadata
 - `s3:GetObject` - To retrieve files from the bucket
 
-> Note: If you need to migrate documentation objects from an older-style path
-> format including case-sensitive entity metadata, you will need to add some
-> additional permissions to be able to perform the migration, including:
->
-> - `s3:PutBucketAcl` (for copying files,
->   [more info here](https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObjectAcl.html))
-> - `s3:DeleteObject` and `s3:DeleteObjectVersion` (for deleting migrated files,
->   [more info here](https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObject.html))
->
-> ...And you will need to ensure the permissions apply to the bucket itself, as
-> well as all resources under the bucket. See the example policy below.
+:::note Note
+
+If you need to migrate documentation objects from an older-style path
+format including case-sensitive entity metadata, you will need to add some
+additional permissions to be able to perform the migration, including:
+
+- `s3:PutBucketAcl` (for copying files,
+  [more info here](https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObjectAcl.html))
+- `s3:DeleteObject` and `s3:DeleteObjectVersion` (for deleting migrated files,
+  [more info here](https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObject.html))
+
+...And you will need to ensure the permissions apply to the bucket itself, as
+well as all resources under the bucket. See the example policy below.
+
+:::
 
 ```json
 {

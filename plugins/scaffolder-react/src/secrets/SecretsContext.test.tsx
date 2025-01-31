@@ -15,7 +15,7 @@
  */
 import React from 'react';
 import { useTemplateSecrets, SecretsContextProvider } from './SecretsContext';
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react';
 
 describe('SecretsContext', () => {
   it('should allow the setting of secrets in the context', async () => {
@@ -24,7 +24,7 @@ describe('SecretsContext', () => {
         hook: useTemplateSecrets(),
       }),
       {
-        wrapper: ({ children }) => (
+        wrapper: ({ children }: React.PropsWithChildren<{}>) => (
           <SecretsContextProvider>{children}</SecretsContextProvider>
         ),
       },
@@ -33,6 +33,22 @@ describe('SecretsContext', () => {
 
     act(() => result.current.hook.setSecrets({ foo: 'bar' }));
 
+    expect(result.current.hook?.secrets.foo).toEqual('bar');
+  });
+
+  it('should create SecretsContextProvider with initial secrets', async () => {
+    const { result } = renderHook(
+      () => ({
+        hook: useTemplateSecrets(),
+      }),
+      {
+        wrapper: ({ children }: React.PropsWithChildren<{}>) => (
+          <SecretsContextProvider initialSecrets={{ foo: 'bar' }}>
+            {children}
+          </SecretsContextProvider>
+        ),
+      },
+    );
     expect(result.current.hook?.secrets.foo).toEqual('bar');
   });
 });

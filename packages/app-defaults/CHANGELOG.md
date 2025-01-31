@@ -1,5 +1,762 @@
 # @backstage/app-defaults
 
+## 1.5.17-next.0
+
+### Patch Changes
+
+- 58ec9e7: Removed older versions of React packages as a preparatory step for upgrading to React 19. This commit does not introduce any functional changes, but removes dependencies on previous React versions, allowing for a cleaner upgrade path in subsequent commits.
+- Updated dependencies
+  - @backstage/core-components@0.16.4-next.0
+  - @backstage/core-plugin-api@1.10.4-next.0
+  - @backstage/plugin-permission-react@0.4.31-next.0
+  - @backstage/core-app-api@1.15.5-next.0
+  - @backstage/theme@0.6.4-next.0
+
+## 1.5.16
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.10.3
+  - @backstage/core-components@0.16.3
+  - @backstage/core-app-api@1.15.4
+  - @backstage/theme@0.6.3
+  - @backstage/plugin-permission-react@0.4.30
+
+## 1.5.16-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.10.3-next.0
+  - @backstage/core-app-api@1.15.4-next.0
+  - @backstage/core-components@0.16.3-next.0
+  - @backstage/plugin-permission-react@0.4.30-next.0
+  - @backstage/theme@0.6.3
+
+## 1.5.15
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-app-api@1.15.3
+  - @backstage/theme@0.6.3
+  - @backstage/core-components@0.16.2
+  - @backstage/core-plugin-api@1.10.2
+  - @backstage/plugin-permission-react@0.4.29
+
+## 1.5.15-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-app-api@1.15.3-next.1
+  - @backstage/core-components@0.16.2-next.2
+  - @backstage/core-plugin-api@1.10.2-next.0
+  - @backstage/theme@0.6.3-next.0
+  - @backstage/plugin-permission-react@0.4.29-next.0
+
+## 1.5.15-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.16.2-next.1
+  - @backstage/core-app-api@1.15.3-next.0
+  - @backstage/core-plugin-api@1.10.1
+  - @backstage/theme@0.6.3-next.0
+  - @backstage/plugin-permission-react@0.4.28
+
+## 1.5.15-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-app-api@1.15.3-next.0
+  - @backstage/theme@0.6.3-next.0
+  - @backstage/core-components@0.16.2-next.0
+  - @backstage/core-plugin-api@1.10.1
+  - @backstage/plugin-permission-react@0.4.28
+
+## 1.5.13
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/theme@0.6.1
+  - @backstage/core-components@0.16.0
+  - @backstage/core-app-api@1.15.2
+  - @backstage/core-plugin-api@1.10.1
+  - @backstage/plugin-permission-react@0.4.28
+
+## 1.5.13-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.16.0-next.2
+  - @backstage/core-app-api@1.15.1
+  - @backstage/core-plugin-api@1.10.0
+  - @backstage/theme@0.6.1-next.0
+  - @backstage/plugin-permission-react@0.4.27
+
+## 1.5.13-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/theme@0.6.1-next.0
+  - @backstage/core-app-api@1.15.1
+  - @backstage/core-components@0.16.0-next.1
+  - @backstage/core-plugin-api@1.10.0
+  - @backstage/plugin-permission-react@0.4.27
+
+## 1.5.13-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.16.0-next.0
+  - @backstage/core-app-api@1.15.1
+  - @backstage/core-plugin-api@1.10.0
+  - @backstage/theme@0.6.0
+  - @backstage/plugin-permission-react@0.4.27
+
+## 1.5.12
+
+### Patch Changes
+
+- e969dc7: Move `@types/react` to a peer dependency.
+- 46b5a20: Added `externalLink` to icon defaults
+- 8c40e55: Updated the `bitbucket-server-auth` default API to set its environment based on the `auth.environment` config option instead of being hardcoded to `development`.
+- Updated dependencies
+  - @backstage/core-components@0.15.1
+  - @backstage/core-plugin-api@1.10.0
+  - @backstage/plugin-permission-react@0.4.27
+  - @backstage/core-app-api@1.15.1
+  - @backstage/theme@0.6.0
+
+## 1.5.12-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/theme@0.6.0-next.1
+  - @backstage/core-app-api@1.15.1-next.1
+  - @backstage/core-components@0.15.1-next.2
+  - @backstage/core-plugin-api@1.10.0-next.1
+  - @backstage/plugin-permission-react@0.4.27-next.1
+
+## 1.5.12-next.1
+
+### Patch Changes
+
+- e969dc7: Move `@types/react` to a peer dependency.
+- Updated dependencies
+  - @backstage/core-components@0.15.1-next.1
+  - @backstage/core-plugin-api@1.10.0-next.1
+  - @backstage/plugin-permission-react@0.4.27-next.1
+  - @backstage/core-app-api@1.15.1-next.1
+  - @backstage/theme@0.5.8-next.0
+
+## 1.5.12-next.0
+
+### Patch Changes
+
+- 46b5a20: Added `externalLink` to icon defaults
+- 8c40e55: Updated the `bitbucket-server-auth` default API to set its environment based on the `auth.environment` config option instead of being hardcoded to `development`.
+- Updated dependencies
+  - @backstage/core-components@0.15.1-next.0
+  - @backstage/core-plugin-api@1.10.0-next.0
+  - @backstage/core-app-api@1.15.1-next.0
+  - @backstage/theme@0.5.7
+  - @backstage/plugin-permission-react@0.4.27-next.0
+
+## 1.5.11
+
+### Patch Changes
+
+- b537bd7: Allow custom star icons to be provided via the `star` and `unstarred` icon overrides. See how to override existing icons in the [Backstage documentation](https://backstage.io/docs/getting-started/app-custom-theme/#custom-icons).
+- 836127c: Updated dependency `@testing-library/react` to `^16.0.0`.
+- Updated dependencies
+  - @backstage/core-components@0.15.0
+  - @backstage/core-app-api@1.15.0
+  - @backstage/core-plugin-api@1.9.4
+  - @backstage/theme@0.5.7
+  - @backstage/plugin-permission-react@0.4.26
+
+## 1.5.11-next.1
+
+### Patch Changes
+
+- b537bd7: Allow custom star icons to be provided via the `star` and `unstarred` icon overrides. See how to override existing icons in the [Backstage documentation](https://backstage.io/docs/getting-started/app-custom-theme/#custom-icons).
+- 836127c: Updated dependency `@testing-library/react` to `^16.0.0`.
+- Updated dependencies
+  - @backstage/core-components@0.14.11-next.1
+  - @backstage/core-app-api@1.14.3-next.0
+  - @backstage/core-plugin-api@1.9.4-next.0
+  - @backstage/theme@0.5.7-next.0
+  - @backstage/plugin-permission-react@0.4.26-next.0
+
+## 1.5.11-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.11-next.0
+  - @backstage/core-app-api@1.14.2
+  - @backstage/core-plugin-api@1.9.3
+  - @backstage/theme@0.5.6
+  - @backstage/plugin-permission-react@0.4.25
+
+## 1.5.10
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.10
+  - @backstage/core-app-api@1.14.2
+  - @backstage/core-plugin-api@1.9.3
+  - @backstage/theme@0.5.6
+  - @backstage/plugin-permission-react@0.4.25
+
+## 1.5.10-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-permission-react@0.4.25-next.1
+  - @backstage/core-app-api@1.14.2-next.0
+  - @backstage/core-components@0.14.10-next.0
+  - @backstage/core-plugin-api@1.9.3
+  - @backstage/theme@0.5.6
+
+## 1.5.10-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-permission-react@0.4.25-next.0
+  - @backstage/core-app-api@1.14.2-next.0
+  - @backstage/core-components@0.14.10-next.0
+  - @backstage/core-plugin-api@1.9.3
+  - @backstage/theme@0.5.6
+
+## 1.5.9-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.10-next.0
+  - @backstage/core-app-api@1.14.1-next.0
+  - @backstage/core-plugin-api@1.9.3
+  - @backstage/theme@0.5.6
+  - @backstage/plugin-permission-react@0.4.24
+
+## 1.5.8
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.9
+  - @backstage/core-app-api@1.14.0
+  - @backstage/plugin-permission-react@0.4.24
+  - @backstage/core-plugin-api@1.9.3
+  - @backstage/theme@0.5.6
+
+## 1.5.8-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.9-next.1
+
+## 1.5.8-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-app-api@1.13.1-next.1
+  - @backstage/core-components@0.14.9-next.0
+  - @backstage/core-plugin-api@1.9.3
+  - @backstage/theme@0.5.6
+  - @backstage/plugin-permission-react@0.4.23
+
+## 1.5.7-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.9-next.0
+  - @backstage/core-app-api@1.13.0-next.0
+  - @backstage/core-plugin-api@1.9.3
+  - @backstage/theme@0.5.6
+  - @backstage/plugin-permission-react@0.4.23
+
+## 1.5.6
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.8
+  - @backstage/core-plugin-api@1.9.3
+  - @backstage/theme@0.5.6
+  - @backstage/plugin-permission-react@0.4.23
+  - @backstage/core-app-api@1.12.6
+
+## 1.5.6-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.8-next.2
+  - @backstage/plugin-permission-react@0.4.23-next.1
+  - @backstage/core-app-api@1.12.6-next.0
+  - @backstage/core-plugin-api@1.9.3-next.0
+  - @backstage/theme@0.5.6-next.0
+
+## 1.5.6-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.8-next.1
+  - @backstage/core-plugin-api@1.9.3-next.0
+  - @backstage/core-app-api@1.12.6-next.0
+  - @backstage/plugin-permission-react@0.4.23-next.0
+  - @backstage/theme@0.5.6-next.0
+
+## 1.5.6-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/theme@0.5.6-next.0
+  - @backstage/core-components@0.14.8-next.0
+  - @backstage/core-app-api@1.12.5
+  - @backstage/core-plugin-api@1.9.2
+  - @backstage/plugin-permission-react@0.4.22
+
+## 1.5.5
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.7
+  - @backstage/theme@0.5.4
+  - @backstage/core-app-api@1.12.5
+
+## 1.5.5-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.6-next.1
+
+## 1.5.5-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/theme@0.5.4-next.0
+  - @backstage/core-components@0.14.5-next.0
+  - @backstage/core-app-api@1.12.4
+  - @backstage/core-plugin-api@1.9.2
+  - @backstage/plugin-permission-react@0.4.22
+
+## 1.5.4
+
+### Patch Changes
+
+- abfbcfc: Updated dependency `@testing-library/react` to `^15.0.0`.
+- Updated dependencies
+  - @backstage/core-components@0.14.4
+  - @backstage/core-app-api@1.12.4
+  - @backstage/core-plugin-api@1.9.2
+  - @backstage/theme@0.5.3
+  - @backstage/plugin-permission-react@0.4.22
+
+## 1.5.4-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-app-api@1.12.4-next.0
+  - @backstage/core-components@0.14.4-next.0
+  - @backstage/core-plugin-api@1.9.1
+  - @backstage/theme@0.5.2
+  - @backstage/plugin-permission-react@0.4.21
+
+## 1.5.4-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.4-next.0
+  - @backstage/core-app-api@1.12.3
+  - @backstage/core-plugin-api@1.9.1
+  - @backstage/theme@0.5.2
+  - @backstage/plugin-permission-react@0.4.21
+
+## 1.5.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.3
+  - @backstage/core-app-api@1.12.3
+  - @backstage/core-plugin-api@1.9.1
+  - @backstage/theme@0.5.2
+  - @backstage/plugin-permission-react@0.4.21
+
+## 1.5.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.2
+  - @backstage/core-app-api@1.12.2
+  - @backstage/core-plugin-api@1.9.1
+  - @backstage/theme@0.5.2
+  - @backstage/plugin-permission-react@0.4.21
+
+## 1.5.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.1
+  - @backstage/theme@0.5.2
+  - @backstage/core-app-api@1.12.1
+  - @backstage/core-plugin-api@1.9.1
+  - @backstage/plugin-permission-react@0.4.21
+
+## 1.5.1-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.1-next.2
+  - @backstage/core-app-api@1.12.1-next.1
+  - @backstage/core-plugin-api@1.9.1-next.1
+  - @backstage/theme@0.5.2-next.0
+  - @backstage/plugin-permission-react@0.4.21-next.1
+
+## 1.5.1-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.1-next.1
+  - @backstage/core-app-api@1.12.1-next.1
+  - @backstage/core-plugin-api@1.9.1-next.1
+  - @backstage/plugin-permission-react@0.4.21-next.1
+  - @backstage/theme@0.5.2-next.0
+
+## 1.5.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/theme@0.5.2-next.0
+  - @backstage/core-components@0.14.1-next.0
+  - @backstage/core-plugin-api@1.9.1-next.0
+  - @backstage/core-app-api@1.12.1-next.0
+  - @backstage/plugin-permission-react@0.4.21-next.0
+
+## 1.5.0
+
+### Minor Changes
+
+- f919be9: Added a utility API for VMware Cloud auth; the API ref is available in the
+  `@backstage/core-plugin-api` and `@backstage/frontend-plugin-api` packages, the
+  implementation is in `@backstage/core-app-api` and a factory has been added to
+  `@backstage/app-defaults`.
+- 7f11009: Added stack trace display to `ErrorPage` and updated existing refs
+
+### Patch Changes
+
+- f899eec: Change default icon for `kind:resource` to the storage icon.
+- 9aac2b0: Use `--cwd` as the first `yarn` argument
+- 7da67ce: Change `defaultScopes` for Bitbucket auth from invalid `team` to `account`.
+- 214f2da: Fix invalid HTTP status code 501 in Error Page
+- Updated dependencies
+  - @backstage/core-components@0.14.0
+  - @backstage/core-app-api@1.12.0
+  - @backstage/theme@0.5.1
+  - @backstage/core-plugin-api@1.9.0
+  - @backstage/plugin-permission-react@0.4.20
+
+## 1.5.0-next.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/theme@0.5.1-next.1
+  - @backstage/core-components@0.14.0-next.2
+  - @backstage/core-app-api@1.12.0-next.1
+  - @backstage/core-plugin-api@1.9.0-next.1
+  - @backstage/plugin-permission-react@0.4.20-next.1
+
+## 1.5.0-next.2
+
+### Minor Changes
+
+- f919be9: Added a utility API for VMware Cloud auth; the API ref is available in the
+  `@backstage/core-plugin-api` and `@backstage/frontend-plugin-api` packages, the
+  implementation is in `@backstage/core-app-api` and a factory has been added to
+  `@backstage/app-defaults`.
+- 7f11009: Added stack trace display to `ErrorPage` and updated existing refs
+
+### Patch Changes
+
+- 9aac2b0: Use `--cwd` as the first `yarn` argument
+- 214f2da: Fix invalid HTTP status code 501 in Error Page
+- Updated dependencies
+  - @backstage/core-components@0.14.0-next.1
+  - @backstage/core-app-api@1.12.0-next.1
+  - @backstage/core-plugin-api@1.9.0-next.1
+  - @backstage/plugin-permission-react@0.4.20-next.1
+  - @backstage/theme@0.5.1-next.0
+
+## 1.4.8-next.1
+
+### Patch Changes
+
+- 7da67ce: Change `defaultScopes` for Bitbucket auth from invalid `team` to `account`.
+- Updated dependencies
+  - @backstage/core-components@0.14.0-next.0
+  - @backstage/core-plugin-api@1.8.3-next.0
+  - @backstage/core-app-api@1.11.4-next.0
+  - @backstage/theme@0.5.0
+  - @backstage/plugin-permission-react@0.4.20-next.0
+
+## 1.4.8-next.0
+
+### Patch Changes
+
+- f899eec: Change default icon for `kind:resource` to the storage icon.
+- Updated dependencies
+  - @backstage/core-components@0.13.10
+  - @backstage/core-app-api@1.11.3
+  - @backstage/core-plugin-api@1.8.2
+  - @backstage/theme@0.5.0
+  - @backstage/plugin-permission-react@0.4.19
+
+## 1.4.7
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.13.10
+  - @backstage/core-plugin-api@1.8.2
+  - @backstage/plugin-permission-react@0.4.19
+  - @backstage/core-app-api@1.11.3
+  - @backstage/theme@0.5.0
+
+## 1.4.7-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.8.2-next.0
+  - @backstage/core-components@0.13.10-next.1
+  - @backstage/core-app-api@1.11.3-next.0
+  - @backstage/plugin-permission-react@0.4.19-next.1
+  - @backstage/theme@0.5.0
+
+## 1.4.7-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.13.10-next.0
+  - @backstage/plugin-permission-react@0.4.19-next.0
+  - @backstage/core-app-api@1.11.2
+  - @backstage/core-plugin-api@1.8.1
+  - @backstage/theme@0.5.0
+
+## 1.4.6
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.8.1
+  - @backstage/core-components@0.13.9
+  - @backstage/theme@0.5.0
+  - @backstage/core-app-api@1.11.2
+  - @backstage/plugin-permission-react@0.4.18
+
+## 1.4.6-next.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.13.9-next.3
+  - @backstage/core-app-api@1.11.2-next.1
+  - @backstage/core-plugin-api@1.8.1-next.1
+  - @backstage/theme@0.5.0-next.1
+  - @backstage/plugin-permission-react@0.4.18-next.1
+
+## 1.4.6-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/theme@0.5.0-next.1
+  - @backstage/core-app-api@1.11.2-next.1
+  - @backstage/core-components@0.13.9-next.2
+  - @backstage/core-plugin-api@1.8.1-next.1
+  - @backstage/plugin-permission-react@0.4.18-next.1
+
+## 1.4.6-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.13.9-next.1
+  - @backstage/core-plugin-api@1.8.1-next.1
+  - @backstage/core-app-api@1.11.2-next.1
+  - @backstage/plugin-permission-react@0.4.18-next.1
+  - @backstage/theme@0.5.0-next.0
+
+## 1.4.6-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.8.1-next.0
+  - @backstage/core-components@0.13.9-next.0
+  - @backstage/theme@0.5.0-next.0
+  - @backstage/core-app-api@1.11.2-next.0
+  - @backstage/plugin-permission-react@0.4.18-next.0
+
+## 1.4.5
+
+### Patch Changes
+
+- 6c2b872153: Add official support for React 18.
+- Updated dependencies
+  - @backstage/core-components@0.13.8
+  - @backstage/core-plugin-api@1.8.0
+  - @backstage/plugin-permission-react@0.4.17
+  - @backstage/core-app-api@1.11.1
+  - @backstage/theme@0.4.4
+
+## 1.4.5-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.13.8-next.2
+
+## 1.4.5-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.13.8-next.1
+  - @backstage/core-app-api@1.11.1-next.0
+  - @backstage/core-plugin-api@1.8.0-next.0
+  - @backstage/theme@0.4.4-next.0
+  - @backstage/plugin-permission-react@0.4.17-next.0
+
+## 1.4.5-next.0
+
+### Patch Changes
+
+- 6c2b872153: Add official support for React 18.
+- Updated dependencies
+  - @backstage/core-components@0.13.7-next.0
+  - @backstage/core-plugin-api@1.8.0-next.0
+  - @backstage/plugin-permission-react@0.4.17-next.0
+  - @backstage/core-app-api@1.11.1-next.0
+  - @backstage/theme@0.4.4-next.0
+
+## 1.4.4
+
+### Patch Changes
+
+- 1a0616fa10: Add missing resource and template app icons
+- 9a1fce352e: Updated dependency `@testing-library/jest-dom` to `^6.0.0`.
+- Updated dependencies
+  - @backstage/core-app-api@1.11.0
+  - @backstage/core-plugin-api@1.7.0
+  - @backstage/core-components@0.13.6
+  - @backstage/plugin-permission-react@0.4.16
+  - @backstage/theme@0.4.3
+
+## 1.4.4-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-app-api@1.11.0-next.2
+  - @backstage/core-components@0.13.6-next.2
+  - @backstage/core-plugin-api@1.7.0-next.1
+  - @backstage/theme@0.4.3-next.0
+  - @backstage/plugin-permission-react@0.4.16-next.1
+
+## 1.4.4-next.1
+
+### Patch Changes
+
+- 1a0616fa10: Add missing resource and template app icons
+- Updated dependencies
+  - @backstage/core-components@0.13.6-next.1
+  - @backstage/core-app-api@1.10.1-next.1
+  - @backstage/core-plugin-api@1.7.0-next.0
+  - @backstage/plugin-permission-react@0.4.16-next.0
+  - @backstage/theme@0.4.2
+
+## 1.4.4-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.7.0-next.0
+  - @backstage/core-components@0.13.6-next.0
+  - @backstage/core-app-api@1.10.1-next.0
+  - @backstage/plugin-permission-react@0.4.16-next.0
+  - @backstage/theme@0.4.2
+
+## 1.4.3
+
+### Patch Changes
+
+- 406b786a2a2c: Mark package as being free of side effects, allowing more optimized Webpack builds.
+- 8cec7664e146: Removed `@types/node` dependency
+- Updated dependencies
+  - @backstage/core-components@0.13.5
+  - @backstage/core-app-api@1.10.0
+  - @backstage/core-plugin-api@1.6.0
+  - @backstage/plugin-permission-react@0.4.15
+  - @backstage/theme@0.4.2
+
+## 1.4.3-next.3
+
+### Patch Changes
+
+- 406b786a2a2c: Mark package as being free of side effects, allowing more optimized Webpack builds.
+- Updated dependencies
+  - @backstage/core-app-api@1.10.0-next.3
+  - @backstage/core-components@0.13.5-next.3
+  - @backstage/core-plugin-api@1.6.0-next.3
+  - @backstage/plugin-permission-react@0.4.15-next.3
+  - @backstage/theme@0.4.2-next.0
+
+## 1.4.3-next.2
+
+### Patch Changes
+
+- 8cec7664e146: Removed `@types/node` dependency
+- Updated dependencies
+  - @backstage/core-components@0.13.5-next.2
+  - @backstage/core-plugin-api@1.6.0-next.2
+  - @backstage/core-app-api@1.10.0-next.2
+  - @backstage/plugin-permission-react@0.4.15-next.2
+  - @backstage/theme@0.4.1
+
 ## 1.4.3-next.1
 
 ### Patch Changes
@@ -234,7 +991,7 @@
 
 ### Minor Changes
 
-- 7908d72e033: Introduce a new global config parameter, `auth.enableExperimentalRedirectFlow`. When enabled, auth will happen with an in-window redirect flow rather than through a popup window.
+- 7908d72e033: Introduce a new global config parameter, `enableExperimentalRedirectFlow`. When enabled, auth will happen with an in-window redirect flow rather than through a popup window.
 
 ### Patch Changes
 
@@ -282,7 +1039,7 @@
 
 ### Minor Changes
 
-- 7908d72e033: Introduce a new global config parameter, `auth.enableExperimentalRedirectFlow`. When enabled, auth will happen with an in-window redirect flow rather than through a popup window.
+- 7908d72e033: Introduce a new global config parameter, `enableExperimentalRedirectFlow`. When enabled, auth will happen with an in-window redirect flow rather than through a popup window.
 
 ### Patch Changes
 

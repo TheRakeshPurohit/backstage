@@ -14,110 +14,20 @@
  * limitations under the License.
  */
 
-import { ComponentType } from 'react';
-import { PortableSchema } from './createSchemaFromZod';
+import { ReactNode } from 'react';
+import { FrontendPlugin } from './wiring';
 
 /** @public */
-export type ExtensionDataRef<T> = {
-  id: string;
-  T: T;
-  $$type: 'extension-data';
+export type CoreProgressProps = {};
+
+/** @public */
+export type CoreNotFoundErrorPageProps = {
+  children?: ReactNode;
 };
 
 /** @public */
-export function createExtensionDataRef<T>(id: string): ExtensionDataRef<T> {
-  return { id, $$type: 'extension-data' } as ExtensionDataRef<T>;
-}
-
-/** @public */
-export const coreExtensionData = {
-  reactComponent: createExtensionDataRef<ComponentType>('core.reactComponent'),
-  routePath: createExtensionDataRef<string>('core.routing.path'),
+export type CoreErrorBoundaryFallbackProps = {
+  plugin?: FrontendPlugin;
+  error: Error;
+  resetError: () => void;
 };
-
-/** @public */
-export type AnyExtensionDataMap = Record<string, ExtensionDataRef<any>>;
-
-/** @public */
-export type ExtensionDataBind<TData extends AnyExtensionDataMap> = {
-  [K in keyof TData]: (value: TData[K]['T']) => void;
-};
-
-/** @public */
-export type ExtensionDataValue<TData extends AnyExtensionDataMap> = {
-  [K in keyof TData]: TData[K]['T'];
-};
-
-/** @public */
-export interface CreateExtensionOptions<
-  TData extends AnyExtensionDataMap,
-  TPoint extends Record<string, { extensionData: AnyExtensionDataMap }>,
-  TConfig,
-> {
-  inputs?: TPoint;
-  output: TData;
-  configSchema?: PortableSchema<TConfig>;
-  factory(options: {
-    bind: ExtensionDataBind<TData>;
-    config: TConfig;
-    inputs: {
-      [pointName in keyof TPoint]: ExtensionDataValue<
-        TPoint[pointName]['extensionData']
-      >[];
-    };
-  }): void;
-}
-
-/** @public */
-export interface Extension<TConfig> {
-  $$type: 'extension';
-  // TODO: will extensions have a default "at" as part of their contract, making it optional in the instance config?
-  inputs: Record<string, { extensionData: AnyExtensionDataMap }>;
-  output: AnyExtensionDataMap;
-  configSchema?: PortableSchema<TConfig>;
-  factory(options: {
-    bind: ExtensionDataBind<AnyExtensionDataMap>;
-    config: TConfig;
-    inputs: Record<string, Array<Record<string, unknown>>>;
-  }): void;
-}
-
-/** @public */
-export function createExtension<
-  TData extends AnyExtensionDataMap,
-  TPoint extends Record<string, { extensionData: AnyExtensionDataMap }>,
-  TConfig = never,
->(options: CreateExtensionOptions<TData, TPoint, TConfig>): Extension<TConfig> {
-  return { ...options, $$type: 'extension', inputs: options.inputs ?? {} };
-}
-
-/** @public */
-export interface ExtensionInstanceParameters {
-  id: string;
-  at: string;
-  extension: Extension<unknown>;
-  config?: unknown;
-  disabled?: boolean;
-}
-
-/** @public */
-export interface BackstagePluginOptions {
-  id: string;
-  defaultExtensionInstances?: ExtensionInstanceParameters[];
-}
-
-/** @public */
-export interface BackstagePlugin {
-  $$type: 'backstage-plugin';
-  id: string;
-  defaultExtensionInstances: ExtensionInstanceParameters[];
-}
-
-/** @public */
-export function createPlugin(options: BackstagePluginOptions): BackstagePlugin {
-  return {
-    ...options,
-    $$type: 'backstage-plugin',
-    defaultExtensionInstances: options.defaultExtensionInstances ?? [],
-  };
-}

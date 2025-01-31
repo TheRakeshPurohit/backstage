@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import React from 'react';
 
-import { BackstageTheme } from '@backstage/theme';
-import { CircularProgress, makeStyles, StepIconProps } from '@material-ui/core';
+import React from 'react';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import { StepIconProps } from '@material-ui/core/StepIcon';
+import { makeStyles } from '@material-ui/core/styles';
 import RemoveCircleOutline from '@material-ui/icons/RemoveCircleOutline';
 import PanoramaFishEyeIcon from '@material-ui/icons/PanoramaFishEye';
 import classNames from 'classnames';
 import CheckCircleOutline from '@material-ui/icons/CheckCircleOutline';
 import ErrorOutline from '@material-ui/icons/ErrorOutline';
 
-const useStepIconStyles = makeStyles((theme: BackstageTheme) => ({
+const useStepIconStyles = makeStyles(theme => ({
   root: {
     color: theme.palette.text.disabled,
   },

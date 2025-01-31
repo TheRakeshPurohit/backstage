@@ -16,11 +16,10 @@
 
 import { Config } from '@backstage/config';
 import { DocumentCollatorFactory } from '@backstage/plugin-search-common';
-import { Logger } from 'winston';
 import { Permission } from '@backstage/plugin-permission-common';
 import { Readable } from 'stream';
-import { UrlReader } from '@backstage/backend-common';
 import { parse as parseNdjson } from 'ndjson';
+import { LoggerService, UrlReaderService } from '@backstage/backend-plugin-api';
 
 /**
  * Options for instantiate NewlineDelimitedJsonCollatorFactory
@@ -29,8 +28,8 @@ import { parse as parseNdjson } from 'ndjson';
 export type NewlineDelimitedJsonCollatorFactoryOptions = {
   type: string;
   searchPattern: string;
-  reader: UrlReader;
-  logger: Logger;
+  reader: UrlReaderService;
+  logger: LoggerService;
   visibilityPermission?: Permission;
 };
 
@@ -73,8 +72,8 @@ export class NewlineDelimitedJsonCollatorFactory
   private constructor(
     type: string,
     private readonly searchPattern: string,
-    private readonly reader: UrlReader,
-    private readonly logger: Logger,
+    private readonly reader: UrlReaderService,
+    private readonly logger: LoggerService,
     visibilityPermission: Permission | undefined,
   ) {
     this.type = type;

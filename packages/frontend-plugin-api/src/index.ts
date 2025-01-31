@@ -15,26 +15,25 @@
  */
 
 /**
- * TODO
+ * Core API used by Backstage frontend plugins.
  *
  * @packageDocumentation
  */
 
-export {
-  createExtension,
-  coreExtensionData,
-  createPlugin,
-  type ExtensionInstanceParameters,
-  type BackstagePlugin,
-  type Extension,
-  type AnyExtensionDataMap,
-  type BackstagePluginOptions,
-  type CreateExtensionOptions,
-  type ExtensionDataBind,
-  type ExtensionDataRef,
-  type ExtensionDataValue,
+export * from './analytics';
+export * from './apis';
+export * from './blueprints';
+export * from './components';
+export * from './extensions';
+export * from './icons';
+export * from './routing';
+export * from './schema';
+export * from './apis/system';
+export * from './translation';
+export * from './wiring';
+
+export type {
+  CoreProgressProps,
+  CoreNotFoundErrorPageProps,
+  CoreErrorBoundaryFallbackProps,
 } from './types';
-export {
-  createSchemaFromZod,
-  type PortableSchema,
-} from './createSchemaFromZod';

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { useApi } from '@backstage/core-plugin-api';
-import useAsyncFn from 'react-use/lib/useAsyncFn';
+import useAsyncFn from 'react-use/esm/useAsyncFn';
 import { catalogApiRef } from '../../api';
 import { useState } from 'react';
 import { Entity, parseEntityRef } from '@backstage/catalog-model';
@@ -39,6 +39,7 @@ type FacetsInitialRequest = {
  * All the owners are kept internally in memory and rendered in batches once requested
  * by the frontend. The values returned by this hook are compatible with `useQueryEntities`
  * hook, which is also used by EntityOwnerPicker.
+ * In this mode, the EntityOwnerPicker won't show detailed information of the owners.
  */
 export function useFacetsEntities({ enabled }: { enabled: boolean }) {
   const catalogApi = useApi(catalogApiRef);
@@ -48,12 +49,13 @@ export function useFacetsEntities({ enabled }: { enabled: boolean }) {
       return [];
     }
     const facet = 'relations.ownedBy';
+
     return catalogApi
       .getEntityFacets({ facets: [facet] })
       .then(response =>
         response.facets[facet]
           .map(e => e.value)
-          .map<Entity>(ref => {
+          .map(ref => {
             const { kind, name, namespace } = parseEntityRef(ref);
             return {
               apiVersion: 'backstage.io/v1beta1',
@@ -63,12 +65,12 @@ export function useFacetsEntities({ enabled }: { enabled: boolean }) {
           })
           .sort(
             (a, b) =>
-              (a.metadata.namespace || '').localeCompare(
-                b.metadata.namespace || '',
+              a.kind.localeCompare(b.kind, 'en-US') ||
+              a.metadata.namespace.localeCompare(
+                b.metadata.namespace,
                 'en-US',
               ) ||
-              a.metadata.name.localeCompare(b.metadata.name, 'en-US') ||
-              a.kind.localeCompare(b.kind, 'en-US'),
+              a.metadata.name.localeCompare(b.metadata.name, 'en-US'),
           ),
       )
       .catch(() => []);

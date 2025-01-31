@@ -18,6 +18,8 @@ import Typography from '@material-ui/core/Typography';
 import React, { ComponentClass, Component, ErrorInfo } from 'react';
 import { LinkButton } from '../../components/LinkButton';
 import { ErrorPanel } from '../../components/ErrorPanel';
+import { coreComponentsTranslationRef } from '../../translation';
+import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 
 type SlackChannel = {
   name: string;
@@ -25,10 +27,10 @@ type SlackChannel = {
 };
 
 /** @public */
-export type ErrorBoundaryProps = {
+export type ErrorBoundaryProps = React.PropsWithChildren<{
   slackChannel?: string | SlackChannel;
   onError?: (error: Error, errorInfo: string) => null;
-};
+}>;
 
 type State = {
   error?: Error;
@@ -37,14 +39,21 @@ type State = {
 
 const SlackLink = (props: { slackChannel?: string | SlackChannel }) => {
   const { slackChannel } = props;
+  const { t } = useTranslationRef(coreComponentsTranslationRef);
 
   if (!slackChannel) {
     return null;
   } else if (typeof slackChannel === 'string') {
-    return <Typography>Please contact {slackChannel} for help.</Typography>;
+    return (
+      <Typography>{t('errorBoundary.title', { slackChannel })}</Typography>
+    );
   } else if (!slackChannel.href) {
     return (
-      <Typography>Please contact {slackChannel.name} for help.</Typography>
+      <Typography>
+        {t('errorBoundary.title', {
+          slackChannel: slackChannel.name,
+        })}
+      </Typography>
     );
   }
 
@@ -70,7 +79,7 @@ export const ErrorBoundary: ComponentClass<
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // eslint-disable-next-line no-console
-    console.error(`ErrorBoundary, error: ${error}, info: ${errorInfo}`);
+    console.error(`ErrorBoundary, error: ${error}`, { error, errorInfo });
     this.setState({ error, errorInfo });
   }
 

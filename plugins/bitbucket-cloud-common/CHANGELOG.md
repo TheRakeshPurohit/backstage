@@ -1,5 +1,322 @@
 # @backstage/plugin-bitbucket-cloud-common
 
+## 0.2.27
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.16.1
+
+## 0.2.27-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.16.1-next.0
+
+## 0.2.26
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.16.0
+
+## 0.2.26-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.16.0-next.1
+
+## 0.2.26-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.16.0-next.0
+
+## 0.2.25
+
+### Patch Changes
+
+- 23f1da2: Updated dependency `ts-morph` to `^24.0.0`.
+- Updated dependencies
+  - @backstage/integration@1.15.2
+
+## 0.2.25-next.0
+
+### Patch Changes
+
+- 23f1da2: Updated dependency `ts-morph` to `^24.0.0`.
+- Updated dependencies
+  - @backstage/integration@1.15.1
+
+## 0.2.24
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.15.1
+
+## 0.2.24-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.15.1-next.1
+
+## 0.2.24-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.15.1-next.0
+
+## 0.2.23
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.15.0
+
+## 0.2.23-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.15.0-next.0
+
+## 0.2.22
+
+### Patch Changes
+
+- 3fca643: Added method `listBranchesByRepository` to `BitbucketCloudClient`
+- Updated dependencies
+  - @backstage/integration@1.14.0
+
+## 0.2.22-next.1
+
+### Patch Changes
+
+- 3fca643: Added method `listBranchesByRepository` to `BitbucketCloudClient`
+- Updated dependencies
+  - @backstage/integration@1.14.0-next.0
+
+## 0.2.22-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.14.0-next.0
+
+## 0.2.21
+
+### Patch Changes
+
+- b5deed0: Add support for `autocomplete` handler to provide autocomplete options for `RepoUrlPicker`
+- Updated dependencies
+  - @backstage/integration@1.13.0
+
+## 0.2.21-next.0
+
+### Patch Changes
+
+- b5deed0: Add support for `autocomplete` handler to provide autocomplete options for `RepoUrlPicker`
+- Updated dependencies
+  - @backstage/integration@1.13.0-next.0
+
+## 0.2.20
+
+### Patch Changes
+
+- d44a20a: Added additional plugin metadata to `package.json`.
+- Updated dependencies
+  - @backstage/integration@1.12.0
+
+## 0.2.20-next.1
+
+### Patch Changes
+
+- d44a20a: Added additional plugin metadata to `package.json`.
+- Updated dependencies
+  - @backstage/integration@1.12.0-next.1
+
+## 0.2.20-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.12.0-next.0
+
+## 0.2.19
+
+### Patch Changes
+
+- d76cb29: Updated dependency `ts-morph` to `^22.0.0`.
+- Updated dependencies
+  - @backstage/integration@1.11.0
+
+## 0.2.19-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.11.0-next.0
+
+## 0.2.18
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.10.0
+
+## 0.2.18-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.10.0-next.0
+
+## 0.2.17
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.9.1
+
+## 0.2.17-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.9.1-next.2
+
+## 0.2.17-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.9.1-next.1
+
+## 0.2.17-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.9.1-next.0
+
+## 0.2.16
+
+### Patch Changes
+
+- 2e6af00: Updated dependency `ts-morph` to `^21.0.0`.
+- Updated dependencies
+  - @backstage/integration@1.9.0
+
+## 0.2.16-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.9.0-next.1
+
+## 0.2.16-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.9.0-next.0
+
+## 0.2.16-next.0
+
+### Patch Changes
+
+- 2e6af00: Updated dependency `ts-morph` to `^21.0.0`.
+- Updated dependencies
+  - @backstage/integration@1.8.0
+
+## 0.2.15
+
+### Patch Changes
+
+- acf9390: Updated dependency `ts-morph` to `^20.0.0`.
+- Updated dependencies
+  - @backstage/integration@1.8.0
+
+## 0.2.15-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.8.0-next.1
+
+## 0.2.15-next.0
+
+### Patch Changes
+
+- acf93904e7: Updated dependency `ts-morph` to `^20.0.0`.
+- Updated dependencies
+  - @backstage/integration@1.8.0-next.0
+
+## 0.2.14
+
+### Patch Changes
+
+- 4aa43f62aa: Updated dependency `cross-fetch` to `^4.0.0`.
+- Updated dependencies
+  - @backstage/integration@1.7.2
+
+## 0.2.14-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.7.2-next.0
+
+## 0.2.13
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.7.1
+
+## 0.2.13-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.7.1-next.1
+
+## 0.2.13-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.7.1-next.0
+
+## 0.2.12
+
+### Patch Changes
+
+- 406b786a2a2c: Mark package as being free of side effects, allowing more optimized Webpack builds.
+- Updated dependencies
+  - @backstage/integration@1.7.0
+
+## 0.2.12-next.3
+
+### Patch Changes
+
+- 406b786a2a2c: Mark package as being free of side effects, allowing more optimized Webpack builds.
+- Updated dependencies
+  - @backstage/integration@1.7.0-next.3
+
+## 0.2.12-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.7.0-next.2
+
 ## 0.2.12-next.1
 
 ### Patch Changes

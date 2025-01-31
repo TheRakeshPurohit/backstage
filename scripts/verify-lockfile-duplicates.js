@@ -36,7 +36,7 @@ async function findLockFiles() {
 
   if (!files.length) {
     // List all lock files that are in the root or in an immediate subdirectory
-    files = ['yarn.lock', 'cypress/yarn.lock', 'microsite/yarn.lock'];
+    files = ['yarn.lock', 'microsite/yarn.lock'];
   }
 
   return files.map(file => ({
@@ -95,11 +95,11 @@ async function main() {
 
     if (failed) {
       if (!fix) {
-        const command = `yarn dedupe${
+        const command = `yarn${
           lockFile.directoryRelativeToProjectRoot === '.'
             ? ''
             : ` --cwd ${lockFile.directoryRelativeToProjectRoot}`
-        }`;
+        } dedupe`;
         const padding = ' '.repeat(Math.max(0, 85 - 6 - command.length));
         console.error('');
         console.error(

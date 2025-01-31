@@ -19,11 +19,13 @@ import {
   SignInPageProps,
   useApi,
 } from '@backstage/core-plugin-api';
-import React from 'react';
+import React, { ComponentType } from 'react';
 import { useAsync, useMountEffect } from '@react-hookz/web';
 import { ErrorPanel } from '../../components/ErrorPanel';
 import { Progress } from '../../components/Progress';
 import { ProxiedSignInIdentity } from './ProxiedSignInIdentity';
+import { coreComponentsTranslationRef } from '../../translation';
+import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 
 /**
  * Props for {@link ProxiedSignInPage}.
@@ -32,7 +34,7 @@ import { ProxiedSignInIdentity } from './ProxiedSignInIdentity';
  */
 export type ProxiedSignInPageProps = SignInPageProps & {
   /**
-   * The provider to use, e.g. "gcp-iap" or "awsalb". This must correspond to
+   * The provider to use, e.g. "gcpIap" or "awsalb". This must correspond to
    * a properly configured auth provider ID in the auth backend.
    */
   provider: string;
@@ -42,6 +44,12 @@ export type ProxiedSignInPageProps = SignInPageProps & {
    * underlying provider
    */
   headers?: HeadersInit | (() => HeadersInit) | (() => Promise<HeadersInit>);
+
+  /**
+   * Error component to be rendered instead of the default error panel in case
+   * sign in fails.
+   */
+  ErrorComponent?: ComponentType<{ error?: Error }>;
 };
 
 /**
@@ -61,6 +69,7 @@ export type ProxiedSignInPageProps = SignInPageProps & {
  */
 export const ProxiedSignInPage = (props: ProxiedSignInPageProps) => {
   const discoveryApi = useApi(discoveryApiRef);
+  const { t } = useTranslationRef(coreComponentsTranslationRef);
 
   const [{ status, error }, { execute }] = useAsync(async () => {
     const identity = new ProxiedSignInIdentity({
@@ -79,11 +88,10 @@ export const ProxiedSignInPage = (props: ProxiedSignInPageProps) => {
   if (status === 'loading') {
     return <Progress />;
   } else if (error) {
-    return (
-      <ErrorPanel
-        title="You do not appear to be signed in. Please try reloading the browser page."
-        error={error}
-      />
+    return props.ErrorComponent ? (
+      <props.ErrorComponent error={error} />
+    ) : (
+      <ErrorPanel title={t('proxiedSignInPage.title')} error={error} />
     );
   }
 

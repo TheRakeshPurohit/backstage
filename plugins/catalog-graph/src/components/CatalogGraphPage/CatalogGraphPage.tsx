@@ -27,10 +27,13 @@ import {
   entityRouteRef,
   humanizeEntityRef,
 } from '@backstage/plugin-catalog-react';
-import { Grid, makeStyles, Paper, Typography } from '@material-ui/core';
+import Grid from '@material-ui/core/Grid';
+import Paper from '@material-ui/core/Paper';
+import Typography from '@material-ui/core/Typography';
+import { makeStyles } from '@material-ui/core/styles';
 import FilterListIcon from '@material-ui/icons/FilterList';
 import ZoomOutMap from '@material-ui/icons/ZoomOutMap';
-import { ToggleButton } from '@material-ui/lab';
+import ToggleButton from '@material-ui/lab/ToggleButton';
 import React, { MouseEvent, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -47,6 +50,16 @@ import { SelectedKindsFilter } from './SelectedKindsFilter';
 import { SelectedRelationsFilter } from './SelectedRelationsFilter';
 import { SwitchFilter } from './SwitchFilter';
 import { useCatalogGraphPage } from './useCatalogGraphPage';
+
+/** @public */
+export type CatalogGraphPageClassKey =
+  | 'content'
+  | 'container'
+  | 'fullHeight'
+  | 'graphWrapper'
+  | 'graph'
+  | 'legend'
+  | 'filters';
 
 const useStyles = makeStyles(
   theme => ({
@@ -118,7 +131,11 @@ export const CatalogGraphPage = (
     };
   } & Partial<EntityRelationsGraphProps>,
 ) => {
-  const { relationPairs = ALL_RELATION_PAIRS, initialState } = props;
+  const {
+    relationPairs = ALL_RELATION_PAIRS,
+    initialState,
+    entityFilter,
+  } = props;
 
   const navigate = useNavigate();
   const classes = useStyles();
@@ -157,14 +174,14 @@ export const CatalogGraphPage = (
 
         analytics.captureEvent(
           'click',
-          node.title ?? humanizeEntityRef(nodeEntityName),
+          node.entity.metadata.title ?? humanizeEntityRef(nodeEntityName),
           { attributes: { to: path } },
         );
         navigate(path);
       } else {
         analytics.captureEvent(
           'click',
-          node.title ?? humanizeEntityRef(nodeEntityName),
+          node.entity.metadata.title ?? humanizeEntityRef(nodeEntityName),
         );
         setRootEntityNames([nodeEntityName]);
       }
@@ -253,6 +270,7 @@ export const CatalogGraphPage = (
                 onNodeClick={onNodeClick}
                 direction={direction}
                 relationPairs={relationPairs}
+                entityFilter={entityFilter}
                 className={classes.graph}
                 zoom="enabled"
                 curve={curve}

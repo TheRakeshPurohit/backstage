@@ -23,12 +23,11 @@ import {
   useSidebarPinState,
 } from '@backstage/core-components';
 import { useApi } from '@backstage/core-plugin-api';
-import { CatalogSearchResultListItem } from '@internal/plugin-catalog-customized';
+import { CatalogSearchResultListItem } from '@backstage/plugin-catalog';
 import {
-  catalogApiRef,
   CATALOG_FILTER_EXISTS,
+  catalogApiRef,
 } from '@backstage/plugin-catalog-react';
-import { AdrSearchResultListItem } from '@backstage/plugin-adr';
 import { SearchType } from '@backstage/plugin-search';
 import {
   SearchBar,
@@ -39,10 +38,11 @@ import {
   useSearch,
 } from '@backstage/plugin-search-react';
 import { TechDocsSearchResultListItem } from '@backstage/plugin-techdocs';
-import { Grid, makeStyles, Paper, Theme } from '@material-ui/core';
+import Paper from '@material-ui/core/Paper';
+import Grid from '@material-ui/core/Grid';
+import { Theme } from '@material-ui/core/styles/createTheme';
+import { makeStyles } from '@material-ui/core/styles';
 import React from 'react';
-import { ToolSearchResultListItem } from '@backstage/plugin-explore';
-import BuildIcon from '@material-ui/icons/Build';
 
 const useStyles = makeStyles((theme: Theme) => ({
   filter: {
@@ -73,7 +73,7 @@ const SearchPage = () => {
           {!isMobile && (
             <Grid item xs={3}>
               <SearchType.Accordion
-                name="Result Type"
+                name="Result type"
                 defaultValue="software-catalog"
                 showCounts
                 types={[
@@ -85,11 +85,6 @@ const SearchPage = () => {
                   {
                     value: 'techdocs',
                     name: 'Documentation',
-                    icon: <DocsIcon />,
-                  },
-                  {
-                    value: 'adr',
-                    name: 'Architecture Decision Records',
                     icon: <DocsIcon />,
                   },
                 ]}
@@ -122,7 +117,7 @@ const SearchPage = () => {
                   name="kind"
                   values={['Component', 'Template']}
                 />
-                <SearchFilter.Checkbox
+                <SearchFilter.Select
                   className={classes.filter}
                   label="Lifecycle"
                   name="lifecycle"
@@ -136,8 +131,6 @@ const SearchPage = () => {
             <SearchResult>
               <CatalogSearchResultListItem icon={<CatalogIcon />} />
               <TechDocsSearchResultListItem icon={<DocsIcon />} />
-              <ToolSearchResultListItem icon={<BuildIcon />} />
-              <AdrSearchResultListItem icon={<DocsIcon />} />
             </SearchResult>
             <SearchResultPager />
           </Grid>

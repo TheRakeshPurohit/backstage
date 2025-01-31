@@ -1,5 +1,659 @@
 # @backstage/plugin-config-schema
 
+## 0.1.65-next.0
+
+### Patch Changes
+
+- 58ec9e7: Removed older versions of React packages as a preparatory step for upgrading to React 19. This commit does not introduce any functional changes, but removes dependencies on previous React versions, allowing for a cleaner upgrade path in subsequent commits.
+- Updated dependencies
+  - @backstage/core-components@0.16.4-next.0
+  - @backstage/core-plugin-api@1.10.4-next.0
+  - @backstage/errors@1.2.7
+  - @backstage/types@1.2.1
+
+## 0.1.64
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.10.3
+  - @backstage/types@1.2.1
+  - @backstage/core-components@0.16.3
+  - @backstage/errors@1.2.7
+
+## 0.1.64-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.10.3-next.0
+  - @backstage/types@1.2.1-next.0
+  - @backstage/core-components@0.16.3-next.0
+  - @backstage/errors@1.2.7-next.0
+
+## 0.1.63
+
+### Patch Changes
+
+- c36bd35: Internal refactor to break potential circular imports
+- Updated dependencies
+  - @backstage/core-components@0.16.2
+  - @backstage/errors@1.2.6
+  - @backstage/core-plugin-api@1.10.2
+  - @backstage/types@1.2.0
+
+## 0.1.63-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.2.6-next.0
+  - @backstage/core-components@0.16.2-next.2
+  - @backstage/core-plugin-api@1.10.2-next.0
+  - @backstage/types@1.2.0
+
+## 0.1.63-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.16.2-next.1
+  - @backstage/core-plugin-api@1.10.1
+  - @backstage/errors@1.2.5
+  - @backstage/types@1.2.0
+
+## 0.1.63-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.16.2-next.0
+  - @backstage/core-plugin-api@1.10.1
+  - @backstage/errors@1.2.5
+  - @backstage/types@1.2.0
+
+## 0.1.61
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/types@1.2.0
+  - @backstage/core-components@0.16.0
+  - @backstage/core-plugin-api@1.10.1
+  - @backstage/errors@1.2.5
+
+## 0.1.61-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.16.0-next.2
+  - @backstage/core-plugin-api@1.10.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.61-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.16.0-next.1
+  - @backstage/core-plugin-api@1.10.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.61-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.16.0-next.0
+  - @backstage/core-plugin-api@1.10.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.60
+
+### Patch Changes
+
+- e969dc7: Move `@types/react` to a peer dependency.
+- Updated dependencies
+  - @backstage/core-components@0.15.1
+  - @backstage/core-plugin-api@1.10.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.60-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.15.1-next.2
+  - @backstage/core-plugin-api@1.10.0-next.1
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.60-next.1
+
+### Patch Changes
+
+- e969dc7: Move `@types/react` to a peer dependency.
+- Updated dependencies
+  - @backstage/core-components@0.15.1-next.1
+  - @backstage/core-plugin-api@1.10.0-next.1
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.60-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.15.1-next.0
+  - @backstage/core-plugin-api@1.10.0-next.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.59
+
+### Patch Changes
+
+- 836127c: Updated dependency `@testing-library/react` to `^16.0.0`.
+- Updated dependencies
+  - @backstage/core-components@0.15.0
+  - @backstage/core-plugin-api@1.9.4
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.59-next.1
+
+### Patch Changes
+
+- 836127c: Updated dependency `@testing-library/react` to `^16.0.0`.
+- Updated dependencies
+  - @backstage/core-components@0.14.11-next.1
+  - @backstage/core-plugin-api@1.9.4-next.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.59-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.11-next.0
+  - @backstage/core-plugin-api@1.9.3
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.58
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.10
+  - @backstage/core-plugin-api@1.9.3
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.58-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.10-next.0
+  - @backstage/core-plugin-api@1.9.3
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.57
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.9
+  - @backstage/core-plugin-api@1.9.3
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.57-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.9-next.1
+
+## 0.1.57-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.9-next.0
+  - @backstage/core-plugin-api@1.9.3
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.56
+
+### Patch Changes
+
+- d44a20a: Added additional plugin metadata to `package.json`.
+- Updated dependencies
+  - @backstage/core-components@0.14.8
+  - @backstage/core-plugin-api@1.9.3
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.56-next.2
+
+### Patch Changes
+
+- d44a20a: Added additional plugin metadata to `package.json`.
+- Updated dependencies
+  - @backstage/core-components@0.14.8-next.2
+  - @backstage/core-plugin-api@1.9.3-next.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.56-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.8-next.1
+  - @backstage/core-plugin-api@1.9.3-next.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.56-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.8-next.0
+  - @backstage/core-plugin-api@1.9.2
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.55
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.7
+
+## 0.1.55-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.6-next.1
+
+## 0.1.55-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.5-next.0
+  - @backstage/core-plugin-api@1.9.2
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.54
+
+### Patch Changes
+
+- abfbcfc: Updated dependency `@testing-library/react` to `^15.0.0`.
+- cb1e3b0: Updated dependency `@testing-library/dom` to `^10.0.0`.
+- c43315a: Added the `no-top-level-material-ui-4-imports` ESLint rule to aid with the migration to Material UI v5
+- Updated dependencies
+  - @backstage/core-components@0.14.4
+  - @backstage/core-plugin-api@1.9.2
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.54-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.4-next.0
+  - @backstage/core-plugin-api@1.9.1
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.53
+
+### Patch Changes
+
+- e8f026a: Use ESM exports of react-use library
+- Updated dependencies
+  - @backstage/core-components@0.14.3
+  - @backstage/core-plugin-api@1.9.1
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.52
+
+### Patch Changes
+
+- e8f026a: Use ESM exports of react-use library
+- Updated dependencies
+  - @backstage/core-components@0.14.2
+  - @backstage/core-plugin-api@1.9.1
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+
+## 0.1.51
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.1
+  - @backstage/errors@1.2.4
+  - @backstage/core-plugin-api@1.9.1
+  - @backstage/types@1.1.1
+
+## 0.1.51-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.1-next.2
+  - @backstage/core-plugin-api@1.9.1-next.1
+  - @backstage/errors@1.2.4-next.0
+  - @backstage/types@1.1.1
+
+## 0.1.51-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.1-next.1
+  - @backstage/core-plugin-api@1.9.1-next.1
+  - @backstage/errors@1.2.4-next.0
+  - @backstage/types@1.1.1
+
+## 0.1.51-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.2.4-next.0
+  - @backstage/core-components@0.14.1-next.0
+  - @backstage/core-plugin-api@1.9.1-next.0
+  - @backstage/types@1.1.1
+
+## 0.1.50
+
+### Patch Changes
+
+- 8fe56a8: Widen `@types/react` dependency range to include version 18.
+- Updated dependencies
+  - @backstage/core-components@0.14.0
+  - @backstage/core-plugin-api@1.9.0
+  - @backstage/errors@1.2.3
+  - @backstage/types@1.1.1
+
+## 0.1.50-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.0-next.2
+  - @backstage/core-plugin-api@1.9.0-next.1
+  - @backstage/errors@1.2.3
+  - @backstage/types@1.1.1
+
+## 0.1.50-next.1
+
+### Patch Changes
+
+- 8fe56a8: Widen `@types/react` dependency range to include version 18.
+- Updated dependencies
+  - @backstage/core-components@0.14.0-next.1
+  - @backstage/core-plugin-api@1.9.0-next.1
+  - @backstage/errors@1.2.3
+  - @backstage/types@1.1.1
+
+## 0.1.50-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.14.0-next.0
+  - @backstage/core-plugin-api@1.8.3-next.0
+  - @backstage/errors@1.2.3
+  - @backstage/types@1.1.1
+
+## 0.1.49
+
+### Patch Changes
+
+- 4016f21: Remove some unused dependencies
+- Updated dependencies
+  - @backstage/core-components@0.13.10
+  - @backstage/core-plugin-api@1.8.2
+  - @backstage/errors@1.2.3
+  - @backstage/types@1.1.1
+
+## 0.1.49-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.8.2-next.0
+  - @backstage/core-components@0.13.10-next.1
+  - @backstage/errors@1.2.3
+  - @backstage/types@1.1.1
+
+## 0.1.49-next.0
+
+### Patch Changes
+
+- 4016f21: Remove some unused dependencies
+- Updated dependencies
+  - @backstage/core-components@0.13.10-next.0
+  - @backstage/core-plugin-api@1.8.1
+  - @backstage/errors@1.2.3
+  - @backstage/types@1.1.1
+
+## 0.1.48
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.8.1
+  - @backstage/core-components@0.13.9
+  - @backstage/theme@0.5.0
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/types@1.1.1
+
+## 0.1.48-next.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.13.9-next.3
+  - @backstage/config@1.1.1
+  - @backstage/core-plugin-api@1.8.1-next.1
+  - @backstage/errors@1.2.3
+  - @backstage/theme@0.5.0-next.1
+  - @backstage/types@1.1.1
+
+## 0.1.48-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/theme@0.5.0-next.1
+  - @backstage/config@1.1.1
+  - @backstage/core-components@0.13.9-next.2
+  - @backstage/core-plugin-api@1.8.1-next.1
+  - @backstage/errors@1.2.3
+  - @backstage/types@1.1.1
+
+## 0.1.48-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.13.9-next.1
+  - @backstage/core-plugin-api@1.8.1-next.1
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/theme@0.5.0-next.0
+  - @backstage/types@1.1.1
+
+## 0.1.48-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.8.1-next.0
+  - @backstage/core-components@0.13.9-next.0
+  - @backstage/theme@0.5.0-next.0
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/types@1.1.1
+
+## 0.1.47
+
+### Patch Changes
+
+- 6c2b872153: Add official support for React 18.
+- Updated dependencies
+  - @backstage/core-components@0.13.8
+  - @backstage/core-plugin-api@1.8.0
+  - @backstage/theme@0.4.4
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/types@1.1.1
+
+## 0.1.47-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.13.8-next.2
+
+## 0.1.47-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.13.8-next.1
+  - @backstage/config@1.1.1
+  - @backstage/core-plugin-api@1.8.0-next.0
+  - @backstage/errors@1.2.3
+  - @backstage/theme@0.4.4-next.0
+  - @backstage/types@1.1.1
+
+## 0.1.47-next.0
+
+### Patch Changes
+
+- 6c2b872153: Add official support for React 18.
+- Updated dependencies
+  - @backstage/core-components@0.13.7-next.0
+  - @backstage/core-plugin-api@1.8.0-next.0
+  - @backstage/theme@0.4.4-next.0
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/types@1.1.1
+
+## 0.1.46
+
+### Patch Changes
+
+- 9a1fce352e: Updated dependency `@testing-library/jest-dom` to `^6.0.0`.
+- f95af4e540: Updated dependency `@testing-library/dom` to `^9.0.0`.
+- Updated dependencies
+  - @backstage/core-plugin-api@1.7.0
+  - @backstage/core-components@0.13.6
+  - @backstage/errors@1.2.3
+  - @backstage/theme@0.4.3
+  - @backstage/config@1.1.1
+  - @backstage/types@1.1.1
+
+## 0.1.46-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.13.6-next.2
+  - @backstage/core-plugin-api@1.7.0-next.1
+  - @backstage/errors@1.2.3-next.0
+  - @backstage/theme@0.4.3-next.0
+  - @backstage/config@1.1.1-next.0
+  - @backstage/types@1.1.1
+
+## 0.1.46-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.13.6-next.1
+  - @backstage/core-plugin-api@1.7.0-next.0
+  - @backstage/config@1.1.0
+  - @backstage/errors@1.2.2
+  - @backstage/theme@0.4.2
+  - @backstage/types@1.1.1
+
+## 0.1.46-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.7.0-next.0
+  - @backstage/core-components@0.13.6-next.0
+  - @backstage/config@1.1.0
+  - @backstage/errors@1.2.2
+  - @backstage/theme@0.4.2
+  - @backstage/types@1.1.1
+
+## 0.1.45
+
+### Patch Changes
+
+- 482bb5c0bbf8: Moved `@types/react` to be a regular dependency
+- 406b786a2a2c: Mark package as being free of side effects, allowing more optimized Webpack builds.
+- 8cec7664e146: Removed `@types/node` dependency
+- Updated dependencies
+  - @backstage/core-components@0.13.5
+  - @backstage/config@1.1.0
+  - @backstage/core-plugin-api@1.6.0
+  - @backstage/errors@1.2.2
+  - @backstage/theme@0.4.2
+  - @backstage/types@1.1.1
+
+## 0.1.45-next.3
+
+### Patch Changes
+
+- 406b786a2a2c: Mark package as being free of side effects, allowing more optimized Webpack builds.
+- Updated dependencies
+  - @backstage/config@1.1.0-next.2
+  - @backstage/core-components@0.13.5-next.3
+  - @backstage/core-plugin-api@1.6.0-next.3
+  - @backstage/errors@1.2.2-next.0
+  - @backstage/theme@0.4.2-next.0
+  - @backstage/types@1.1.1-next.0
+
+## 0.1.45-next.2
+
+### Patch Changes
+
+- 8cec7664e146: Removed `@types/node` dependency
+- Updated dependencies
+  - @backstage/core-components@0.13.5-next.2
+  - @backstage/core-plugin-api@1.6.0-next.2
+  - @backstage/config@1.1.0-next.1
+  - @backstage/errors@1.2.1
+  - @backstage/theme@0.4.1
+  - @backstage/types@1.1.0
+
 ## 0.1.45-next.1
 
 ### Patch Changes

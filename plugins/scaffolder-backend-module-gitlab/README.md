@@ -10,52 +10,20 @@ Here you can find all Gitlab related features to improve your scaffolder:
 
 ```bash
 # From your Backstage root directory
-yarn add --cwd packages/backend @backstage/plugin-scaffolder-backend-module-gitlab
+yarn --cwd packages/backend add @backstage/plugin-scaffolder-backend-module-gitlab
 ```
 
-Configure the action:
-(you can check the [docs](https://backstage.io/docs/features/software-templates/writing-custom-actions#registering-custom-actions) to see all options):
+Then ensure that both the scaffolder and this module are added to your backend:
 
 ```typescript
-// packages/backend/src/plugins/scaffolder.ts
-
-import {
-  createGitlabProjectAccessTokenAction,
-  createGitlabProjectDeployTokenAction,
-  createGitlabProjectVariableAction,
-  createGitlabGroupEnsureExistsAction,
-} from '@backstage/plugin-scaffolder-backend-module-gitlab';
-
-// Create BuiltIn Actions
-const builtInActions = createBuiltinActions({
-  integrations,
-  catalogClient,
-  config: env.config,
-  reader: env.reader,
-});
-
-// Add Gitlab Actions
-const actions = [
-  ...builtInActions,
-  createGitlabProjectAccessTokenAction({ integrations: integrations }),
-  createGitlabProjectDeployTokenAction({ integrations: integrations }),
-  createGitlabProjectVariableAction({ integrations: integrations }),
-  createGitlabGroupEnsureExistsAction({ integrations: integrations }),
-];
-
-// Create Scaffolder Router
-return await createRouter({
-  containerRunner,
-  catalogClient,
-  actions,
-  logger: env.logger,
-  config: env.config,
-  database: env.database,
-  reader: env.reader,
-});
+// In packages/backend/src/index.ts
+const backend = createBackend();
+// ...
+backend.add(import('@backstage/plugin-scaffolder-backend'));
+backend.add(import('@backstage/plugin-scaffolder-backend-module-gitlab'));
 ```
 
-After that you can use the action in your template:
+After that you can use the actions in your template:
 
 ```yaml
 apiVersion: scaffolder.backstage.io/v1beta3
@@ -160,8 +128,26 @@ spec:
         repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
         catalogInfoPath: '/catalog-info.yaml'
 
+    - id: gitlabIssue
+      name: Issues
+      action: gitlab:issues:create
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        token: ${{ secrets.USER_OAUTH_TOKEN }}
+        projectId: 1111111
+        title: Test Issue
+        assignees:
+          - 2222222
+        description: This is the description of the issue
+        confidential: true
+        createdAt: 2022-09-27 18:00:00.000
+        dueDate: 2024-09-28 12:00:00.000
+        epicId: 3333333
+        labels: phase1:label1,phase2:label2
   output:
     links:
       - title: Repository
         url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Link to new issue
+        url: ${{ steps['gitlabIssue'].output.issueUrl }}
 ```

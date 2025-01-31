@@ -13,38 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { PassThrough } from 'stream';
 import { createConfluenceToMarkdownAction } from './confluenceToMarkdown';
-import { getVoidLogger } from '@backstage/backend-common';
-import { UrlReader } from '@backstage/backend-common';
+import { loggerToWinstonLogger } from '@backstage/backend-common';
 import { ConfigReader } from '@backstage/config';
 import { ScmIntegrations } from '@backstage/integration';
-import { setupRequestMockHandlers } from '@backstage/backend-test-utils';
-import mockFs from 'mock-fs';
-import os from 'os';
-import { readFile, writeFile, createWriteStream } from 'fs-extra';
+import {
+  createMockDirectory,
+  mockServices,
+  registerMswTestHooks,
+} from '@backstage/backend-test-utils';
 import { rest } from 'msw';
 import { setupServer } from 'msw/node';
 import { examples } from './confluenceToMarkdown.examples';
 import yaml from 'yaml';
 import { ActionContext } from '@backstage/plugin-scaffolder-node';
-
-jest.mock('fs-extra', () => ({
-  mkdirSync: jest.fn(),
-  readFile: jest.fn().mockResolvedValue('File contents'),
-  writeFile: jest.fn().mockImplementation(() => {
-    return Promise.resolve();
-  }),
-  outputFile: jest.fn(),
-  openSync: jest.fn(),
-  createWriteStream: jest.fn().mockReturnValue(new PassThrough()),
-  ensureDir: jest.fn(),
-}));
+import { createMockActionContext } from '@backstage/plugin-scaffolder-node-test-utils';
+import { UrlReaderService } from '@backstage/backend-plugin-api';
 
 describe('confluence:transform:markdown examples', () => {
   const baseUrl = `https://confluence.example.com`;
   const worker = setupServer();
-  setupRequestMockHandlers(worker);
+  registerMswTestHooks(worker);
 
   const config = new ConfigReader({
     confluence: {
@@ -63,16 +52,17 @@ describe('confluence:transform:markdown examples', () => {
     }),
   );
 
-  let reader: UrlReader;
+  let reader: UrlReaderService;
   let mockContext: ActionContext<{
     confluenceUrls: string[];
     repoUrl: string;
   }>;
 
-  const logger = getVoidLogger();
+  const logger = loggerToWinstonLogger(mockServices.logger.mock());
   jest.spyOn(logger, 'info');
 
-  const mockTmpDir = os.tmpdir();
+  const mockDir = createMockDirectory();
+  const workspacePath = mockDir.resolve('workspace');
 
   beforeEach(() => {
     reader = {
@@ -82,19 +72,17 @@ describe('confluence:transform:markdown examples', () => {
       }),
       search: jest.fn(),
     };
-    mockContext = {
+    mockContext = createMockActionContext({
       input: yaml.parse(examples[0].example).steps[0].input,
-      workspacePath: '/tmp',
+      workspacePath,
       logger,
-      logStream: new PassThrough(),
-      output: jest.fn(),
-      createTemporaryDirectory: jest.fn().mockResolvedValue(mockTmpDir),
-    };
-    mockFs({ [`${mockTmpDir}/src/docs`]: {} });
+    });
+
+    mockDir.setContent({ 'workspace/mkdocs.yml': 'File contents' });
   });
+
   afterEach(() => {
     jest.clearAllMocks();
-    mockFs.restore();
   });
 
   it('should call confluence to markdown action successfully with results array', async () => {
@@ -155,8 +143,10 @@ describe('confluence:transform:markdown examples', () => {
       `Fetching the mkdocs.yml catalog from https://github.com/organization-name/repo-name/blob/main/mkdocs.yml`,
     );
     expect(logger.info).toHaveBeenCalledTimes(5);
-    expect(createWriteStream).toHaveBeenCalledTimes(1);
-    expect(readFile).toHaveBeenCalledTimes(1);
-    expect(writeFile).toHaveBeenCalledTimes(1);
+
+    expect(mockDir.content({ path: 'workspace/docs' })).toEqual({
+      img: { 'testing.pdf': Buffer.from('hello') },
+      'Page-Title.md': 'hello world',
+    });
   });
 });

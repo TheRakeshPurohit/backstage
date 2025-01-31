@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-import { serveBundle } from '../../lib/bundler';
+import { readJson } from 'fs-extra';
+import { resolve as resolvePath } from 'path';
+import { getModuleFederationOptions, serveBundle } from '../../lib/bundler';
+import { paths } from '../../lib/paths';
+import { BackstagePackageJson } from '@backstage/cli-node';
 
 interface StartAppOptions {
   verifyVersions?: boolean;
@@ -22,14 +26,28 @@ interface StartAppOptions {
 
   checksEnabled: boolean;
   configPaths: string[];
+  skipOpenBrowser?: boolean;
+  isModuleFederationRemote?: boolean;
+  linkedWorkspace?: string;
 }
 
 export async function startFrontend(options: StartAppOptions) {
+  const packageJson = (await readJson(
+    paths.resolveTarget('package.json'),
+  )) as BackstagePackageJson;
+
   const waitForExit = await serveBundle({
     entry: options.entry,
     checksEnabled: options.checksEnabled,
     configPaths: options.configPaths,
     verifyVersions: options.verifyVersions,
+    skipOpenBrowser: options.skipOpenBrowser,
+    linkedWorkspace: options.linkedWorkspace,
+    moduleFederation: await getModuleFederationOptions(
+      packageJson,
+      resolvePath(paths.targetDir),
+      options.isModuleFederationRemote,
+    ),
   });
 
   await waitForExit();

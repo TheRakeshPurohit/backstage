@@ -15,12 +15,14 @@
  */
 
 import { entityRouteRef } from '../../../routes';
-import { IconButton } from '@material-ui/core';
+import IconButton from '@material-ui/core/IconButton';
 import InfoIcon from '@material-ui/icons/Info';
 import React from 'react';
 import { useRouteRef } from '@backstage/core-plugin-api';
 import { Entity, getCompoundEntityRef } from '@backstage/catalog-model';
 import { Link } from '@backstage/core-components';
+import { catalogReactTranslationRef } from '../../../translation';
+import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 
 /**
  * Card actions that show for all entities
@@ -29,12 +31,13 @@ import { Link } from '@backstage/core-components';
  */
 export const EntityCardActions = (props: { entity: Entity }) => {
   const entityRoute = useRouteRef(entityRouteRef);
+  const { t } = useTranslationRef(catalogReactTranslationRef);
 
   return (
     <IconButton
       component={Link}
       aria-label="Show"
-      title="Show details"
+      title={t('entityPeekAheadPopover.entityCardActionsTitle')}
       to={entityRoute(getCompoundEntityRef(props.entity))}
     >
       <InfoIcon />

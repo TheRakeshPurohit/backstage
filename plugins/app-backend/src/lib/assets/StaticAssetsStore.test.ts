@@ -14,40 +14,22 @@
  * limitations under the License.
  */
 
-import { Knex as KnexType } from 'knex';
-import { getVoidLogger } from '@backstage/backend-common';
-import { TestDatabases } from '@backstage/backend-test-utils';
+import { TestDatabases, mockServices } from '@backstage/backend-test-utils';
 import { StaticAssetsStore } from './StaticAssetsStore';
-
-const logger = getVoidLogger();
-
-function createDatabaseManager(
-  client: KnexType,
-  skipMigrations: boolean = false,
-) {
-  return {
-    getClient: async () => client,
-    migrations: {
-      skip: skipMigrations,
-    },
-  };
-}
 
 jest.setTimeout(60_000);
 
 describe('StaticAssetsStore', () => {
-  const databases = TestDatabases.create({
-    ids: ['MYSQL_8', 'POSTGRES_13', 'POSTGRES_9', 'SQLITE_3'],
-  });
+  const databases = TestDatabases.create();
 
   it.each(databases.eachSupportedId())(
     'should store and retrieve assets, %p',
     async databaseId => {
-      const client = await databases.init(databaseId);
-      const database = createDatabaseManager(client);
+      const knex = await databases.init(databaseId);
+
       const store = await StaticAssetsStore.create({
-        logger,
-        database,
+        logger: mockServices.logger.mock(),
+        database: mockServices.database({ knex }),
       });
 
       await store.storeAssets([
@@ -73,7 +55,7 @@ describe('StaticAssetsStore', () => {
       expect(bar!.path).toBe('dir/bar.txt');
       expect(
         Math.abs(bar!.lastModifiedAt.getTime() - foo!.lastModifiedAt.getTime()),
-      ).toBeLessThan(1000);
+      ).toBeLessThan(1001); // 1s resolution on the timestamps
       expect(bar!.content).toEqual(Buffer.from('bar'));
 
       await expect(
@@ -85,11 +67,11 @@ describe('StaticAssetsStore', () => {
   it.each(databases.eachSupportedId())(
     'should update assets timestamps, but not contents, %p',
     async databaseId => {
-      const client = await databases.init(databaseId);
-      const database = createDatabaseManager(client);
+      const knex = await databases.init(databaseId);
+
       const store = await StaticAssetsStore.create({
-        logger,
-        database,
+        logger: mockServices.logger.mock(),
+        database: mockServices.database({ knex }),
       });
 
       await store.storeAssets([
@@ -137,10 +119,10 @@ describe('StaticAssetsStore', () => {
     'should trim old assets, %p',
     async databaseId => {
       const knex = await databases.init(databaseId);
-      const database = createDatabaseManager(knex);
+
       const store = await StaticAssetsStore.create({
-        logger,
-        database,
+        logger: mockServices.logger.mock(),
+        database: mockServices.database({ knex }),
       });
 
       await store.storeAssets([
@@ -175,6 +157,46 @@ describe('StaticAssetsStore', () => {
 
       await expect(store.getAsset('new')).resolves.toBeDefined();
       await expect(store.getAsset('old')).resolves.toBeUndefined();
+    },
+  );
+
+  it.each(databases.eachSupportedId())(
+    'should isolate assets in namespace, %p',
+    async databaseId => {
+      const knex = await databases.init(databaseId);
+
+      const store = await StaticAssetsStore.create({
+        logger: mockServices.logger.mock(),
+        database: mockServices.database({ knex }),
+      });
+      const otherStore = store.withNamespace('other');
+
+      await store.storeAssets([
+        {
+          path: 'foo',
+          content: async () => Buffer.alloc(0),
+        },
+      ]);
+      await otherStore.storeAssets([
+        {
+          path: 'bar',
+          content: async () => Buffer.alloc(0),
+        },
+      ]);
+
+      await expect(store.getAsset('foo')).resolves.toBeDefined();
+      await expect(store.getAsset('bar')).resolves.not.toBeDefined();
+      await expect(otherStore.getAsset('foo')).resolves.not.toBeDefined();
+      await expect(otherStore.getAsset('bar')).resolves.toBeDefined();
+
+      await store.trimAssets({ maxAgeSeconds: 0 });
+
+      await expect(store.getAsset('foo')).resolves.not.toBeDefined();
+      await expect(otherStore.getAsset('bar')).resolves.toBeDefined();
+
+      await otherStore.trimAssets({ maxAgeSeconds: 0 });
+
+      await expect(otherStore.getAsset('bar')).resolves.not.toBeDefined();
     },
   );
 });

@@ -15,8 +15,14 @@
  */
 
 import { Entity } from '@backstage/catalog-model';
+import {
+  AnalyzeLocationExistingEntity,
+  AnalyzeLocationRequest,
+  AnalyzeLocationResponse,
+} from '@backstage/plugin-catalog-common';
 import { JsonValue } from '@backstage/types';
 import { CatalogProcessorEmit } from '../api';
+import { BackstageCredentials } from '@backstage/backend-plugin-api';
 
 /**
  * Entities that are not yet processed.
@@ -50,3 +56,34 @@ export type PlaceholderResolverParams = {
 export type PlaceholderResolver = (
   params: PlaceholderResolverParams,
 ) => Promise<JsonValue>;
+
+/** @public */
+export type LocationAnalyzer = {
+  /**
+   * Generates an entity configuration for given git repository. It's used for
+   * importing new component to the backstage app.
+   *
+   * @param location - Git repository to analyze and generate config for.
+   */
+  analyzeLocation(
+    location: AnalyzeLocationRequest,
+    credentials: BackstageCredentials,
+  ): Promise<AnalyzeLocationResponse>;
+};
+
+/** @public */
+export type AnalyzeOptions = {
+  url: string;
+  catalogFilename?: string;
+};
+
+/** @public */
+export type ScmLocationAnalyzer = {
+  /** The method that decides if this analyzer can work with the provided url */
+  supports(url: string): boolean;
+  /** This function can return an array of already existing entities */
+  analyze(options: AnalyzeOptions): Promise<{
+    /** Existing entities in the analyzed location */
+    existing: AnalyzeLocationExistingEntity[];
+  }>;
+};

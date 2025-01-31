@@ -14,48 +14,32 @@
  * limitations under the License.
  */
 
-import { getVoidLogger } from '@backstage/backend-common';
-import mockFs from 'mock-fs';
-import os from 'os';
-import { Writable } from 'stream';
+import { createMockActionContext } from '@backstage/plugin-scaffolder-node-test-utils';
+import { Logger } from 'winston';
 import { createDebugLogAction } from './log';
 import { join } from 'path';
 import yaml from 'yaml';
+import { createMockDirectory } from '@backstage/backend-test-utils';
 
 describe('debug:log', () => {
-  const logStream = {
-    write: jest.fn(),
-  } as jest.Mocked<Partial<Writable>> as jest.Mocked<Writable>;
+  const logger = {
+    info: jest.fn(),
+  } as unknown as jest.Mocked<Logger>;
 
-  const mockTmpDir = os.tmpdir();
-  const mockContext = {
-    input: {},
-    baseUrl: 'somebase',
-    workspacePath: mockTmpDir,
-    logger: getVoidLogger(),
-    logStream,
-    output: jest.fn(),
-    createTemporaryDirectory: jest.fn().mockResolvedValue(mockTmpDir),
-  };
+  const mockDir = createMockDirectory();
+  const workspacePath = mockDir.resolve('workspace');
+
+  const mockContext = createMockActionContext({ workspacePath, logger });
 
   const action = createDebugLogAction();
 
   beforeEach(() => {
-    mockFs({
-      [`${mockContext.workspacePath}/README.md`]: '',
-      [`${mockContext.workspacePath}/a-directory/index.md`]: '',
+    mockDir.setContent({
+      [`${mockContext.workspacePath}/README.md`]: 'This is a README file',
+      [`${mockContext.workspacePath}/a-directory/index.md`]:
+        'This is a markdown file',
     });
     jest.resetAllMocks();
-  });
-
-  afterEach(() => {
-    mockFs.restore();
-  });
-
-  it('should do nothing', async () => {
-    await action.handler(mockContext);
-
-    expect(logStream.write).toHaveBeenCalledTimes(0);
   });
 
   it('should log the workspace content, if active', async () => {
@@ -68,11 +52,10 @@ describe('debug:log', () => {
 
     await action.handler(context);
 
-    expect(logStream.write).toHaveBeenCalledTimes(1);
-    expect(logStream.write).toHaveBeenCalledWith(
+    expect(logger.info).toHaveBeenCalledWith(
       expect.stringContaining('README.md'),
     );
-    expect(logStream.write).toHaveBeenCalledWith(
+    expect(logger.info).toHaveBeenCalledWith(
       expect.stringContaining(join('a-directory', 'index.md')),
     );
   });
@@ -87,8 +70,7 @@ describe('debug:log', () => {
 
     await action.handler(context);
 
-    expect(logStream.write).toHaveBeenCalledTimes(1);
-    expect(logStream.write).toHaveBeenCalledWith(
+    expect(logger.info).toHaveBeenCalledWith(
       expect.stringContaining('Hello Backstage!'),
     );
   });
@@ -105,12 +87,39 @@ describe('debug:log', () => {
 
     await action.handler(context);
 
-    expect(logStream.write).toHaveBeenCalledTimes(1);
-    expect(logStream.write).toHaveBeenCalledWith(
+    expect(logger.info).toHaveBeenCalledWith(
       expect.stringContaining('README.md'),
     );
-    expect(logStream.write).toHaveBeenCalledWith(
+    expect(logger.info).toHaveBeenCalledWith(
       expect.stringContaining(join('a-directory', 'index.md')),
+    );
+  });
+
+  it('should log the workspace content with file contents from an example, if active', async () => {
+    const example = action.examples?.find(
+      sample =>
+        sample.description ===
+        'List the workspace directory with file contents',
+    )?.example as string;
+    expect(typeof example).toEqual('string');
+    const context = {
+      ...mockContext,
+      ...yaml.parse(example).steps[0],
+    };
+
+    await action.handler(context);
+
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining('README.md'),
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining(join('a-directory', 'index.md')),
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining('This is a README file'),
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining('This is a markdown file'),
     );
   });
 
@@ -126,8 +135,7 @@ describe('debug:log', () => {
 
     await action.handler(context);
 
-    expect(logStream.write).toHaveBeenCalledTimes(1);
-    expect(logStream.write).toHaveBeenCalledWith(
+    expect(logger.info).toHaveBeenCalledWith(
       expect.stringContaining('Hello Backstage!'),
     );
   });

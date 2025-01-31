@@ -116,16 +116,11 @@ export default class OAuth2
           },
         };
         if (backstageIdentity) {
-          // TODO(Rugvip): This fallback can be removed a few releases after 1.18. It's there to avoid
-          //               breaking deployments that update their frontend before updating their backend.
-          const expInSec =
-            backstageIdentity.expiresInSeconds ??
-            res.providerInfo.expiresInSeconds;
           session.backstageIdentity = {
             token: backstageIdentity.token,
             identity: backstageIdentity.identity,
-            expiresAt: expInSec
-              ? new Date(Date.now() + expInSec * 1000)
+            expiresAt: backstageIdentity.expiresInSeconds
+              ? new Date(Date.now() + backstageIdentity.expiresInSeconds * 1000)
               : undefined,
           };
         }
@@ -153,7 +148,7 @@ export default class OAuth2
             (session.backstageIdentity.expiresAt.getTime() - Date.now()) / 1000,
           );
         }
-        return min < 60 * 5;
+        return min < 60 * 3;
       },
     });
 

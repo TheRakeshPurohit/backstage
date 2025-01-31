@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-import { isDatabaseConflictError } from '@backstage/backend-common';
 import { stringifyEntityRef } from '@backstage/catalog-model';
 import { DeferredEntity } from '@backstage/plugin-catalog-node';
 import { Knex } from 'knex';
 import lodash from 'lodash';
 import { v4 as uuid } from 'uuid';
-import type { Logger } from 'winston';
 import { rethrowError } from './conversion';
 import { deleteWithEagerPruningOfChildren } from './operations/provider/deleteWithEagerPruningOfChildren';
 import { refreshByRefreshKeys } from './operations/provider/refreshByRefreshKeys';
@@ -35,6 +33,10 @@ import {
   Transaction,
 } from './types';
 import { generateStableHash } from './util';
+import {
+  LoggerService,
+  isDatabaseConflictError,
+} from '@backstage/backend-plugin-api';
 
 // The number of items that are sent per batch to the database layer, when
 // doing .batchInsert calls to knex. This needs to be low enough to not cause
@@ -46,7 +48,7 @@ export class DefaultProviderDatabase implements ProviderDatabase {
   constructor(
     private readonly options: {
       database: Knex;
-      logger: Logger;
+      logger: LoggerService;
     },
   ) {}
 
@@ -73,10 +75,10 @@ export class DefaultProviderDatabase implements ProviderDatabase {
   }
 
   async replaceUnprocessedEntities(
-    txOpaque: Transaction,
+    txOpaque: Knex | Transaction,
     options: ReplaceUnprocessedEntitiesOptions,
   ): Promise<void> {
-    const tx = txOpaque as Knex.Transaction;
+    const tx = txOpaque as Knex | Knex.Transaction;
     const { toAdd, toUpsert, toRemove } = await this.createDelta(tx, options);
 
     if (toRemove.length) {
@@ -160,13 +162,11 @@ export class DefaultProviderDatabase implements ProviderDatabase {
               logger: this.options.logger,
             });
           }
-
-          await tx<DbRefreshStateReferencesRow>('refresh_state_references')
-            .where('target_entity_ref', entityRef)
-            .andWhere({ source_key: options.sourceKey })
-            .delete();
-
           if (ok) {
+            await tx<DbRefreshStateReferencesRow>('refresh_state_references')
+              .where('target_entity_ref', entityRef)
+              .delete();
+
             await tx<DbRefreshStateReferencesRow>(
               'refresh_state_references',
             ).insert({
@@ -174,6 +174,11 @@ export class DefaultProviderDatabase implements ProviderDatabase {
               target_entity_ref: entityRef,
             });
           } else {
+            await tx<DbRefreshStateReferencesRow>('refresh_state_references')
+              .where('target_entity_ref', entityRef)
+              .andWhere({ source_key: options.sourceKey })
+              .delete();
+
             const conflictingKey = await checkLocationKeyConflict({
               tx,
               entityRef,
@@ -203,7 +208,7 @@ export class DefaultProviderDatabase implements ProviderDatabase {
   }
 
   private async createDelta(
-    tx: Knex.Transaction,
+    tx: Knex | Knex.Transaction,
     options: ReplaceUnprocessedEntitiesOptions,
   ): Promise<{
     toAdd: { deferred: DeferredEntity; hash: string }[];
@@ -211,14 +216,46 @@ export class DefaultProviderDatabase implements ProviderDatabase {
     toRemove: string[];
   }> {
     if (options.type === 'delta') {
-      return {
-        toAdd: [],
-        toUpsert: options.added.map(e => ({
-          deferred: e,
-          hash: generateStableHash(e.entity),
-        })),
-        toRemove: options.removed.map(e => e.entityRef),
-      };
+      const toAdd = new Array<{ deferred: DeferredEntity; hash: string }>();
+      const toUpsert = new Array<{ deferred: DeferredEntity; hash: string }>();
+      const toRemove = options.removed.map(e => e.entityRef);
+
+      for (const chunk of lodash.chunk(options.added, 1000)) {
+        const entityRefs = chunk.map(e => stringifyEntityRef(e.entity));
+        const rows = await tx<DbRefreshStateRow>('refresh_state')
+          .select(['entity_ref', 'unprocessed_hash', 'location_key'])
+          .whereIn('entity_ref', entityRefs);
+        const oldStates = new Map(
+          rows.map(row => [
+            row.entity_ref,
+            {
+              unprocessed_hash: row.unprocessed_hash,
+              location_key: row.location_key,
+            },
+          ]),
+        );
+
+        chunk.forEach((deferred, i) => {
+          const entityRef = entityRefs[i];
+          const newHash = generateStableHash(deferred.entity);
+          const oldState = oldStates.get(entityRef);
+          if (oldState === undefined) {
+            // Add any entity that does not exist in the database
+            toAdd.push({ deferred, hash: newHash });
+          } else if (
+            (deferred.locationKey ?? null) !== (oldState.location_key ?? null)
+          ) {
+            // Remove and then re-add any entity that exists, but with a different location key
+            toRemove.push(entityRef);
+            toAdd.push({ deferred, hash: newHash });
+          } else if (newHash !== oldState.unprocessed_hash) {
+            // Entities with modifications should be pushed through too
+            toUpsert.push({ deferred, hash: newHash });
+          }
+        });
+      }
+
+      return { toAdd, toUpsert, toRemove };
     }
 
     // Grab all of the existing references from the same source, and their locationKeys as well
@@ -265,7 +302,7 @@ export class DefaultProviderDatabase implements ProviderDatabase {
         // Add any entity that does not exist in the database
         toAdd.push(upsertItem);
       } else if (
-        (oldRef?.locationKey ?? undefined) !==
+        (oldRef.locationKey ?? undefined) !==
         (item.deferred.locationKey ?? undefined)
       ) {
         // Remove and then re-add any entity that exists, but with a different location key

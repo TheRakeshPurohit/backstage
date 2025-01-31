@@ -15,13 +15,14 @@
  */
 
 import { Isolate } from 'isolated-vm';
-import { resolvePackagePath } from '@backstage/backend-common';
+import { resolvePackagePath } from '@backstage/backend-plugin-api';
 import {
   TemplateFilter as _TemplateFilter,
   TemplateGlobal as _TemplateGlobal,
 } from '@backstage/plugin-scaffolder-node';
 import fs from 'fs-extra';
 import { JsonValue } from '@backstage/types';
+import { getMajorNodeVersion, isNoNodeSnapshotOptionProvided } from './helpers';
 
 // language=JavaScript
 const mkScript = (nunjucksSource: string) => `
@@ -34,6 +35,7 @@ const { render, renderCompat } = (() => {
 
   const env = module.exports.configure({
     autoescape: false,
+    ...JSON.parse(nunjucksConfigs),
     tags: {
       variableStart: '\${{',
       variableEnd: '}}',
@@ -42,6 +44,7 @@ const { render, renderCompat } = (() => {
 
   const compatEnv = module.exports.configure({
     autoescape: false,
+    ...JSON.parse(nunjucksConfigs),
     tags: {
       variableStart: '{{',
       variableEnd: '}}',
@@ -49,14 +52,17 @@ const { render, renderCompat } = (() => {
   });
   compatEnv.addFilter('jsonify', compatEnv.getFilter('dump'));
 
+  const handleFunctionResult = (value) => {
+    return value === '' ? undefined : JSON.parse(value);
+  };
   for (const name of JSON.parse(availableTemplateFilters)) {
-    env.addFilter(name, (...args) => JSON.parse(callFilter(name, args)));
+    env.addFilter(name, (...args) => handleFunctionResult(callFilter(name, args)));
   }
   for (const [name, value] of Object.entries(JSON.parse(availableTemplateGlobals))) {
     env.addGlobal(name, value);
   }
   for (const name of JSON.parse(availableTemplateCallbacks)) {
-    env.addGlobal(name, (...args) => JSON.parse(callGlobal(name, args)));
+    env.addGlobal(name, (...args) => handleFunctionResult(callGlobal(name, args)));
   }
 
   let uninstallCompat = undefined;
@@ -102,13 +108,14 @@ export type TemplateFilter = _TemplateFilter;
  */
 export type TemplateGlobal = _TemplateGlobal;
 
-export interface SecureTemplaterOptions {
+interface SecureTemplaterOptions {
   /* Enables jinja compatibility and the "jsonify" filter */
   cookiecutterCompat?: boolean;
   /* Extra user-provided nunjucks filters */
   templateFilters?: Record<string, TemplateFilter>;
   /* Extra user-provided nunjucks globals */
   templateGlobals?: Record<string, TemplateGlobal>;
+  nunjucksConfigs?: { trimBlocks?: boolean; lstripBlocks?: boolean };
 }
 
 export type SecureTemplateRenderer = (
@@ -122,7 +129,16 @@ export class SecureTemplater {
       cookiecutterCompat,
       templateFilters = {},
       templateGlobals = {},
+      nunjucksConfigs = {},
     } = options;
+
+    const nodeVersion = getMajorNodeVersion();
+    if (nodeVersion >= 20 && !isNoNodeSnapshotOptionProvided()) {
+      throw new Error(
+        `When using Node.js version 20 or newer, the scaffolder backend plugin requires that it be started with the --no-node-snapshot option. 
+        Please make sure that you have NODE_OPTIONS=--no-node-snapshot in your environment.`,
+      );
+    }
 
     const isolate = new Isolate({ memoryLimit: 128 });
     const context = await isolate.createContext();
@@ -139,6 +155,8 @@ export class SecureTemplater {
     const nunjucksScript = await isolate.compileScript(
       mkScript(nunjucksSource),
     );
+
+    await contextGlobal.set('nunjucksConfigs', JSON.stringify(nunjucksConfigs));
 
     const availableFilters = Object.keys(templateFilters);
 
@@ -172,7 +190,8 @@ export class SecureTemplater {
         if (!Object.hasOwn(templateFilters, filterName)) {
           return '';
         }
-        return JSON.stringify(templateFilters[filterName](...args));
+        const rz = templateFilters[filterName](...args);
+        return rz === undefined ? '' : JSON.stringify(rz);
       },
     );
 
@@ -186,7 +205,8 @@ export class SecureTemplater {
         if (typeof global !== 'function') {
           return '';
         }
-        return JSON.stringify(global(...args));
+        const rz = global(...args);
+        return rz === undefined ? '' : JSON.stringify(rz);
       },
     );
 

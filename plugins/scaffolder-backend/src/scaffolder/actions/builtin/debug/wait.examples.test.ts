@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-import { getVoidLogger } from '@backstage/backend-common';
-import mockFs from 'mock-fs';
 import { createWaitAction } from './wait';
 import { Writable } from 'stream';
-import os from 'os';
 import { examples } from './wait.examples';
 import yaml from 'yaml';
+import { createMockActionContext } from '@backstage/plugin-scaffolder-node-test-utils';
 
 describe('debug:wait examples', () => {
   const action = createWaitAction();
@@ -29,23 +27,12 @@ describe('debug:wait examples', () => {
     write: jest.fn(),
   } as jest.Mocked<Partial<Writable>> as jest.Mocked<Writable>;
 
-  const mockTmpDir = os.tmpdir();
-  const mockContext = {
-    input: {},
-    baseUrl: 'somebase',
-    workspacePath: mockTmpDir,
-    logger: getVoidLogger(),
+  const mockContext = createMockActionContext({
     logStream,
-    output: jest.fn(),
-    createTemporaryDirectory: jest.fn().mockResolvedValue(mockTmpDir),
-  };
+  });
 
   beforeEach(() => {
     jest.resetAllMocks();
-  });
-
-  afterEach(() => {
-    mockFs.restore();
   });
 
   it('should wait for specified period of seconds', async () => {
@@ -56,6 +43,7 @@ describe('debug:wait examples', () => {
     const start = new Date().getTime();
     await action.handler(context);
     const end = new Date().getTime();
-    expect(end - start).toBeGreaterThanOrEqual(50);
+    expect(end - start).toBeGreaterThanOrEqual(45); // should rarely by markedly less
+    expect(end - start).toBeLessThanOrEqual(500); // can get delayed a bit in CI
   });
 });

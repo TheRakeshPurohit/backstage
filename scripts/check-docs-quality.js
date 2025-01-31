@@ -13,17 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 const { spawnSync } = require('child_process');
-const { resolve: resolvePath, join: joinPath } = require('path');
+const {
+  resolve: resolvePath,
+  join: joinPath,
+  relative: relativePath,
+} = require('path');
 const fs = require('fs').promises;
 
-const IGNORED = [
+const IGNORED_WHEN_LISTING = [
   /^ADOPTERS\.md$/,
   /^OWNERS\.md$/,
   /^.*[/\\]CHANGELOG\.md$/,
   /^.*[/\\]([^\/]+-)?api-report\.md$/,
+  /^.*[/\\]knip-report\.md$/,
   /^docs[/\\]releases[/\\].*-changelog\.md$/,
   /^docs[/\\]reference[/\\]/,
+  /^README-[a-z]{2}_[A-Z]{2}\.md$/,
+];
+
+const IGNORED_WHEN_EXPLICIT = [
+  /^ADOPTERS\.md$/,
+  /^OWNERS\.md$/,
+  /^.*[/\\]knip-report\.md$/,
 ];
 
 const rootDir = resolvePath(__dirname, '..');
@@ -37,7 +50,7 @@ async function listFiles(dir = '') {
       .map(async file => {
         const path = joinPath(dir, file);
 
-        if (IGNORED.some(pattern => pattern.test(path))) {
+        if (IGNORED_WHEN_LISTING.some(pattern => pattern.test(path))) {
           return [];
         }
         if ((await fs.stat(path)).isDirectory()) {
@@ -59,15 +72,10 @@ async function exitIfMissingVale() {
     // eslint-disable-next-line @backstage/no-undeclared-imports
     await require('command-exists')('vale');
   } catch (e) {
-    if (process.env.CI) {
-      console.log(
-        `Language linter (vale) was not found. Please install vale linter (https://docs.errata.ai/vale/install).\n`,
-      );
-      process.exit(1);
-    }
-    console.log(`Language linter (vale) generated errors. Please check the errors and review any markdown files that you changed.
-  Possibly update .github/vale/Vocab/Backstage/accept.txt to add new valid words.\n`);
-    process.exit(0);
+    console.log(
+      `Language linter (vale) was not found. Please install vale linter (https://vale.sh/docs/vale-cli/installation/).\n`,
+    );
+    process.exit(process.env.CI ? 1 : 0);
   }
 }
 
@@ -85,7 +93,7 @@ async function runVale(files) {
     // If it contains system level error. In this case vale does not exist.
     if (process.platform !== 'win32' || result.error) {
       console.log(`Language linter (vale) generated errors. Please check the errors and review any markdown files that you changed.
-  Possibly update .github/vale/Vocab/Backstage/accept.txt to add new valid words.\n`);
+  Possibly update .github/vale/config/vocabularies/Backstage/accept.txt to add new valid words.\n`);
     }
     return false;
   }
@@ -94,9 +102,9 @@ async function runVale(files) {
 }
 
 async function main() {
-  const files = await listFiles();
-
   if (process.argv.includes('--ci-args')) {
+    const files = await listFiles();
+
     process.stdout.write(
       // Workaround for not being able to pass arguments to the vale action
       JSON.stringify([...files]),
@@ -106,7 +114,15 @@ async function main() {
 
   await exitIfMissingVale();
 
-  const success = await runVale(files);
+  const absolutePaths = process.argv
+    .slice(2)
+    .filter(path => !path.startsWith('-'));
+  const relativePaths = absolutePaths
+    .map(path => relativePath(rootDir, path))
+    .filter(path => !IGNORED_WHEN_EXPLICIT.some(pattern => pattern.test(path)));
+  const success = await runVale(
+    relativePaths.length === 0 ? await listFiles() : relativePaths,
+  );
   if (!success) {
     process.exit(2);
   }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { BackstageTheme } from '@backstage/theme';
+
 import Box from '@material-ui/core/Box';
 import Button from '@material-ui/core/Button';
 import { makeStyles } from '@material-ui/core/styles';
@@ -21,10 +21,12 @@ import React, { useEffect, useState } from 'react';
 
 import { Select } from '../Select';
 import { SelectProps } from '../Select/Select';
+import { coreComponentsTranslationRef } from '../../translation';
+import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 
 export type TableFiltersClassKey = 'root' | 'value' | 'heder' | 'filters';
 
-const useFilterStyles = makeStyles<BackstageTheme>(
+const useFilterStyles = makeStyles(
   theme => ({
     root: {
       height: '100%',
@@ -76,6 +78,7 @@ export const Filters = (props: Props) => {
   const classes = useFilterStyles();
 
   const { onChangeFilters } = props;
+  const { t } = useTranslationRef(coreComponentsTranslationRef);
 
   const [selectedFilters, setSelectedFilters] = useState<SelectedFilters>({
     ...props.selectedFilters,
@@ -96,9 +99,9 @@ export const Filters = (props: Props) => {
   return (
     <Box className={classes.root}>
       <Box className={classes.header}>
-        <Box className={classes.value}>Filters</Box>
+        <Box className={classes.value}>{t('table.filter.title')}</Box>
         <Button color="primary" onClick={handleClick}>
-          Clear all
+          {t('table.filter.clearAll')}
         </Button>
       </Box>
       <Box className={classes.filters}>

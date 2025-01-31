@@ -16,7 +16,11 @@
 
 export { MicrosoftGraphClient } from './client';
 export type { GroupMember, ODataQuery } from './client';
-export { readMicrosoftGraphConfig } from './config';
+export {
+  readMicrosoftGraphConfig,
+  readProviderConfigs,
+  readProviderConfig,
+} from './config';
 export type { MicrosoftGraphProviderConfig } from './config';
 export {
   MICROSOFT_EMAIL_ANNOTATION,
@@ -35,4 +39,5 @@ export type {
   GroupTransformer,
   OrganizationTransformer,
   UserTransformer,
+  ProviderConfigTransformer,
 } from './types';

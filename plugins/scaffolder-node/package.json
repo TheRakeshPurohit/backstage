@@ -1,18 +1,21 @@
 {
   "name": "@backstage/plugin-scaffolder-node",
+  "version": "0.7.0-next.0",
   "description": "The plugin-scaffolder-node module for @backstage/plugin-scaffolder-backend",
-  "version": "0.2.3-next.1",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
-  "license": "Apache-2.0",
-  "publishConfig": {
-    "access": "public",
-    "alphaTypes": "dist/index.alpha.d.ts",
-    "main": "dist/index.cjs.js",
-    "types": "dist/index.d.ts"
-  },
   "backstage": {
-    "role": "node-library"
+    "role": "node-library",
+    "pluginId": "scaffolder",
+    "pluginPackages": [
+      "@backstage/plugin-scaffolder",
+      "@backstage/plugin-scaffolder-backend",
+      "@backstage/plugin-scaffolder-common",
+      "@backstage/plugin-scaffolder-node",
+      "@backstage/plugin-scaffolder-node-test-utils",
+      "@backstage/plugin-scaffolder-react"
+    ]
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "homepage": "https://backstage.io",
   "repository": {
@@ -20,35 +23,58 @@
     "url": "https://github.com/backstage/backstage",
     "directory": "plugins/scaffolder-node"
   },
+  "license": "Apache-2.0",
+  "exports": {
+    ".": "./src/index.ts",
+    "./alpha": "./src/alpha.ts",
+    "./package.json": "./package.json"
+  },
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "typesVersions": {
+    "*": {
+      "alpha": [
+        "src/alpha.ts"
+      ],
+      "package.json": [
+        "package.json"
+      ]
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "start": "backstage-cli package start",
-    "build": "backstage-cli package build --experimental-type-build",
-    "lint": "backstage-cli package lint",
-    "test": "backstage-cli package test",
+    "build": "backstage-cli package build",
     "clean": "backstage-cli package clean",
+    "lint": "backstage-cli package lint",
     "prepack": "backstage-cli package prepack",
-    "postpack": "backstage-cli package postpack"
+    "postpack": "backstage-cli package postpack",
+    "start": "backstage-cli package start",
+    "test": "backstage-cli package test"
   },
   "dependencies": {
-    "@backstage/backend-common": "workspace:^",
+    "@backstage/backend-common": "^0.25.0",
     "@backstage/backend-plugin-api": "workspace:^",
     "@backstage/catalog-model": "workspace:^",
     "@backstage/errors": "workspace:^",
     "@backstage/integration": "workspace:^",
     "@backstage/plugin-scaffolder-common": "workspace:^",
     "@backstage/types": "workspace:^",
-    "fs-extra": "10.1.0",
+    "concat-stream": "^2.0.0",
+    "fs-extra": "^11.2.0",
+    "globby": "^11.0.0",
+    "isomorphic-git": "^1.23.0",
     "jsonschema": "^1.2.6",
+    "p-limit": "^3.1.0",
+    "tar": "^6.1.12",
     "winston": "^3.2.1",
-    "zod": "^3.21.4",
+    "zod": "^3.22.4",
     "zod-to-json-schema": "^3.20.4"
   },
   "devDependencies": {
+    "@backstage/backend-test-utils": "workspace:^",
     "@backstage/cli": "workspace:^",
     "@backstage/config": "workspace:^"
-  },
-  "files": [
-    "alpha",
-    "dist"
-  ]
+  }
 }

@@ -18,10 +18,9 @@ import { PuppetDbEntityProviderConfig } from '../providers';
 import { PuppetNode, ResourceTransformer } from './types';
 import { ResourceEntity } from '@backstage/catalog-model';
 import { defaultResourceTransformer } from './transformers';
-import fetch from 'node-fetch';
 import { ResponseError } from '@backstage/errors';
 import { ENDPOINT_FACTSETS } from './constants';
-import { Logger } from 'winston';
+import { LoggerService } from '@backstage/backend-plugin-api';
 
 /**
  * Reads nodes and their facts from PuppetDB.
@@ -33,7 +32,7 @@ export async function readPuppetNodes(
   config: PuppetDbEntityProviderConfig,
   opts?: {
     transformer?: ResourceTransformer;
-    logger?: Logger;
+    logger?: LoggerService;
   },
 ): Promise<ResourceEntity[]> {
   const transformFn = opts?.transformer ?? defaultResourceTransformer;

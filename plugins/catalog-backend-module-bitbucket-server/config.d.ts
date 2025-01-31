@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { TaskScheduleDefinitionConfig } from '@backstage/backend-tasks';
+import { SchedulerServiceTaskScheduleDefinitionConfig } from '@backstage/backend-plugin-api';
 
 export interface Config {
   catalog?: {
@@ -46,11 +46,15 @@ export interface Config {
                * @visibility frontend
                */
               projectKey?: string;
+              /**
+               * (Optional) Skip archived repositories
+               */
+              skipArchivedRepos?: boolean;
             };
             /**
              * (Optional) TaskScheduleDefinition for the refresh.
              */
-            schedule?: TaskScheduleDefinitionConfig;
+            schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
           }
         | {
             [name: string]: {
@@ -74,11 +78,15 @@ export interface Config {
                  * @visibility frontend
                  */
                 projectKey?: string;
+                /**
+                 * (Optional) Skip archived repositories
+                 */
+                skipArchivedRepos?: boolean;
               };
               /**
                * (Optional) TaskScheduleDefinition for the refresh.
                */
-              schedule?: TaskScheduleDefinitionConfig;
+              schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
             };
           };
     };

@@ -14,32 +14,30 @@
  * limitations under the License.
  */
 
-import type { JsonObject } from '@backstage/types';
+import type { JsonObject, JsonValue } from '@backstage/types';
 import {
   PodStatus,
   V1ConfigMap,
   V1CronJob,
   V1DaemonSet,
   V1Deployment,
-  V1HorizontalPodAutoscaler,
+  V2HorizontalPodAutoscaler,
   V1Ingress,
   V1Job,
   V1LimitRange,
   V1Pod,
   V1ReplicaSet,
+  V1ResourceQuota,
   V1Service,
   V1StatefulSet,
+  V1Secret,
 } from '@kubernetes/client-node';
 import { Entity } from '@backstage/catalog-model';
 
 /** @public */
-export interface KubernetesRequestAuth {
-  google?: string;
-  aks?: string;
-  oidc?: {
-    [key: string]: string;
-  };
-}
+export type KubernetesRequestAuth = {
+  [providerKey: string]: JsonValue | undefined;
+};
 
 /** @public */
 export interface CustomResourceMatcher {
@@ -70,9 +68,13 @@ export interface KubernetesRequestBody {
 /** @public */
 export interface ClusterAttributes {
   /**
-   * Specifies the name of the Kubernetes cluster.
+   * Name of the Kubernetes cluster; used as an internal identifier.
    */
   name: string;
+  /**
+   * Human-readable name for the cluster, to be dispayed in UIs.
+   */
+  title?: string;
   /**
    * Specifies the link to the Kubernetes dashboard managing this cluster.
    * @remarks
@@ -129,6 +131,7 @@ export type FetchResponse =
   | ConfigMapFetchResponse
   | DeploymentFetchResponse
   | LimitRangeFetchResponse
+  | ResourceQuotaFetchResponse
   | ReplicaSetsFetchResponse
   | HorizontalPodAutoscalersFetchResponse
   | JobsFetchResponse
@@ -137,7 +140,8 @@ export type FetchResponse =
   | CustomResourceFetchResponse
   | StatefulSetsFetchResponse
   | DaemonSetsFetchResponse
-  | PodStatusFetchResponse;
+  | PodStatusFetchResponse
+  | SecretsFetchResponse;
 
 /** @public */
 export interface PodFetchResponse {
@@ -176,9 +180,15 @@ export interface LimitRangeFetchResponse {
 }
 
 /** @public */
+export interface ResourceQuotaFetchResponse {
+  type: 'resourcequotas';
+  resources: Array<V1ResourceQuota>;
+}
+
+/** @public */
 export interface HorizontalPodAutoscalersFetchResponse {
   type: 'horizontalpodautoscalers';
-  resources: Array<V1HorizontalPodAutoscaler>;
+  resources: Array<V2HorizontalPodAutoscaler>;
 }
 
 /** @public */
@@ -221,6 +231,12 @@ export interface DaemonSetsFetchResponse {
 export interface PodStatusFetchResponse {
   type: 'podstatus';
   resources: Array<PodStatus>;
+}
+
+/** @public */
+export interface SecretsFetchResponse {
+  type: 'secrets';
+  resources: Array<V1Secret>;
 }
 
 /** @public */
@@ -267,4 +283,24 @@ export interface ClientPodStatus {
   cpu: ClientCurrentResourceUsage;
   memory: ClientCurrentResourceUsage;
   containers: ClientContainerStatus[];
+}
+
+/** @public */
+export interface DeploymentResources {
+  pods: V1Pod[];
+  replicaSets: V1ReplicaSet[];
+  deployments: V1Deployment[];
+  horizontalPodAutoscalers: V2HorizontalPodAutoscaler[];
+}
+
+/** @public */
+export interface GroupedResponses extends DeploymentResources {
+  services: V1Service[];
+  configMaps: V1ConfigMap[];
+  ingresses: V1Ingress[];
+  jobs: V1Job[];
+  cronJobs: V1CronJob[];
+  customResources: any[];
+  statefulsets: V1StatefulSet[];
+  daemonSets: V1DaemonSet[];
 }

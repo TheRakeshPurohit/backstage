@@ -33,7 +33,11 @@ import fixture1 from '../src/__fixtures__/1-deployments.json';
 import fixture2 from '../src/__fixtures__/2-deployments.json';
 import fixture3 from '../src/__fixtures__/1-cronjobs.json';
 import fixture4 from '../src/__fixtures__/2-cronjobs.json';
+import fixture5 from '../src/__fixtures__/1-rollouts.json';
+import fixture6 from '../src/__fixtures__/3-ingresses.json';
+import fixture7 from '../src/__fixtures__/2-statefulsets.json';
 import { TestApiProvider } from '@backstage/test-utils';
+import { StructuredMetadataTable } from '@backstage/core-components';
 
 const mockEntity: Entity = {
   apiVersion: 'backstage.io/v1alpha1',
@@ -116,6 +120,12 @@ class MockKubernetesClient implements KubernetesApi {
     return [{ name: 'mock-cluster', authProvider: 'serviceAccount' }];
   }
 
+  async getCluster(
+    _clusterName: string,
+  ): Promise<{ name: string; authProvider: string }> {
+    return { name: 'mock-cluster', authProvider: 'serviceAccount' };
+  }
+
   async proxy(_options: { clusterName: String; path: String }): Promise<any> {
     return {
       kind: 'Namespace',
@@ -126,6 +136,12 @@ class MockKubernetesClient implements KubernetesApi {
     };
   }
 }
+
+const metadata = {
+  testA: 'stuff',
+  testB: { testC: 'stuff' },
+  testD: [{ testE: 'stuff' }],
+};
 
 createDevApp()
   .addPage({
@@ -175,6 +191,49 @@ createDevApp()
         apis={[[kubernetesApiRef, new MockKubernetesClient(fixture4)]]}
       >
         <EntityProvider entity={mockEntity}>
+          <EntityKubernetesContent />
+        </EntityProvider>
+      </TestApiProvider>
+    ),
+  })
+  .addPage({
+    path: '/fixture-5',
+    title: 'Fixture 5',
+    element: (
+      <TestApiProvider
+        apis={[[kubernetesApiRef, new MockKubernetesClient(fixture5)]]}
+      >
+        <EntityProvider entity={mockEntity}>
+          <EntityKubernetesContent />
+        </EntityProvider>
+      </TestApiProvider>
+    ),
+  })
+  .addPage({
+    path: '/fixture-6',
+    title: 'Fixture 6',
+    element: (
+      <TestApiProvider
+        apis={[[kubernetesApiRef, new MockKubernetesClient(fixture6)]]}
+      >
+        <EntityProvider entity={mockEntity}>
+          <EntityKubernetesContent />
+        </EntityProvider>
+      </TestApiProvider>
+    ),
+  })
+  .addPage({
+    path: '/fixture-7',
+    title: 'Fixture 7',
+    element: (
+      <TestApiProvider
+        apis={[[kubernetesApiRef, new MockKubernetesClient(fixture7)]]}
+      >
+        <EntityProvider entity={mockEntity}>
+          <StructuredMetadataTable
+            metadata={metadata}
+            options={{ nestedValuesAsYaml: true }}
+          />
           <EntityKubernetesContent />
         </EntityProvider>
       </TestApiProvider>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 The Backstage Authors
+ * Copyright 2023 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  getVoidLogger,
-  PluginEndpointDiscovery,
-  TokenManager,
-} from '@backstage/backend-common';
+
 import { Entity } from '@backstage/catalog-model';
 import { ConfigReader } from '@backstage/config';
 import { TestPipeline } from '@backstage/plugin-search-backend-node';
-import { setupRequestMockHandlers } from '@backstage/backend-test-utils';
+import {
+  mockServices,
+  registerMswTestHooks,
+} from '@backstage/backend-test-utils';
 import { rest } from 'msw';
 import { setupServer } from 'msw/node';
 import { Readable } from 'stream';
 import { DefaultTechDocsCollatorFactory } from './DefaultTechDocsCollatorFactory';
+import { TechDocsCollatorEntityTransformer } from './TechDocsCollatorEntityTransformer';
+import {
+  MkSearchIndexDoc,
+  TechDocsCollatorDocumentTransformer,
+} from './TechDocsCollatorDocumentTransformer';
 
-const logger = getVoidLogger();
+const logger = mockServices.logger.mock();
 
 const mockSearchDocIndex = {
   config: {
@@ -66,6 +70,7 @@ const expectedEntities: Entity[] = [
       annotations: {
         'backstage.io/techdocs-ref': './',
       },
+      tags: ['tag1', 'tag2'],
     },
     spec: {
       type: 'dog',
@@ -76,19 +81,13 @@ const expectedEntities: Entity[] = [
 ];
 
 describe('DefaultTechDocsCollatorFactory', () => {
-  const config = new ConfigReader({});
-  const mockDiscoveryApi: jest.Mocked<PluginEndpointDiscovery> = {
-    getBaseUrl: jest.fn().mockResolvedValue('http://test-backend'),
-    getExternalBaseUrl: jest.fn(),
-  };
-  const mockTokenManager: jest.Mocked<TokenManager> = {
-    getToken: jest.fn().mockResolvedValue({ token: '' }),
-    authenticate: jest.fn(),
-  };
+  const config = mockServices.rootConfig.mock();
+  const mockDiscoveryApi = mockServices.discovery.mock({
+    getBaseUrl: async () => 'http://test-backend',
+  });
   const options = {
+    logger,
     discovery: mockDiscoveryApi,
-    logger: getVoidLogger(),
-    tokenManager: mockTokenManager,
   };
 
   it('has expected type', () => {
@@ -101,7 +100,7 @@ describe('DefaultTechDocsCollatorFactory', () => {
     let collator: Readable;
 
     const worker = setupServer();
-    setupRequestMockHandlers(worker);
+    registerMswTestHooks(worker);
 
     beforeEach(async () => {
       factory = DefaultTechDocsCollatorFactory.fromConfig(config, options);
@@ -182,7 +181,6 @@ describe('DefaultTechDocsCollatorFactory', () => {
       });
       factory = DefaultTechDocsCollatorFactory.fromConfig(_config, {
         discovery: mockDiscoveryApi,
-        tokenManager: mockTokenManager,
         logger,
       });
       collator = await factory.getCollator();
@@ -253,6 +251,80 @@ describe('DefaultTechDocsCollatorFactory', () => {
             kind: entity.kind,
             name: entity.metadata.name,
           });
+        });
+      });
+    });
+
+    it('should transform the entity using the entityTransformer function', async () => {
+      // @ts-ignore
+      const entityTransformer: TechDocsCollatorEntityTransformer = (
+        entity: Entity,
+      ) => {
+        return {
+          tags: entity.metadata.tags,
+        };
+      };
+
+      factory = DefaultTechDocsCollatorFactory.fromConfig(config, {
+        ...options,
+        entityTransformer,
+      });
+
+      collator = await factory.getCollator();
+
+      const pipeline = TestPipeline.fromCollator(collator);
+      const { documents } = await pipeline.execute();
+      const entity = expectedEntities[0];
+      documents.forEach((document, idx) => {
+        expect(document).toMatchObject({
+          title: mockSearchDocIndex.docs[idx].title,
+          location: `/docs/default/component/${entity.metadata.name}/${mockSearchDocIndex.docs[idx].location}`,
+          text: mockSearchDocIndex.docs[idx].text,
+          namespace: 'default',
+          entityTitle: entity!.metadata.title,
+          componentType: entity!.spec!.type,
+          lifecycle: entity!.spec!.lifecycle,
+          owner: '',
+          kind: entity.kind.toLocaleLowerCase('en-US'),
+          name: entity.metadata.name,
+          tags: entity.metadata.tags,
+        });
+      });
+    });
+
+    it('should transform the doc using the documentTransformer function', async () => {
+      // @ts-ignore
+      const documentTransformer: TechDocsCollatorDocumentTransformer = (
+        _: MkSearchIndexDoc,
+      ) => {
+        return {
+          tags: ['static-tag'],
+        };
+      };
+
+      factory = DefaultTechDocsCollatorFactory.fromConfig(config, {
+        ...options,
+        documentTransformer,
+      });
+
+      collator = await factory.getCollator();
+
+      const pipeline = TestPipeline.fromCollator(collator);
+      const { documents } = await pipeline.execute();
+      const entity = expectedEntities[0];
+      documents.forEach((document, idx) => {
+        expect(document).toMatchObject({
+          title: mockSearchDocIndex.docs[idx].title,
+          location: `/docs/default/component/${entity.metadata.name}/${mockSearchDocIndex.docs[idx].location}`,
+          text: mockSearchDocIndex.docs[idx].text,
+          namespace: 'default',
+          entityTitle: entity!.metadata.title,
+          componentType: entity!.spec!.type,
+          lifecycle: entity!.spec!.lifecycle,
+          owner: '',
+          kind: entity.kind.toLocaleLowerCase('en-US'),
+          name: entity.metadata.name,
+          tags: ['static-tag'],
         });
       });
     });

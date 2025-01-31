@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { loggerToWinstonLogger } from '@backstage/backend-common';
 import {
   coreServices,
   createBackendModule,
@@ -29,7 +28,7 @@ import { GkeEntityProvider } from '../providers/GkeEntityProvider';
  */
 export const catalogModuleGcpGkeEntityProvider = createBackendModule({
   pluginId: 'catalog',
-  moduleId: 'gcpGkeEntityProvider',
+  moduleId: 'gcp-gke-entity-provider',
   register(env) {
     env.registerInit({
       deps: {
@@ -41,7 +40,7 @@ export const catalogModuleGcpGkeEntityProvider = createBackendModule({
       async init({ config, catalog, logger, scheduler }) {
         catalog.addEntityProvider(
           GkeEntityProvider.fromConfig({
-            logger: loggerToWinstonLogger(logger),
+            logger,
             scheduler,
             config,
           }),

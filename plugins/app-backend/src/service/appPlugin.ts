@@ -20,17 +20,21 @@ import {
   createBackendPlugin,
 } from '@backstage/backend-plugin-api';
 import { createRouter } from './router';
-import { loggerToWinstonLogger } from '@backstage/backend-common';
-import { staticFallbackHandlerExtensionPoint } from '@backstage/plugin-app-node';
+import {
+  configSchemaExtensionPoint,
+  staticFallbackHandlerExtensionPoint,
+} from '@backstage/plugin-app-node';
+import { ConfigSchema } from '@backstage/config-loader';
 
 /**
  * The App plugin is responsible for serving the frontend app bundle and static assets.
- * @alpha
+ * @public
  */
 export const appPlugin = createBackendPlugin({
   pluginId: 'app',
   register(env) {
     let staticFallbackHandler: express.Handler | undefined;
+    let schema: ConfigSchema | undefined;
 
     env.registerExtensionPoint(staticFallbackHandlerExtensionPoint, {
       setStaticFallbackHandler(handler) {
@@ -43,26 +47,47 @@ export const appPlugin = createBackendPlugin({
       },
     });
 
+    env.registerExtensionPoint(configSchemaExtensionPoint, {
+      setConfigSchema(configSchema) {
+        if (schema) {
+          throw new Error(
+            'Attempted to set config schema for the app-backend twice',
+          );
+        }
+        schema = configSchema;
+      },
+    });
+
     env.registerInit({
       deps: {
         logger: coreServices.logger,
         config: coreServices.rootConfig,
         database: coreServices.database,
         httpRouter: coreServices.httpRouter,
+        auth: coreServices.auth,
+        httpAuth: coreServices.httpAuth,
       },
-      async init({ logger, config, database, httpRouter }) {
+      async init({ logger, config, database, httpRouter, auth, httpAuth }) {
         const appPackageName =
           config.getOptionalString('app.packageName') ?? 'app';
-        const winstonLogger = loggerToWinstonLogger(logger);
 
         const router = await createRouter({
-          logger: winstonLogger,
+          logger,
           config,
           database,
+          auth,
+          httpAuth,
           appPackageName,
           staticFallbackHandler,
+          schema,
         });
         httpRouter.use(router);
+
+        // Access control is handled within the router
+        httpRouter.addAuthPolicy({
+          allow: 'unauthenticated',
+          path: '/',
+        });
       },
     });
   },

@@ -18,13 +18,13 @@ import { ComponentType, PropsWithChildren } from 'react';
 import {
   AnyApiFactory,
   AppTheme,
-  IconComponent,
   BackstagePlugin,
+  ExternalRouteRef,
+  FeatureFlag,
+  IconComponent,
+  IdentityApi,
   RouteRef,
   SubRouteRef,
-  ExternalRouteRef,
-  IdentityApi,
-  FeatureFlag,
 } from '@backstage/core-plugin-api';
 import { AppConfig } from '@backstage/config';
 
@@ -99,7 +99,8 @@ export type AppIcons = {
   'kind:location': IconComponent;
   'kind:system': IconComponent;
   'kind:user': IconComponent;
-
+  'kind:resource': IconComponent;
+  'kind:template': IconComponent;
   brokenImage: IconComponent;
   catalog: IconComponent;
   chat: IconComponent;
@@ -114,6 +115,8 @@ export type AppIcons = {
   techdocs: IconComponent;
   user: IconComponent;
   warning: IconComponent;
+  star: IconComponent;
+  unstarred: IconComponent;
 };
 
 /**
@@ -157,7 +160,7 @@ type TargetRouteMap<
     infer Params,
     any
   >
-    ? RouteRef<Params> | SubRouteRef<Params>
+    ? RouteRef<Params> | SubRouteRef<Params> | false
     : never;
 };
 
@@ -278,6 +281,21 @@ export type AppOptions = {
    * ```
    */
   bindRoutes?(context: { bind: AppRouteBinder }): void;
+
+  __experimentalTranslations?: {
+    defaultLanguage?: string;
+    availableLanguages?: string[];
+    resources?: Array<
+      // Separate declaration for now to avoid dependency on core-plugin-api/alpha and TS 5.0
+      | { $$type: '@backstage/TranslationResource'; id: string }
+      | {
+          $$type: '@backstage/TranslationMessages';
+          id: string;
+          full: boolean;
+          messages: Record<string, string>;
+        }
+    >;
+  };
 };
 
 /**

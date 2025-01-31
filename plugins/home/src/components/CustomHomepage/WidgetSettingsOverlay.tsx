@@ -13,24 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  createStyles,
-  Dialog,
-  DialogContent,
-  Grid,
-  makeStyles,
-  Theme,
-  Tooltip,
-} from '@material-ui/core';
+import Dialog from '@material-ui/core/Dialog';
+import DialogContent from '@material-ui/core/DialogContent';
+import Grid from '@material-ui/core/Grid';
+import Tooltip from '@material-ui/core/Tooltip';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import IconButton from '@material-ui/core/IconButton';
 import SettingsIcon from '@material-ui/icons/Settings';
 import DeleteIcon from '@material-ui/icons/Delete';
 import React from 'react';
 import { Widget } from './types';
-import { withTheme } from '@rjsf/core-v5';
+import { withTheme } from '@rjsf/core';
+import { Theme as MuiTheme } from '@rjsf/material-ui';
 import validator from '@rjsf/validator-ajv8';
 
-const Form = withTheme(require('@rjsf/material-ui-v5').Theme);
+const Form = withTheme(MuiTheme);
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -89,6 +86,9 @@ export const WidgetSettingsOverlay = (props: WidgetSettingsOverlayProps) => {
                   handleSettingsSave(id, formData);
                   setSettingsDialogOpen(false);
                 }
+              }}
+              experimental_defaultFormStateBehavior={{
+                allOf: 'populateDefaults',
               }}
             />
           </DialogContent>

@@ -89,6 +89,7 @@ export type ScaffolderOutputText = {
   title?: string;
   icon?: string;
   content?: string;
+  default?: boolean;
 };
 
 /** @public */
@@ -105,7 +106,7 @@ export type ScaffolderTaskOutput = {
  * @public
  */
 export type LogEvent = {
-  type: 'log' | 'completion' | 'cancelled';
+  type: 'log' | 'completion' | 'cancelled' | 'recovered';
   body: {
     message: string;
     stepId?: string;
@@ -160,6 +161,7 @@ export interface ScaffolderGetIntegrationsListResponse {
  * @public
  */
 export interface ScaffolderStreamLogsOptions {
+  isTaskRecoverable?: boolean;
   taskId: string;
   after?: number;
 }
@@ -212,9 +214,18 @@ export interface ScaffolderApi {
    */
   cancelTask(taskId: string): Promise<void>;
 
+  /**
+   * Starts the task again from the point where it failed.
+   *
+   * @param taskId - the id of the task
+   */
+  retry?(taskId: string): Promise<void>;
+
   listTasks?(options: {
     filterByOwnership: 'owned' | 'all';
-  }): Promise<{ tasks: ScaffolderTask[] }>;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ tasks: ScaffolderTask[]; totalTasks?: number }>;
 
   getIntegrationsList(
     options: ScaffolderGetIntegrationsListOptions,
@@ -228,4 +239,11 @@ export interface ScaffolderApi {
   streamLogs(options: ScaffolderStreamLogsOptions): Observable<LogEvent>;
 
   dryRun?(options: ScaffolderDryRunOptions): Promise<ScaffolderDryRunResponse>;
+
+  autocomplete?(options: {
+    token: string;
+    provider: string;
+    resource: string;
+    context?: Record<string, string>;
+  }): Promise<{ results: { title?: string; id: string }[] }>;
 }

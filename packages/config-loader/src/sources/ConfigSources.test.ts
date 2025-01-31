@@ -15,6 +15,7 @@
  */
 
 import fs from 'fs-extra';
+import { resolve as resolvePath } from 'path';
 import { ConfigSources } from './ConfigSources';
 import { ConfigSource } from './types';
 import { MutableConfigSource } from './MutableConfigSource';
@@ -41,6 +42,8 @@ function mergeSources(source: ConfigSource): ConfigSource[] {
   ] as ConfigSource[];
 }
 
+const root = resolvePath('/');
+
 describe('ConfigSources', () => {
   it('should parse args', () => {
     expect(ConfigSources.parseArgs([])).toEqual([]);
@@ -66,20 +69,25 @@ describe('ConfigSources', () => {
   });
 
   it('should create default sources for targets', () => {
+    const fsSpy = jest.spyOn(fs, 'pathExistsSync').mockImplementation(path => {
+      return path === `${root}app-config.yaml`;
+    });
+
     expect(
       mergeSources(
         ConfigSources.defaultForTargets({ rootDir: '/', targets: [] }),
       ),
-    ).toEqual([{ name: 'FileConfigSource', path: '/app-config.yaml' }]);
+    ).toEqual([{ name: 'FileConfigSource', path: `${root}app-config.yaml` }]);
 
-    const fsSpy = jest.spyOn(fs, 'pathExistsSync').mockReturnValue(true);
+    fsSpy.mockReturnValue(true);
+
     expect(
       mergeSources(
         ConfigSources.defaultForTargets({ rootDir: '/', targets: [] }),
       ),
     ).toEqual([
-      { name: 'FileConfigSource', path: '/app-config.yaml' },
-      { name: 'FileConfigSource', path: '/app-config.local.yaml' },
+      { name: 'FileConfigSource', path: `${root}app-config.yaml` },
+      { name: 'FileConfigSource', path: `${root}app-config.local.yaml` },
     ]);
     fsSpy.mockRestore();
 
@@ -90,7 +98,15 @@ describe('ConfigSources', () => {
           targets: [{ type: 'path', target: '/config.yaml' }],
         }),
       ),
-    ).toEqual([{ name: 'FileConfigSource', path: '/config.yaml' }]);
+    ).toEqual([{ name: 'FileConfigSource', path: `${root}config.yaml` }]);
+
+    expect(
+      mergeSources(
+        ConfigSources.defaultForTargets({
+          targets: [{ type: 'path', target: 'config.yaml' }],
+        }),
+      ),
+    ).toEqual([{ name: 'FileConfigSource', path: resolvePath('config.yaml') }]);
 
     const subFunc = async () => undefined;
     expect(
@@ -148,6 +164,10 @@ describe('ConfigSources', () => {
   });
 
   it('should create a default source', () => {
+    const fsSpy = jest.spyOn(fs, 'pathExistsSync').mockImplementation(path => {
+      return path === `${root}app-config.yaml`;
+    });
+
     expect(
       mergeSources(
         ConfigSources.default({
@@ -156,7 +176,7 @@ describe('ConfigSources', () => {
         }),
       ),
     ).toEqual([
-      { name: 'FileConfigSource', path: '/app-config.yaml' },
+      { name: 'FileConfigSource', path: `${root}app-config.yaml` },
       { name: 'EnvConfigSource', env: { HOME: '/' } },
     ]);
 
@@ -169,10 +189,12 @@ describe('ConfigSources', () => {
         }),
       ),
     ).toEqual([
-      { name: 'FileConfigSource', path: 'a.yaml' },
-      { name: 'FileConfigSource', path: 'b.yaml' },
+      { name: 'FileConfigSource', path: resolvePath('a.yaml') },
+      { name: 'FileConfigSource', path: resolvePath('b.yaml') },
       { name: 'EnvConfigSource', env: { HOME: '/' } },
     ]);
+
+    fsSpy.mockRestore();
   });
 
   it('should merge sources', () => {
@@ -190,9 +212,9 @@ describe('ConfigSources', () => {
         ]),
       ),
     ).toEqual([
-      { name: 'FileConfigSource', path: '/a.yaml' },
-      { name: 'FileConfigSource', path: '/b.yaml' },
-      { name: 'FileConfigSource', path: '/c.yaml' },
+      { name: 'FileConfigSource', path: `${root}a.yaml` },
+      { name: 'FileConfigSource', path: `${root}b.yaml` },
+      { name: 'FileConfigSource', path: `${root}c.yaml` },
     ]);
   });
 

@@ -30,8 +30,12 @@ As an example, we will create a component that validates whether a string is in 
 ```tsx
 //packages/app/src/scaffolder/ValidateKebabCase/ValidateKebabCaseExtension.tsx
 import React from 'react';
-import { FieldProps, FieldValidation } from '@rjsf/core';
+import { FieldExtensionComponentProps } from '@backstage/plugin-scaffolder-react';
+import type { FieldValidation } from '@rjsf/utils';
 import FormControl from '@material-ui/core/FormControl';
+import FormHelperText from '@material-ui/core/FormHelperText';
+import Input from '@material-ui/core/Input';
+import InputLabel from '@material-ui/core/InputLabel';
 /*
  This is the actual component that will get rendered in the form
 */
@@ -40,7 +44,7 @@ export const ValidateKebabCase = ({
   rawErrors,
   required,
   formData,
-}: FieldProps<string>) => {
+}: FieldExtensionComponentProps<string>) => {
   return (
     <FormControl
       margin="normal"
@@ -94,7 +98,7 @@ import { createScaffolderFieldExtension } from '@backstage/plugin-scaffolder-rea
 import {
   ValidateKebabCase,
   validateKebabCaseValidation,
-} from './ValidateKebabCase/ValidateKebabCaseExtension';
+} from './ValidateKebabCaseExtension';
 
 export const ValidateKebabCaseFieldExtension = scaffolderPlugin.provide(
   createScaffolderFieldExtension({
@@ -144,6 +148,32 @@ const routes = (
     ...
   </FlatRoutes>
 );
+```
+
+### Async Validation Function
+
+A validation function can be asyncronous and use [Utility APIs](https://backstage.io/docs/api/utility-apis/) via the `ApiHolder` in the [field validation context](https://backstage.io/docs/reference/plugin-scaffolder-react.customfieldvalidator). The example below uses the `catalogApiRef` to check if the submitted value (in this scenario an entity ref) exists in the catalog.
+
+```tsx
+import { FieldValidation } from '@rjsf/utils';
+import { ApiHolder } from '@backstage/core-plugin-api';
+import { catalogApiRef } from '@backstage/plugin-catalog-react';
+
+/*
+  This validation function checks if the submitted entity ref value is present in the catalog.
+*/
+
+export const customFieldExtensionValidator = async (
+  value: string,
+  validation: FieldValidation,
+  context: { apiHolder: ApiHolder },
+) => {
+  const catalogApi = context.apiHolder.get(catalogApiRef);
+
+  if ((await catalogApi?.getEntityByRef(value)) === undefined) {
+    validation.addError('Entity not found');
+  }
+};
 ```
 
 ## Using the Custom Field Extension

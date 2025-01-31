@@ -22,7 +22,8 @@ import {
   MockStarredEntitiesApi,
   entityRouteRef,
 } from '@backstage/plugin-catalog-react';
-import { Grid } from '@material-ui/core';
+import { catalogApiMock } from '@backstage/plugin-catalog-react/testUtils';
+import Grid from '@material-ui/core/Grid';
 import React, { ComponentType, PropsWithChildren } from 'react';
 
 const starredEntitiesApi = new MockStarredEntitiesApi();
@@ -66,9 +67,7 @@ const entities = [
   },
 ];
 
-const mockCatalogApi = {
-  getEntities: async () => ({ items: entities }),
-};
+const mockCatalogApi = catalogApiMock({ entities });
 
 export default {
   title: 'Plugins/Home/Components/StarredEntities',

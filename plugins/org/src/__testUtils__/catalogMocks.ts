@@ -15,7 +15,6 @@
  */
 
 import {
-  CatalogApi,
   GetEntitiesByRefsRequest,
   GetEntitiesRequest,
 } from '@backstage/catalog-client';
@@ -25,6 +24,7 @@ import {
   GroupEntity,
   stringifyEntityRef,
 } from '@backstage/catalog-model';
+import { catalogApiMock } from '@backstage/plugin-catalog-react/testUtils';
 
 export const groupA: GroupEntity = {
   apiVersion: 'backstage.io/v1alpha1',
@@ -208,8 +208,7 @@ export const groupAUserOne: Entity = {
     profile: {
       displayName: 'Group A User One',
       email: 'group-a-user-one@testing.email',
-      picture:
-        'https://avatars.dicebear.com/api/avataaars/breanna-davison@example.com.svg',
+      picture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Buster',
     },
   },
 };
@@ -224,8 +223,7 @@ export const groupBUserOne: Entity = {
     profile: {
       displayName: 'Group B User One',
       email: 'group-b-user-one@testing.email',
-      picture:
-        'https://avatars.dicebear.com/api/avataaars/breanna-davison@example.com.svg',
+      picture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Buster',
     },
   },
 };
@@ -240,8 +238,7 @@ export const groupDUserOne: Entity = {
     profile: {
       displayName: 'Group D User One',
       email: 'group-d-user-one@testing.email',
-      picture:
-        'https://avatars.dicebear.com/api/avataaars/breanna-davison@example.com.svg',
+      picture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Buster',
     },
   },
 };
@@ -256,8 +253,7 @@ export const groupEUserOne: Entity = {
     profile: {
       displayName: 'Group E User One',
       email: 'group-e-user-one@testing.email',
-      picture:
-        'https://avatars.dicebear.com/api/avataaars/breanna-davison@example.com.svg',
+      picture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Buster',
     },
   },
 };
@@ -272,8 +268,7 @@ export const groupFUserOne: Entity = {
     profile: {
       displayName: 'Group F User One',
       email: 'group-f-user-one@testing.email',
-      picture:
-        'https://avatars.dicebear.com/api/avataaars/breanna-davison@example.com.svg',
+      picture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Buster',
     },
   },
 };
@@ -288,8 +283,7 @@ export const duplicatedUser: Entity = {
     profile: {
       displayName: 'Duplicated User',
       email: 'duplicated-user@testing.email',
-      picture:
-        'https://avatars.dicebear.com/api/avataaars/breanna-davison@example.com.svg',
+      picture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Buster',
     },
   },
 };
@@ -314,7 +308,7 @@ const mockedMembersMapping = new Map<string, Entity[]>([
 
 type Nullable<T> = T | undefined;
 
-export const mockedCatalogApiSupportingGroups: Partial<CatalogApi> = {
+export const mockedCatalogApiSupportingGroups = catalogApiMock.mock({
   getEntities: async (request?: GetEntitiesRequest) => {
     const actualFilter = (request?.filter as Nullable<{
       'relations.memberof': string[];
@@ -337,4 +331,4 @@ export const mockedCatalogApiSupportingGroups: Partial<CatalogApi> = {
     );
     return { items };
   },
-};
+});

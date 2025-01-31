@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 import React from 'react';
-import {
-  Stepper as MuiStepper,
-  Step as MuiStep,
-  StepButton as MuiStepButton,
-  StepLabel as MuiStepLabel,
-  StepIconProps,
-  Box,
-  Paper,
-} from '@material-ui/core';
+import MuiStepper from '@material-ui/core/Stepper';
+import MuiStep from '@material-ui/core/Step';
+import MuiStepButton from '@material-ui/core/StepButton';
+import MuiStepLabel from '@material-ui/core/StepLabel';
+import { StepIconProps } from '@material-ui/core/StepIcon';
+import Box from '@material-ui/core/Box';
+import Paper from '@material-ui/core/Paper';
 import { TaskStep } from '@backstage/plugin-scaffolder-common';
 import { StepIcon } from './StepIcon';
 import { StepTime } from './StepTime';
@@ -58,8 +56,9 @@ export const TaskSteps = (props: TaskStepsProps) => {
           activeStep={props.activeStep}
           alternativeLabel
           variant="elevation"
+          style={{ overflowX: 'auto' }}
         >
-          {props.steps.map((step, index) => {
+          {props.steps.map(step => {
             const isCompleted = step.status === 'completed';
             const isFailed = step.status === 'failed';
             const isActive = step.status === 'processing';
@@ -73,7 +72,7 @@ export const TaskSteps = (props: TaskStepsProps) => {
               };
 
             return (
-              <MuiStep key={index}>
+              <MuiStep key={step.id}>
                 <MuiStepButton>
                   <MuiStepLabel
                     StepIconProps={stepIconProps}

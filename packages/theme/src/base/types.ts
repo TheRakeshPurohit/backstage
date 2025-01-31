@@ -82,6 +82,9 @@ export type BackstagePaletteAdditions = {
     closeButtonColor?: string;
     warning?: string;
   };
+  code?: {
+    background?: string;
+  };
 };
 
 /**
@@ -124,32 +127,38 @@ export type BackstageTypography = {
   htmlFontSize: number;
   fontFamily: string;
   h1: {
-    fontSize: number;
+    fontFamily?: string;
+    fontSize: number | string;
     fontWeight: number;
     marginBottom: number;
   };
   h2: {
-    fontSize: number;
+    fontFamily?: string;
+    fontSize: number | string;
     fontWeight: number;
     marginBottom: number;
   };
   h3: {
-    fontSize: number;
+    fontFamily?: string;
+    fontSize: number | string;
     fontWeight: number;
     marginBottom: number;
   };
   h4: {
-    fontSize: number;
+    fontFamily?: string;
+    fontSize: number | string;
     fontWeight: number;
     marginBottom: number;
   };
   h5: {
-    fontSize: number;
+    fontFamily?: string;
+    fontSize: number | string;
     fontWeight: number;
     marginBottom: number;
   };
   h6: {
-    fontSize: number;
+    fontFamily?: string;
+    fontSize: number | string;
     fontWeight: number;
     marginBottom: number;
   };

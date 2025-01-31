@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { isChildPath } from '@backstage/backend-common';
+import { isChildPath, LoggerService } from '@backstage/backend-plugin-api';
 import { Entity } from '@backstage/catalog-model';
 import { assertError, ForwardedError } from '@backstage/errors';
 import { ScmIntegrationRegistry } from '@backstage/integration';
@@ -24,7 +24,6 @@ import gitUrlParse from 'git-url-parse';
 import yaml, { DEFAULT_SCHEMA, Type } from 'js-yaml';
 import path, { resolve as resolvePath } from 'path';
 import { PassThrough, Writable } from 'stream';
-import { Logger } from 'winston';
 import { ParsedLocationAnnotation } from '../../helpers';
 import { DefaultMkdocsContent, SupportedGeneratorKey } from './types';
 import { getFileTreeRecursively } from '../publish/helpers';
@@ -101,11 +100,13 @@ export const getRepoUrlFromLocationAnnotation = (
   if (locationType === 'url') {
     const integration = scmIntegrations.byUrl(target);
 
-    // We only support it for github, gitlab and bitbucketServer for now as the edit_uri
+    // We only support it for github, gitlab, bitbucketServer and harness for now as the edit_uri
     // is not properly supported for others yet.
     if (
       integration &&
-      ['github', 'gitlab', 'bitbucketServer'].includes(integration.type)
+      ['github', 'gitlab', 'bitbucketServer', 'harness'].includes(
+        integration.type,
+      )
     ) {
       // handle the case where a user manually writes url:https://github.com/backstage/backstage i.e. without /blob/...
       const { filepathtype } = gitUrlParse(target);
@@ -115,7 +116,7 @@ export const getRepoUrlFromLocationAnnotation = (
 
       const sourceFolder = integration.resolveUrl({
         url: `./${docsFolder}`,
-        base: target,
+        base: target.endsWith('/') ? target : `${target}/`,
       });
       return {
         repo_url: target,
@@ -134,6 +135,14 @@ class UnknownTag {
 export const MKDOCS_SCHEMA = DEFAULT_SCHEMA.extend([
   new Type('', {
     kind: 'scalar',
+    multi: true,
+    representName: o => (o as UnknownTag).type,
+    represent: o => (o as UnknownTag).data ?? '',
+    instanceOf: UnknownTag,
+    construct: (data: string, type?: string) => new UnknownTag(data, type),
+  }),
+  new Type('tag:', {
+    kind: 'mapping',
     multi: true,
     representName: o => (o as UnknownTag).type,
     represent: o => (o as UnknownTag).data ?? '',
@@ -185,21 +194,35 @@ export const generateMkdocsYml = async (
 };
 
 /**
- * Finds and loads the contents of either an mkdocs.yml or mkdocs.yaml file,
- * depending on which is present (MkDocs supports both as of v1.2.2).
+ * Finds and loads the contents of an mkdocs.yml, mkdocs.yaml file, a file
+ * with a specified name or an ad-hoc created file with minimal config.
  * @public
  *
  * @param inputDir - base dir to be searched for either an mkdocs.yml or mkdocs.yaml file.
- * @param siteOptions - options for the site: `name` property will be used in mkdocs.yml for the
- * required `site_name` property, default value is "Documentation Site"
+ * @param options - name: default mkdocs site_name to be used with a ad hoc file default value is "Documentation Site"
+ *                  mkdocsConfigFileName (optional): a non-default file name to be used as the config
  */
 export const getMkdocsYml = async (
   inputDir: string,
-  siteOptions?: { name?: string },
+  options?: { name?: string; mkdocsConfigFileName?: string },
 ): Promise<{ path: string; content: string; configIsTemporary: boolean }> => {
   let mkdocsYmlPath: string;
   let mkdocsYmlFileString: string;
   try {
+    if (options?.mkdocsConfigFileName) {
+      mkdocsYmlPath = path.join(inputDir, options.mkdocsConfigFileName);
+      if (!(await fs.pathExists(mkdocsYmlPath))) {
+        throw new Error(`The specified file ${mkdocsYmlPath} does not exist`);
+      }
+
+      mkdocsYmlFileString = await fs.readFile(mkdocsYmlPath, 'utf8');
+      return {
+        path: mkdocsYmlPath,
+        content: mkdocsYmlFileString,
+        configIsTemporary: false,
+      };
+    }
+
     mkdocsYmlPath = path.join(inputDir, 'mkdocs.yaml');
     if (await fs.pathExists(mkdocsYmlPath)) {
       mkdocsYmlFileString = await fs.readFile(mkdocsYmlPath, 'utf8');
@@ -221,7 +244,7 @@ export const getMkdocsYml = async (
     }
 
     // No mkdocs file, generate it
-    await generateMkdocsYml(inputDir, siteOptions);
+    await generateMkdocsYml(inputDir, options);
     mkdocsYmlFileString = await fs.readFile(mkdocsYmlPath, 'utf8');
   } catch (error) {
     throw new ForwardedError(
@@ -282,7 +305,7 @@ export const patchIndexPreBuild = async ({
   docsDir = 'docs',
 }: {
   inputDir: string;
-  logger: Logger;
+  logger: LoggerService;
   docsDir?: string;
 }) => {
   const docsPath = path.join(inputDir, docsDir);
@@ -326,7 +349,7 @@ export const patchIndexPreBuild = async ({
  */
 export const createOrUpdateMetadata = async (
   techdocsMetadataPath: string,
-  logger: Logger,
+  logger: LoggerService,
 ): Promise<void> => {
   const techdocsMetadataDir = techdocsMetadataPath
     .split(path.sep)

@@ -29,7 +29,7 @@ export const gcpIapAuthenticator = createProxyAuthenticator({
   defaultProfileTransform: async (result: GcpIapResult) => {
     return { profile: { email: result.iapToken.email } };
   },
-  async initialize({ config }) {
+  initialize({ config }) {
     const audience = config.getString('audience');
     const jwtHeader =
       config.getOptionalString('jwtHeader') ?? DEFAULT_IAP_JWT_HEADER;
@@ -47,6 +47,9 @@ export const gcpIapAuthenticator = createProxyAuthenticator({
 
     const iapToken = await tokenValidator(token);
 
-    return { result: { iapToken } };
+    return {
+      result: { iapToken },
+      providerInfo: { iapToken },
+    };
   },
 });

@@ -24,7 +24,7 @@ export interface Config {
      * Documentation building process depends on the builder attr
      * @visibility frontend
      */
-    builder: 'local' | 'external';
+    builder?: 'local' | 'external';
 
     /**
      * Techdocs generator information
@@ -72,9 +72,12 @@ export interface Config {
       | {
           type: 'local';
 
+          /**
+           *  Optional when 'type' is set to local
+           */
           local?: {
             /**
-             * Directory to store generated static files.
+             * (Optional) Directory to store generated static files.
              */
             publishDirectory?: string;
           };
@@ -127,6 +130,11 @@ export interface Config {
              * (Required) Cloud Storage Bucket Name
              */
             bucketName: string;
+            /**
+             * (Optional) Location in storage bucket to save files
+             * If not set, the default location will be the root of the storage bucket
+             */
+            bucketRootPath?: string;
             /**
              * (Optional) AWS Region.
              * If not set, AWS_REGION environment variable or aws config file will be used.
@@ -255,6 +263,11 @@ export interface Config {
              * the credentials belongs to a different project to the bucket.
              */
             projectId?: string;
+            /**
+             * (Optional) Location in storage bucket to save files
+             * If not set, the default location will be the root of the storage bucket
+             */
+            bucketRootPath?: string;
           };
         };
 

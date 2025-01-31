@@ -13,24 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { KubernetesBackendClient } from './api/KubernetesBackendClient';
-import { kubernetesApiRef, kubernetesProxyApiRef } from './api/types';
-import { kubernetesAuthProvidersApiRef } from './kubernetes-auth-provider/types';
-import { KubernetesAuthProviders } from './kubernetes-auth-provider/KubernetesAuthProviders';
+import {
+  KubernetesBackendClient,
+  kubernetesApiRef,
+  kubernetesProxyApiRef,
+  kubernetesAuthProvidersApiRef,
+  KubernetesAuthProviders,
+  KubernetesProxyClient,
+  kubernetesClusterLinkFormatterApiRef,
+  getDefaultFormatters,
+  KubernetesClusterLinkFormatter,
+  DEFAULT_FORMATTER_NAME,
+} from '@backstage/plugin-kubernetes-react';
 import {
   createApiFactory,
   createPlugin,
   createRouteRef,
   discoveryApiRef,
-  identityApiRef,
   gitlabAuthApiRef,
   googleAuthApiRef,
   microsoftAuthApiRef,
   oktaAuthApiRef,
   oneloginAuthApiRef,
   createRoutableExtension,
+  fetchApiRef,
 } from '@backstage/core-plugin-api';
-import { KubernetesProxyClient } from './api';
 
 export const rootCatalogKubernetesRouteRef = createRouteRef({
   id: 'kubernetes',
@@ -43,13 +50,13 @@ export const kubernetesPlugin = createPlugin({
       api: kubernetesApiRef,
       deps: {
         discoveryApi: discoveryApiRef,
-        identityApi: identityApiRef,
+        fetchApi: fetchApiRef,
         kubernetesAuthProvidersApi: kubernetesAuthProvidersApiRef,
       },
-      factory: ({ discoveryApi, identityApi, kubernetesAuthProvidersApi }) =>
+      factory: ({ discoveryApi, fetchApi, kubernetesAuthProvidersApi }) =>
         new KubernetesBackendClient({
           discoveryApi,
-          identityApi,
+          fetchApi,
           kubernetesAuthProvidersApi,
         }),
     }),
@@ -91,6 +98,17 @@ export const kubernetesPlugin = createPlugin({
           microsoftAuthApi,
           googleAuthApi,
           oidcProviders,
+        });
+      },
+    }),
+    createApiFactory({
+      api: kubernetesClusterLinkFormatterApiRef,
+      deps: { googleAuthApi: googleAuthApiRef },
+      factory: deps => {
+        const formatters = getDefaultFormatters(deps);
+        return new KubernetesClusterLinkFormatter({
+          formatters,
+          defaultFormatterName: DEFAULT_FORMATTER_NAME,
         });
       },
     }),

@@ -61,7 +61,7 @@ my-docusaurus/
       css/
       img/
     package.json
-    sidebars.json
+    sidebars.js
     siteConfig.js
 ```
 
@@ -116,19 +116,20 @@ For more information about blog posts, click [here](https://docusaurus.io/docs/e
    My new content here..
    ```
 
-2. Refer to that doc's ID in an existing sidebar in `website/sidebars.json`:
+2. Refer to that doc's ID in an existing sidebar in `website/sidebars.js`:
 
-   ```javascript
+   ```js
    // Add newly-created-doc to the Getting Started category of docs
-   {
-     "docs": {
-       "Getting Started": [
-         "quick-start",
-         "newly-created-doc" // new doc here
-       ],
-       ...
-     },
-     ...
+   module.exports = {
+   ...
+   docs: {
+    "Getting Started": [
+      "quick-start",
+      "newly-created-doc" // new doc here
+    ],
+    ...
+   },
+   ...
    }
    ```
 
@@ -233,3 +234,9 @@ Full documentation can be found on the [Docusaurus website](https://docusaurus.i
     - `highlight-remove-next-line`
     - `highlight-remove-start`
     - `highlight-remove-end`
+
+## Feedback widget
+
+A feedback widget is provided by the `docusaurus-pushfeedback` plugin, which connects to the https://pushfeedback.com service. Styling of the button is configured in `microsite/src/theme/customTheme.scss`, while the plugin itself is configured in `microsite/docusaurus.config.js`.
+
+Feedback submissions are connected to an account owned by @Rugvip and are available on request, reach out to @Rugvip on [Discord](https://discord.gg/backstage-687207715902193673).

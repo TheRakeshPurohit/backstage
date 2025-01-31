@@ -19,16 +19,22 @@ import npmPackList from 'npm-packlist';
 import { resolve as resolvePath, posix as posixPath } from 'path';
 import { BackstagePackageJson } from '@backstage/cli-node';
 import { readEntryPoints } from '../entryPoints';
+import { getEntryPointDefaultFeatureType } from '../typeDistProject';
+import { Project } from 'ts-morph';
 
 const PKG_PATH = 'package.json';
 const PKG_BACKUP_PATH = 'package.json-prepack';
 
-const SKIPPED_KEYS = ['access', 'registry', 'tag', 'alphaTypes', 'betaTypes'];
+const SKIPPED_KEYS = ['access', 'registry', 'tag'];
 const SCRIPT_EXTS = ['.js', '.jsx', '.ts', '.tsx'];
 
 interface ProductionPackOptions {
   packageDir: string;
   targetDir?: string;
+  /**
+   * Enables package feature detection using this TS-morph project.
+   */
+  featureDetectionProject?: Project;
 }
 
 export async function productionPack(options: ProductionPackOptions) {
@@ -42,19 +48,8 @@ export async function productionPack(options: ProductionPackOptions) {
     await fs.writeFile(PKG_BACKUP_PATH, pkgContent);
   }
 
-  const hasStageEntry =
-    !!pkg.publishConfig?.alphaTypes || !!pkg.publishConfig?.betaTypes;
-  if (pkg.exports && hasStageEntry) {
-    throw new Error(
-      'Combining both exports and alpha/beta types is not supported',
-    );
-  }
-
   // This mutates pkg to fill in index exports, so call it before applying publishConfig
-  const writeCompatibilityEntryPoints = await prepareExportsEntryPoints(
-    pkg,
-    packageDir,
-  );
+  await rewriteEntryPoints(pkg, packageDir, options.featureDetectionProject);
 
   // TODO(Rugvip): Once exports are rolled out more broadly we should deprecate and remove this behavior
   const publishConfig = pkg.publishConfig ?? {};
@@ -63,9 +58,6 @@ export async function productionPack(options: ProductionPackOptions) {
       (pkg as any)[key] = publishConfig[key as keyof typeof publishConfig];
     }
   }
-
-  // For published packages we rely on compatibility entry points rather than this
-  delete pkg.typesVersions;
 
   // We remove the dependencies from package.json of packages that are marked
   // as bundled, so that yarn doesn't try to install them.
@@ -98,16 +90,6 @@ export async function productionPack(options: ProductionPackOptions) {
   } else {
     await fs.writeJson(pkgPath, pkg, { encoding: 'utf8', spaces: 2 });
   }
-
-  if (publishConfig.alphaTypes) {
-    await writeReleaseStageEntrypoint(pkg, 'alpha', targetDir ?? packageDir);
-  }
-  if (publishConfig.betaTypes) {
-    await writeReleaseStageEntrypoint(pkg, 'beta', targetDir ?? packageDir);
-  }
-  if (writeCompatibilityEntryPoints) {
-    await writeCompatibilityEntryPoints(targetDir ?? packageDir);
-  }
 }
 
 // Reverts the changes made by productionPack when called without a targetDir.
@@ -118,12 +100,6 @@ export async function revertProductionPack(packageDir: string) {
 
     // Check if we're shipping types for other release stages, clean up in that case
     const pkg = await fs.readJson(PKG_PATH);
-    if (pkg.publishConfig?.alphaTypes) {
-      await fs.remove(resolvePath(packageDir, 'alpha'));
-    }
-    if (pkg.publishConfig?.betaTypes) {
-      await fs.remove(resolvePath(packageDir, 'beta'));
-    }
 
     // Remove any extra entrypoint backwards compatibility directories
     const entryPoints = readEntryPoints(pkg);
@@ -140,32 +116,6 @@ export async function revertProductionPack(packageDir: string) {
   }
 }
 
-function resolveEntrypoint(pkg: any, name: string) {
-  const targetEntry = pkg.publishConfig[name] || pkg[name];
-  return targetEntry && posixPath.join('..', targetEntry);
-}
-
-// Writes e.g. alpha/package.json
-async function writeReleaseStageEntrypoint(
-  pkg: BackstagePackageJson,
-  stage: 'alpha' | 'beta',
-  targetDir: string,
-) {
-  await fs.ensureDir(resolvePath(targetDir, stage));
-  await fs.writeJson(
-    resolvePath(targetDir, stage, PKG_PATH),
-    {
-      name: pkg.name,
-      version: pkg.version,
-      main: resolveEntrypoint(pkg, 'main'),
-      module: resolveEntrypoint(pkg, 'module'),
-      browser: resolveEntrypoint(pkg, 'browser'),
-      types: posixPath.join('..', pkg.publishConfig![`${stage}Types`]!),
-    },
-    { encoding: 'utf8', spaces: 2 },
-  );
-}
-
 const EXPORT_MAP = {
   import: '.esm.js',
   require: '.cjs.js',
@@ -177,9 +127,10 @@ const EXPORT_MAP = {
  * well as returning a function that creates backwards compatibility
  * entry points for importers that don't support exports.
  */
-async function prepareExportsEntryPoints(
+async function rewriteEntryPoints(
   pkg: BackstagePackageJson,
   packageDir: string,
+  featureDetectionProject?: Project,
 ) {
   const distPath = resolvePath(packageDir, 'dist');
   if (!(await fs.pathExists(distPath))) {
@@ -188,26 +139,59 @@ async function prepareExportsEntryPoints(
   const distFiles = await fs.readdir(distPath);
   const outputExports = {} as Record<string, string | Record<string, string>>;
 
-  const compatibilityWriters = new Array<
-    (targetDir: string) => Promise<void>
-  >();
-
   const entryPoints = readEntryPoints(pkg);
+
+  // Clear to ensure a clean slate before adding entries back in further down
+  if (pkg.typesVersions) {
+    pkg.typesVersions = { '*': {} };
+  }
+
   for (const entryPoint of entryPoints) {
     if (!SCRIPT_EXTS.includes(entryPoint.ext)) {
       outputExports[entryPoint.mount] = entryPoint.path;
       continue;
     }
-    const exp = {} as Record<string, string>;
+
+    let exp = {} as Record<string, string>;
+
     for (const [key, ext] of Object.entries(EXPORT_MAP)) {
       const name = `${entryPoint.name}${ext}`;
       if (distFiles.includes(name)) {
         exp[key] = `./${posixPath.join(`dist`, name)}`;
       }
     }
+
+    // Our current tooling relies on the typesVersions field rather than export.*.types
+    if (exp.types) {
+      if (!pkg.typesVersions) {
+        pkg.typesVersions = { '*': {} };
+      }
+      pkg.typesVersions['*'][entryPoint.name] = [
+        `dist/${entryPoint.name}.d.ts`,
+      ];
+    }
+
     exp.default = exp.require ?? exp.import;
 
-    // This creates a directory with a lone package.json for backwards compatibility
+    // Find the default export type for the entry point, if feature detection is active
+    if (exp.types && featureDetectionProject) {
+      const defaultFeatureType =
+        pkg.backstage?.role &&
+        getEntryPointDefaultFeatureType(
+          pkg.backstage?.role,
+          packageDir,
+          featureDetectionProject,
+          exp.types,
+        );
+
+      if (defaultFeatureType) {
+        // This ensures that the `backstage` field is at the top of the
+        // `exports` field in the package.json because order is important.
+        // https://nodejs.org/docs/latest-v20.x/api/packages.html#conditional-exports
+        exp = { backstage: defaultFeatureType, ...exp };
+      }
+    }
+
     if (entryPoint.mount === '.') {
       if (exp.default) {
         pkg.main = exp.default;
@@ -217,26 +201,6 @@ async function prepareExportsEntryPoints(
       }
       if (exp.types) {
         pkg.types = exp.types;
-      }
-    } else {
-      // This is deferred until after we have created the target directory
-      compatibilityWriters.push(async targetDir => {
-        const entryPointDir = resolvePath(targetDir, entryPoint.name);
-        await fs.ensureDir(entryPointDir);
-        await fs.writeJson(
-          resolvePath(entryPointDir, PKG_PATH),
-          {
-            name: pkg.name,
-            version: pkg.version,
-            ...(exp.default ? { main: posixPath.join('..', exp.default) } : {}),
-            ...(exp.import ? { module: posixPath.join('..', exp.import) } : {}),
-            ...(exp.types ? { types: posixPath.join('..', exp.types) } : {}),
-          },
-          { encoding: 'utf8', spaces: 2 },
-        );
-      });
-      if (Array.isArray(pkg.files) && !pkg.files.includes(entryPoint.name)) {
-        pkg.files.push(entryPoint.name);
       }
     }
 
@@ -251,10 +215,5 @@ async function prepareExportsEntryPoints(
     pkg.exports['./package.json'] = './package.json';
   }
 
-  if (compatibilityWriters.length > 0) {
-    return async (targetDir: string) => {
-      await Promise.all(compatibilityWriters.map(writer => writer(targetDir)));
-    };
-  }
   return undefined;
 }

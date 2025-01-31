@@ -31,7 +31,6 @@ import {
   createRoutableExtension,
   discoveryApiRef,
   fetchApiRef,
-  identityApiRef,
 } from '@backstage/core-plugin-api';
 import {
   createSearchResultListItemExtension,
@@ -52,14 +51,12 @@ export const techdocsPlugin = createPlugin({
       deps: {
         configApi: configApiRef,
         discoveryApi: discoveryApiRef,
-        identityApi: identityApiRef,
         fetchApi: fetchApiRef,
       },
-      factory: ({ configApi, discoveryApi, identityApi, fetchApi }) =>
+      factory: ({ configApi, discoveryApi, fetchApi }) =>
         new TechDocsStorageClient({
           configApi,
           discoveryApi,
-          identityApi,
           fetchApi,
         }),
     }),
@@ -106,7 +103,7 @@ export const TechdocsPage = techdocsPlugin.provide(
 export const EntityTechdocsContent = techdocsPlugin.provide(
   createRoutableExtension({
     name: 'EntityTechdocsContent',
-    component: () => import('./Router').then(m => m.EmbeddedDocsRouter),
+    component: () => import('./Router').then(m => m.LegacyEmbeddedDocsRouter),
     mountPoint: rootCatalogDocsRouteRef,
   }),
 );

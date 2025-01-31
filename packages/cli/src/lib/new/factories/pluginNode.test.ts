@@ -15,34 +15,33 @@
  */
 
 import fs from 'fs-extra';
-import mockFs from 'mock-fs';
-import { sep, resolve as resolvePath } from 'path';
-import { paths } from '../../paths';
+import { sep } from 'path';
 import { Task } from '../../tasks';
 import { FactoryRegistry } from '../FactoryRegistry';
-import { createMockOutputStream, mockPaths } from './common/testUtils';
+import {
+  createMockOutputStream,
+  expectLogsToMatch,
+  mockPaths,
+} from './common/testUtils';
 import { pluginNode } from './pluginNode';
+import { createMockDirectory } from '@backstage/backend-test-utils';
 
 describe('pluginNode factory', () => {
+  const mockDir = createMockDirectory();
+
   beforeEach(() => {
     mockPaths({
-      targetRoot: '/root',
+      targetRoot: mockDir.path,
     });
   });
 
   afterEach(() => {
-    mockFs.restore();
     jest.resetAllMocks();
   });
 
   it('should create a node plugin package', async () => {
-    mockFs({
-      '/root': {
-        plugins: mockFs.directory(),
-      },
-      [paths.resolveOwn('templates')]: mockFs.load(
-        paths.resolveOwn('templates'),
-      ),
+    mockDir.setContent({
+      plugins: {},
     });
 
     const options = await FactoryRegistry.populateOptions(pluginNode, {
@@ -63,18 +62,18 @@ describe('pluginNode factory', () => {
         modified = true;
       },
       createTemporaryDirectory: () => fs.mkdtemp('test'),
+      license: 'Apache-2.0',
     });
 
     expect(modified).toBe(true);
 
-    expect(output).toEqual([
-      '',
+    expectLogsToMatch(output, [
       'Creating Node.js plugin library backstage-plugin-test-node',
       'Checking Prerequisites:',
       `availability  plugins${sep}test-node`,
       'creating      temp dir',
       'Executing Template:',
-      'copying       .eslintrc.js',
+      'templating    .eslintrc.js.hbs',
       'templating    README.md.hbs',
       'templating    package.json.hbs',
       'templating    index.ts.hbs',
@@ -84,7 +83,7 @@ describe('pluginNode factory', () => {
     ]);
 
     await expect(
-      fs.readJson('/root/plugins/test-node/package.json'),
+      fs.readJson(mockDir.resolve('plugins/test-node/package.json')),
     ).resolves.toEqual(
       expect.objectContaining({
         name: 'backstage-plugin-test-node',
@@ -96,11 +95,11 @@ describe('pluginNode factory', () => {
 
     expect(Task.forCommand).toHaveBeenCalledTimes(2);
     expect(Task.forCommand).toHaveBeenCalledWith('yarn install', {
-      cwd: resolvePath('/root/plugins/test-node'),
+      cwd: mockDir.resolve('plugins/test-node'),
       optional: true,
     });
     expect(Task.forCommand).toHaveBeenCalledWith('yarn lint --fix', {
-      cwd: resolvePath('/root/plugins/test-node'),
+      cwd: mockDir.resolve('plugins/test-node'),
       optional: true,
     });
   });

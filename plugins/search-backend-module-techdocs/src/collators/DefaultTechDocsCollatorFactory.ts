@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 The Backstage Authors
+ * Copyright 2023 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
  */
 
 import {
-  PluginEndpointDiscovery,
+  createLegacyAuthAdapters,
   TokenManager,
 } from '@backstage/backend-common';
 import {
+  CATALOG_FILTER_EXISTS,
   CatalogApi,
   CatalogClient,
-  CATALOG_FILTER_EXISTS,
 } from '@backstage/catalog-client';
 import {
   Entity,
@@ -34,31 +34,40 @@ import { catalogEntityReadPermission } from '@backstage/plugin-catalog-common/al
 import { Permission } from '@backstage/plugin-permission-common';
 import { DocumentCollatorFactory } from '@backstage/plugin-search-common';
 import { TechDocsDocument } from '@backstage/plugin-techdocs-node';
-import unescape from 'lodash/unescape';
-import fetch from 'node-fetch';
 import pLimit from 'p-limit';
 import { Readable } from 'stream';
-import { Logger } from 'winston';
-
-interface MkSearchIndexDoc {
-  title: string;
-  text: string;
-  location: string;
-}
+import { TechDocsCollatorEntityTransformer } from './TechDocsCollatorEntityTransformer';
+import {
+  MkSearchIndexDoc,
+  TechDocsCollatorDocumentTransformer,
+} from './TechDocsCollatorDocumentTransformer';
+import { defaultTechDocsCollatorEntityTransformer } from './defaultTechDocsCollatorEntityTransformer';
+import { defaultTechDocsCollatorDocumentTransformer } from './defaultTechDocsCollatorDocumentTransformer';
+import {
+  AuthService,
+  DiscoveryService,
+  HttpAuthService,
+  LoggerService,
+} from '@backstage/backend-plugin-api';
 
 /**
  * Options to configure the TechDocs collator factory
  *
  * @public
+ * @deprecated This type is deprecated along with the {@link DefaultTechDocsCollatorFactory}.
  */
 export type TechDocsCollatorFactoryOptions = {
-  discovery: PluginEndpointDiscovery;
-  logger: Logger;
-  tokenManager: TokenManager;
+  discovery: DiscoveryService;
+  logger: LoggerService;
+  tokenManager?: TokenManager;
+  auth?: AuthService;
+  httpAuth?: HttpAuthService;
   locationTemplate?: string;
   catalogClient?: CatalogApi;
   parallelismLimit?: number;
   legacyPathCasing?: boolean;
+  entityTransformer?: TechDocsCollatorEntityTransformer;
+  documentTransformer?: TechDocsCollatorDocumentTransformer;
 };
 
 type EntityInfo = {
@@ -72,19 +81,22 @@ type EntityInfo = {
  * TechDocs documents.
  *
  * @public
+ * @deprecated Migrate to the {@link https://backstage.io/docs/backend-system/building-backends/migrating | new backend system} and install this collator via module instead (see {@link https://github.com/backstage/backstage/blob/nbs10/search-deprecate-create-router/plugins/search-backend-module-techdocs/README.md#installation | here} for more installation details).
  */
 export class DefaultTechDocsCollatorFactory implements DocumentCollatorFactory {
   public readonly type: string = 'techdocs';
   public readonly visibilityPermission: Permission =
     catalogEntityReadPermission;
 
-  private discovery: PluginEndpointDiscovery;
+  private discovery: DiscoveryService;
   private locationTemplate: string;
-  private readonly logger: Logger;
+  private readonly logger: LoggerService;
+  private readonly auth: AuthService;
   private readonly catalogClient: CatalogApi;
-  private readonly tokenManager: TokenManager;
   private readonly parallelismLimit: number;
   private readonly legacyPathCasing: boolean;
+  private entityTransformer: TechDocsCollatorEntityTransformer;
+  private documentTransformer: TechDocsCollatorDocumentTransformer;
 
   private constructor(options: TechDocsCollatorFactoryOptions) {
     this.discovery = options.discovery;
@@ -96,7 +108,14 @@ export class DefaultTechDocsCollatorFactory implements DocumentCollatorFactory {
       new CatalogClient({ discoveryApi: options.discovery });
     this.parallelismLimit = options.parallelismLimit ?? 10;
     this.legacyPathCasing = options.legacyPathCasing ?? false;
-    this.tokenManager = options.tokenManager;
+    this.entityTransformer = options.entityTransformer ?? (() => ({}));
+    this.documentTransformer = options.documentTransformer ?? (() => ({}));
+
+    this.auth = createLegacyAuthAdapters({
+      auth: options.auth,
+      discovery: options.discovery,
+      tokenManager: options.tokenManager,
+    }).auth;
   }
 
   static fromConfig(config: Config, options: TechDocsCollatorFactoryOptions) {
@@ -125,7 +144,7 @@ export class DefaultTechDocsCollatorFactory implements DocumentCollatorFactory {
   private async *execute(): AsyncGenerator<TechDocsDocument, void, undefined> {
     const limit = pLimit(this.parallelismLimit);
     const techDocsBaseUrl = await this.discovery.getBaseUrl('techdocs');
-    const { token } = await this.tokenManager.getToken();
+
     let entitiesRetrieved = 0;
     let moreEntitiesToGet = true;
 
@@ -135,6 +154,11 @@ export class DefaultTechDocsCollatorFactory implements DocumentCollatorFactory {
     // parallelism limit to simplify configuration.
     const batchSize = this.parallelismLimit * 50;
     while (moreEntitiesToGet) {
+      const { token: catalogToken } = await this.auth.getPluginRequestToken({
+        onBehalfOf: await this.auth.getOwnServiceCredentials(),
+        targetPluginId: 'catalog',
+      });
+
       const entities = (
         await this.catalogClient.getEntities(
           {
@@ -142,21 +166,10 @@ export class DefaultTechDocsCollatorFactory implements DocumentCollatorFactory {
               'metadata.annotations.backstage.io/techdocs-ref':
                 CATALOG_FILTER_EXISTS,
             },
-            fields: [
-              'kind',
-              'namespace',
-              'metadata.annotations',
-              'metadata.name',
-              'metadata.title',
-              'metadata.namespace',
-              'spec.type',
-              'spec.lifecycle',
-              'relations',
-            ],
             limit: batchSize,
             offset: entitiesRetrieved,
           },
-          { token },
+          { token: catalogToken },
         )
       ).items;
 
@@ -179,6 +192,12 @@ export class DefaultTechDocsCollatorFactory implements DocumentCollatorFactory {
               );
 
             try {
+              const { token: techdocsToken } =
+                await this.auth.getPluginRequestToken({
+                  onBehalfOf: await this.auth.getOwnServiceCredentials(),
+                  targetPluginId: 'techdocs',
+                });
+
               const searchIndexResponse = await fetch(
                 DefaultTechDocsCollatorFactory.constructDocsIndexUrl(
                   techDocsBaseUrl,
@@ -186,7 +205,7 @@ export class DefaultTechDocsCollatorFactory implements DocumentCollatorFactory {
                 ),
                 {
                   headers: {
-                    Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${techdocsToken}`,
                   },
                 },
               );
@@ -204,8 +223,10 @@ export class DefaultTechDocsCollatorFactory implements DocumentCollatorFactory {
               ]);
 
               return searchIndex.docs.map((doc: MkSearchIndexDoc) => ({
-                title: unescape(doc.title),
-                text: unescape(doc.text || ''),
+                ...defaultTechDocsCollatorEntityTransformer(entity),
+                ...defaultTechDocsCollatorDocumentTransformer(doc),
+                ...this.entityTransformer(entity),
+                ...this.documentTransformer(doc),
                 location: this.applyArgsToFormat(
                   this.locationTemplate || '/docs/:namespace/:kind/:name/:path',
                   {
@@ -213,7 +234,6 @@ export class DefaultTechDocsCollatorFactory implements DocumentCollatorFactory {
                     path: doc.location,
                   },
                 ),
-                path: doc.location,
                 ...entityInfo,
                 entityTitle: entity.metadata.title,
                 componentType: entity.spec?.type?.toString() || 'other',

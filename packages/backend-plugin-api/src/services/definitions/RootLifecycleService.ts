@@ -16,5 +16,13 @@
 
 import { LifecycleService } from './LifecycleService';
 
-/** @public */
-export interface RootLifecycleService extends LifecycleService {}
+/**
+ * Registration of backend startup and shutdown lifecycle hooks.
+ *
+ * See the {@link https://backstage.io/docs/backend-system/core-services/root-lifecycle | service documentation} for more details.
+ *
+ * @public
+ */
+export interface RootLifecycleService extends LifecycleService {
+  addBeforeShutdownHook(hook: () => void | Promise<void>): void;
+}

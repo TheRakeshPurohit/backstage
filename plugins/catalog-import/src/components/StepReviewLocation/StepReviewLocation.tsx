@@ -15,7 +15,9 @@
  */
 
 import { catalogApiRef } from '@backstage/plugin-catalog-react';
-import { FormHelperText, Grid, Typography } from '@material-ui/core';
+import FormHelperText from '@material-ui/core/FormHelperText';
+import Grid from '@material-ui/core/Grid';
+import Typography from '@material-ui/core/Typography';
 import LocationOnIcon from '@material-ui/icons/LocationOn';
 import React, { useCallback, useState } from 'react';
 import { BackButton, NextButton } from '../Buttons';
@@ -42,7 +44,7 @@ export const StepReviewLocation = ({
   const configApi = useApi(configApiRef);
   const analytics = useAnalytics();
 
-  const appTitle = configApi.getOptional('app.title') || 'Backstage';
+  const appTitle = configApi.getOptionalString('app.title') || 'Backstage';
 
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string>();

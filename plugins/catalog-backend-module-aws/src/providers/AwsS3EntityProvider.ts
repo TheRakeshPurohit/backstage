@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { PluginTaskScheduler, TaskRunner } from '@backstage/backend-tasks';
 import { Config } from '@backstage/config';
 import { AwsS3Integration, ScmIntegrations } from '@backstage/integration';
 import {
@@ -31,12 +30,16 @@ import {
   S3,
 } from '@aws-sdk/client-s3';
 import * as uuid from 'uuid';
-import { Logger } from 'winston';
 import { getEndpointFromInstructions } from '@aws-sdk/middleware-endpoint';
 import {
   AwsCredentialsManager,
   DefaultAwsCredentialsManager,
 } from '@backstage/integration-aws-node';
+import {
+  LoggerService,
+  SchedulerService,
+  SchedulerServiceTaskRunner,
+} from '@backstage/backend-plugin-api';
 
 // TODO: event-based updates using S3 events (+ queue like SQS)?
 /**
@@ -47,7 +50,7 @@ import {
  * @public
  */
 export class AwsS3EntityProvider implements EntityProvider {
-  private readonly logger: Logger;
+  private readonly logger: LoggerService;
   private s3?: S3;
   private readonly scheduleFn: () => Promise<void>;
   private connection?: EntityProviderConnection;
@@ -56,9 +59,9 @@ export class AwsS3EntityProvider implements EntityProvider {
   static fromConfig(
     configRoot: Config,
     options: {
-      logger: Logger;
-      schedule?: TaskRunner;
-      scheduler?: PluginTaskScheduler;
+      logger: LoggerService;
+      schedule?: SchedulerServiceTaskRunner;
+      scheduler?: SchedulerService;
     },
   ): AwsS3EntityProvider[] {
     const providerConfigs = readAwsS3Configs(configRoot);
@@ -106,8 +109,8 @@ export class AwsS3EntityProvider implements EntityProvider {
     private readonly config: AwsS3Config,
     private readonly integration: AwsS3Integration,
     private readonly awsCredentialsManager: AwsCredentialsManager,
-    logger: Logger,
-    taskRunner: TaskRunner,
+    logger: LoggerService,
+    taskRunner: SchedulerServiceTaskRunner,
   ) {
     this.logger = logger.child({
       target: this.getProviderName(),
@@ -116,7 +119,9 @@ export class AwsS3EntityProvider implements EntityProvider {
     this.scheduleFn = this.createScheduleFn(taskRunner);
   }
 
-  private createScheduleFn(taskRunner: TaskRunner): () => Promise<void> {
+  private createScheduleFn(
+    taskRunner: SchedulerServiceTaskRunner,
+  ): () => Promise<void> {
     return async () => {
       const taskId = `${this.getProviderName()}:refresh`;
       return taskRunner.run({
@@ -131,7 +136,10 @@ export class AwsS3EntityProvider implements EntityProvider {
           try {
             await this.refresh(logger);
           } catch (error) {
-            logger.error(`${this.getProviderName()} refresh failed`, error);
+            logger.error(
+              `${this.getProviderName()} refresh failed, ${error}`,
+              error,
+            );
           }
         },
       });
@@ -151,6 +159,7 @@ export class AwsS3EntityProvider implements EntityProvider {
       accountId ? { accountId } : undefined,
     );
     this.s3 = new S3({
+      customUserAgent: 'backstage-aws-catalog-s3-entity-provider',
       apiVersion: '2006-03-01',
       credentialDefaultProvider: () => credProvider.sdkCredentialProvider,
       endpoint: this.integration.config.endpoint,
@@ -173,7 +182,7 @@ export class AwsS3EntityProvider implements EntityProvider {
     await this.scheduleFn();
   }
 
-  async refresh(logger: Logger) {
+  async refresh(logger: LoggerService) {
     if (!this.connection) {
       throw new Error('Not initialized');
     }

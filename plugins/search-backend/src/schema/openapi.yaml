@@ -1,24 +1,62 @@
 openapi: 3.0.3
-
 info:
-  title: '@backstage/plugin-search-backend'
+  title: search
   version: '1'
   description: The Backstage backend plugin that provides search functionality.
   license:
     name: Apache-2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   contact: {}
-
 servers:
   - url: /
-
 components:
   examples: {}
   headers: {}
   parameters: {}
   requestBodies: {}
-  responses: {}
+  responses:
+    ErrorResponse:
+      description: An error response from the backend.
+      content:
+        application/json; charset=utf-8:
+          schema:
+            $ref: '#/components/schemas/Error'
   schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            name:
+              type: string
+            message:
+              type: string
+          required:
+            - name
+            - message
+        request:
+          type: object
+          properties:
+            method:
+              type: string
+            url:
+              type: string
+          required:
+            - method
+            - url
+        response:
+          type: object
+          properties:
+            statusCode:
+              type: number
+          required:
+            - statusCode
+      required:
+        - error
+        - request
+        - response
+
     JsonObject:
       type: object
       properties: {}
@@ -85,18 +123,8 @@ paths:
                     type: integer
                 required:
                   - results
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: object
-                    properties:
-                      message:
-                        type: string
+        default:
+          $ref: '#/components/responses/ErrorResponse'
       security:
         - {}
         - JWT: []
@@ -104,6 +132,7 @@ paths:
         - name: term
           in: query
           required: false
+          allowReserved: true
           schema:
             type: string
             default: ''
@@ -111,7 +140,7 @@ paths:
           in: query
           required: false
           style: deepObject
-          explode: true
+          allowReserved: true
           schema:
             # JsonObject is used here instead of the full ZOD schema definition as
             #   resolution of recursive schemas isn't possible with the library we're using
@@ -120,6 +149,7 @@ paths:
         - name: types
           in: query
           required: false
+          allowReserved: true
           schema:
             type: array
             items:
@@ -127,10 +157,22 @@ paths:
         - name: pageCursor
           in: query
           required: false
+          allowReserved: true
           schema:
             type: string
         - name: pageLimit
           in: query
           required: false
+          allowReserved: true
           schema:
             type: integer
+        - name: unknown
+          in: query
+          required: false
+          # explode form is the equivalent to allow any extra query parameters
+          style: form
+          explode: true
+          allowReserved: true
+          schema:
+            type: object
+            additionalProperties: {}

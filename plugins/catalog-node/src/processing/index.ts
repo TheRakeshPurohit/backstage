@@ -15,9 +15,12 @@
  */
 
 export type {
+  AnalyzeOptions,
   DeferredEntity,
   PlaceholderResolver,
   PlaceholderResolverParams,
   PlaceholderResolverRead,
   PlaceholderResolverResolveUrl,
+  LocationAnalyzer,
+  ScmLocationAnalyzer,
 } from './types';

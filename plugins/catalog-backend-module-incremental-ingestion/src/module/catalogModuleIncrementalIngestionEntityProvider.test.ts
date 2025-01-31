@@ -45,10 +45,10 @@ describe('catalogModuleIncrementalIngestionEntityProvider', () => {
       ],
       features: [
         httpRouterMock.factory,
-        catalogModuleIncrementalIngestionEntityProvider(),
+        catalogModuleIncrementalIngestionEntityProvider,
         createBackendModule({
           pluginId: 'catalog',
-          moduleId: 'incrementalTest',
+          moduleId: 'incremental-test',
           register(env) {
             env.registerInit({
               deps: { extension: incrementalIngestionProvidersExtensionPoint },

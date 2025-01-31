@@ -16,7 +16,11 @@
 
 import chalk from 'chalk';
 import fs from 'fs-extra';
-import { relative as relativePath, resolve as resolvePath } from 'path';
+import {
+  extname,
+  relative as relativePath,
+  resolve as resolvePath,
+} from 'path';
 import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
 import postcss from 'rollup-plugin-postcss';
@@ -25,7 +29,12 @@ import svgr from '@svgr/rollup';
 import dts from 'rollup-plugin-dts';
 import json from '@rollup/plugin-json';
 import yaml from '@rollup/plugin-yaml';
-import { RollupOptions, OutputOptions, RollupWarning } from 'rollup';
+import {
+  RollupOptions,
+  OutputOptions,
+  WarningHandlerWithDefault,
+  OutputPlugin,
+} from 'rollup';
 
 import { forwardFileImports } from './plugins';
 import { BuildOptions, Output } from './types';
@@ -35,6 +44,12 @@ import { svgrTemplate } from '../svgrTemplate';
 import { readEntryPoints } from '../entryPoints';
 
 const SCRIPT_EXTS = ['.js', '.jsx', '.ts', '.tsx'];
+
+const MODULE_EXTS = ['.mjs', '.mts'];
+const COMMONJS_EXTS = ['.cjs', '.cts'];
+const MOD_EXT = '.mjs';
+const CJS_EXT = '.cjs';
+const CJS_JS_EXT = '.cjs.js';
 
 function isFileImport(source: string) {
   if (source.startsWith('.')) {
@@ -49,6 +64,54 @@ function isFileImport(source: string) {
   return false;
 }
 
+function buildInternalImportPattern(options: BuildOptions) {
+  const inlinedPackages = options.workspacePackages.filter(
+    pkg => pkg.packageJson.backstage?.inline,
+  );
+  for (const { packageJson } of inlinedPackages) {
+    if (!packageJson.private) {
+      throw new Error(
+        `Inlined package ${packageJson.name} must be marked as private`,
+      );
+    }
+  }
+  const names = inlinedPackages.map(pkg => pkg.packageJson.name);
+  return new RegExp(`^(?:${names.join('|')})(?:$|/)`);
+}
+
+// This Rollup output plugin enables support for mixed CommonJS and ESM output.
+// It does it be filtering out the unwanted output files that don't match the
+// input file format, allowing the rollup configuration to have overlapping
+// output configurations for different formats.
+function multiOutputFormat(): OutputPlugin {
+  return {
+    name: 'backstage-multi-output-format',
+    generateBundle(opts, bundle) {
+      const filter: (name: string) => boolean =
+        opts.format === 'cjs'
+          ? s => s.endsWith(MOD_EXT)
+          : s => !s.endsWith(MOD_EXT);
+
+      // Delete any files that don't match the current output format
+      for (const name in bundle) {
+        if (filter(name)) {
+          delete bundle[name];
+          delete bundle[`${name}.map`];
+        }
+      }
+    },
+    renderDynamicImport(opts) {
+      if (opts.format === 'cjs') {
+        return {
+          left: 'import(',
+          right: ')',
+        };
+      }
+      return undefined;
+    },
+  };
+}
+
 export async function makeRollupConfigs(
   options: BuildOptions,
 ): Promise<RollupOptions[]> {
@@ -61,7 +124,7 @@ export async function makeRollupConfigs(
     targetPkg = (await fs.readJson(packagePath)) as BackstagePackageJson;
   }
 
-  const onwarn = ({ code, message }: RollupWarning) => {
+  const onwarn: WarningHandlerWithDefault = ({ code, message }) => {
     if (code === 'EMPTY_BUNDLE') {
       return; // We don't care about this one
     }
@@ -79,26 +142,81 @@ export async function makeRollupConfigs(
     SCRIPT_EXTS.includes(e.ext),
   );
 
+  const internalImportPattern = buildInternalImportPattern(options);
+  const external = (
+    source: string,
+    importer: string | undefined,
+    isResolved: boolean,
+  ) =>
+    Boolean(
+      importer &&
+        !isResolved &&
+        !internalImportPattern.test(source) &&
+        !isFileImport(source),
+    );
+
   if (options.outputs.has(Output.cjs) || options.outputs.has(Output.esm)) {
     const output = new Array<OutputOptions>();
     const mainFields = ['module', 'main'];
 
+    // Avoid using node_modules as a directory name, since it's trimmed from published packages.
+    // This can happen when inlining dependencies such as style-inject added for css injection.
+    const rewriteNodeModules = (name: string) =>
+      name.replaceAll('node_modules', 'node_modules_dist');
+
+    // For CommonJS we build both CommonJS and ESM output. Each of these outputs
+    // can output both .cjs and .mjs files. The files from each of these outputs
+    // will overlap, but we trim away files where the format doesn't match the
+    // file extensions. That way we are left with a combination of .cjs and .mjs
+    // files where the module format in the file matches the file extension.
     if (options.outputs.has(Output.cjs)) {
-      output.push({
+      const defaultExt = targetPkg.type === 'module' ? MOD_EXT : CJS_JS_EXT;
+      const outputOpts: OutputOptions = {
         dir: distDir,
-        entryFileNames: `[name].cjs.js`,
-        chunkFileNames: `cjs/[name]-[hash].cjs.js`,
-        format: 'commonjs',
+        entryFileNames(chunkInfo) {
+          const cleanName = rewriteNodeModules(chunkInfo.name);
+
+          const inputId = chunkInfo.facadeModuleId;
+          if (!inputId) {
+            return cleanName + defaultExt;
+          }
+
+          const inputExt = extname(inputId);
+          if (MODULE_EXTS.includes(inputExt)) {
+            return cleanName + MOD_EXT;
+          }
+          if (COMMONJS_EXTS.includes(inputExt)) {
+            return cleanName + CJS_EXT;
+          }
+          return cleanName + defaultExt;
+        },
         sourcemap: true,
+        preserveModules: true,
+        preserveModulesRoot: `${targetDir}/src`,
+        interop: 'compat',
+        exports: 'named',
+        plugins: [multiOutputFormat()],
+      };
+
+      output.push({
+        ...outputOpts,
+        format: 'cjs',
+      });
+      output.push({
+        ...outputOpts,
+        format: 'module',
       });
     }
     if (options.outputs.has(Output.esm)) {
       output.push({
         dir: distDir,
-        entryFileNames: `[name].esm.js`,
+        entryFileNames: chunkInfo =>
+          `${rewriteNodeModules(chunkInfo.name)}.esm.js`,
         chunkFileNames: `esm/[name]-[hash].esm.js`,
         format: 'module',
         sourcemap: true,
+        preserveModules: true,
+        preserveModulesRoot: `${targetDir}/src`,
       });
       // Assume we're building for the browser if ESM output is included
       mainFields.unshift('browser');
@@ -110,12 +228,15 @@ export async function makeRollupConfigs(
       ),
       output,
       onwarn,
+      makeAbsoluteExternalsRelative: false,
       preserveEntrySignatures: 'strict',
       // All module imports are always marked as external
-      external: (source, importer, isResolved) =>
-        Boolean(importer && !isResolved && !isFileImport(source)),
+      external,
       plugins: [
-        resolve({ mainFields }),
+        resolve({
+          mainFields,
+          extensions: SCRIPT_EXTS,
+        }),
         commonjs({
           include: /node_modules/,
           exclude: [/\/[^/]+\.(?:stories|test)\.[^/]+$/],
@@ -129,6 +250,7 @@ export async function makeRollupConfigs(
             /\.gif$/,
             /\.jpg$/,
             /\.jpeg$/,
+            /\.webp$/,
             /\.eot$/,
             /\.woff$/,
             /\.woff2$/,
@@ -143,21 +265,21 @@ export async function makeRollupConfigs(
           template: svgrTemplate,
         }),
         esbuild({
-          target: 'es2019',
+          target: 'ES2022',
           minify: options.minify,
         }),
       ],
     });
   }
 
-  if (options.outputs.has(Output.types) && !options.useApiExtractor) {
+  if (options.outputs.has(Output.types)) {
     const input = Object.fromEntries(
       scriptEntryPoints.map(e => [
         e.name,
         paths.resolveTargetRoot(
           'dist-types',
           relativePath(paths.targetRoot, targetDir),
-          e.path.replace(/\.ts$/, '.d.ts'),
+          e.path.replace(/\.(?:ts|tsx)$/, '.d.ts'),
         ),
       ]),
     );
@@ -182,18 +304,11 @@ export async function makeRollupConfigs(
         chunkFileNames: `types/[name]-[hash].d.ts`,
         format: 'es',
       },
-      external: [
-        /\.css$/,
-        /\.scss$/,
-        /\.sass$/,
-        /\.svg$/,
-        /\.eot$/,
-        /\.woff$/,
-        /\.woff2$/,
-        /\.ttf$/,
-      ],
+      external: (source, importer, isResolved) =>
+        /\.css|scss|sass|svg|eot|woff|woff2|ttf$/.test(source) ||
+        external(source, importer, isResolved),
       onwarn,
-      plugins: [dts()],
+      plugins: [dts({ respectExternal: true })],
     });
   }
 

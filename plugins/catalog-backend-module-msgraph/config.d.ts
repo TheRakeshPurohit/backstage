@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { TaskScheduleDefinitionConfig } from '@backstage/backend-tasks';
+import { SchedulerServiceTaskScheduleDefinitionConfig } from '@backstage/backend-plugin-api';
 
 export interface Config {
   catalog?: {
@@ -160,6 +160,17 @@ export interface Config {
                * E.g. "accountEnabled eq true and userType eq 'member'"
                */
               filter?: string;
+              /**
+               * Set to false to not load user photos.
+               * This can be useful for huge organizations.
+               */
+              loadPhotos?: boolean;
+              /**
+               * The fields to be fetched on query.
+               *
+               * E.g. ["id", "displayName", "description"]
+               */
+              select?: string[];
             };
 
             group?: {
@@ -187,6 +198,11 @@ export interface Config {
                * E.g. ["id", "displayName", "description"]
                */
               select?: string[];
+              /**
+               * Whether to ingest groups that are members of the found/filtered/searched groups.
+               * Default value is `false`.
+               */
+              includeSubGroups?: boolean;
             };
 
             userGroupMember?: {
@@ -207,7 +223,7 @@ export interface Config {
             /**
              * (Optional) TaskScheduleDefinition for the refresh.
              */
-            schedule?: TaskScheduleDefinitionConfig;
+            schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
           }
         | {
             [name: string]: {
@@ -248,14 +264,37 @@ export interface Config {
               queryMode?: string;
               user?: {
                 /**
+                 * The "expand" argument to apply to users.
+                 *
+                 * E.g. "manager".
+                 */
+                expand?: string;
+                /**
                  * The filter to apply to extract users.
                  *
                  * E.g. "accountEnabled eq true and userType eq 'member'"
                  */
                 filter?: string;
+                /**
+                 * Set to false to not load user photos.
+                 * This can be useful for huge organizations.
+                 */
+                loadPhotos?: boolean;
+                /**
+                 * The fields to be fetched on query.
+                 *
+                 * E.g. ["id", "displayName", "description"]
+                 */
+                select?: string[];
               };
 
               group?: {
+                /**
+                 * The "expand" argument to apply to groups.
+                 *
+                 * E.g. "member".
+                 */
+                expand?: string;
                 /**
                  * The filter to apply to extract groups.
                  *
@@ -274,6 +313,11 @@ export interface Config {
                  * E.g. ["id", "displayName", "description"]
                  */
                 select?: string[];
+                /**
+                 * Whether to ingest groups that are members of the found/filtered/searched groups.
+                 * Default value is `false`.
+                 */
+                includeSubGroups?: boolean;
               };
 
               userGroupMember?: {
@@ -294,7 +338,7 @@ export interface Config {
               /**
                * (Optional) TaskScheduleDefinition for the refresh.
                */
-              schedule?: TaskScheduleDefinitionConfig;
+              schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
             };
           };
     };

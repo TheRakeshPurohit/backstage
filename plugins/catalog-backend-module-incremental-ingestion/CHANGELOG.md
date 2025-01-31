@@ -1,5 +1,1235 @@
 # @backstage/plugin-catalog-backend-module-incremental-ingestion
 
+## 0.6.3-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.31.0-next.1
+  - @backstage/plugin-catalog-node@1.16.0-next.1
+  - @backstage/backend-defaults@0.8.0-next.1
+  - @backstage/backend-plugin-api@1.2.0-next.0
+  - @backstage/catalog-model@1.7.3
+  - @backstage/config@1.3.2
+  - @backstage/errors@1.2.7
+  - @backstage/types@1.2.1
+  - @backstage/plugin-events-node@0.4.8-next.0
+  - @backstage/plugin-permission-common@0.8.4
+
+## 0.6.3-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-defaults@0.8.0-next.0
+  - @backstage/plugin-catalog-backend@1.31.0-next.0
+  - @backstage/plugin-catalog-node@1.15.2-next.0
+  - @backstage/backend-plugin-api@1.2.0-next.0
+  - @backstage/catalog-model@1.7.3
+  - @backstage/config@1.3.2
+  - @backstage/errors@1.2.7
+  - @backstage/types@1.2.1
+  - @backstage/plugin-events-node@0.4.8-next.0
+  - @backstage/plugin-permission-common@0.8.4
+
+## 0.6.2
+
+### Patch Changes
+
+- ec547b8: Remove the error handler middleware, since that is now provided by the framework
+- Updated dependencies
+  - @backstage/backend-defaults@0.7.0
+  - @backstage/types@1.2.1
+  - @backstage/plugin-catalog-backend@1.30.0
+  - @backstage/backend-plugin-api@1.1.1
+  - @backstage/catalog-model@1.7.3
+  - @backstage/config@1.3.2
+  - @backstage/errors@1.2.7
+  - @backstage/plugin-catalog-node@1.15.1
+  - @backstage/plugin-events-node@0.4.7
+  - @backstage/plugin-permission-common@0.8.4
+
+## 0.6.2-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/types@1.2.1-next.0
+  - @backstage/backend-defaults@0.7.0-next.1
+  - @backstage/backend-plugin-api@1.1.1-next.1
+  - @backstage/catalog-model@1.7.3-next.0
+  - @backstage/config@1.3.2-next.0
+  - @backstage/errors@1.2.7-next.0
+  - @backstage/plugin-catalog-backend@1.30.0-next.1
+  - @backstage/plugin-catalog-node@1.15.1-next.1
+  - @backstage/plugin-events-node@0.4.7-next.1
+  - @backstage/plugin-permission-common@0.8.4-next.0
+
+## 0.6.2-next.0
+
+### Patch Changes
+
+- ec547b8: Remove the error handler middleware, since that is now provided by the framework
+- Updated dependencies
+  - @backstage/backend-defaults@0.7.0-next.0
+  - @backstage/plugin-catalog-backend@1.30.0-next.0
+  - @backstage/backend-plugin-api@1.1.1-next.0
+  - @backstage/catalog-model@1.7.2
+  - @backstage/config@1.3.1
+  - @backstage/errors@1.2.6
+  - @backstage/types@1.2.0
+  - @backstage/plugin-catalog-node@1.15.1-next.0
+  - @backstage/plugin-events-node@0.4.7-next.0
+  - @backstage/plugin-permission-common@0.8.3
+
+## 0.6.1
+
+### Patch Changes
+
+- dfc8b41: Updated dependency `@opentelemetry/api` to `^1.9.0`.
+- cce9cae: Deprecate old-backend-system `IncrementalCatalogBuilder`
+- fe87fbf: Add task metrics as two gauges that track the last start and end timestamps as epoch seconds.
+- 5aa44d2: Wire up the events together in the new backend system
+- d42ecb0: Remove backend-common package from incremental-ingestion plugin and update related code
+- cbfc69e: Create a `dev/index.ts` entrypoint for `yarn start`
+- 3ca5f70: Ensure that the scheduled worker task doesn't run at an unreasonably high frequency
+- Updated dependencies
+  - @backstage/backend-defaults@0.6.0
+  - @backstage/plugin-catalog-backend@1.29.0
+  - @backstage/backend-plugin-api@1.1.0
+  - @backstage/plugin-catalog-node@1.15.0
+  - @backstage/plugin-events-node@0.4.6
+  - @backstage/errors@1.2.6
+  - @backstage/catalog-model@1.7.2
+  - @backstage/config@1.3.1
+  - @backstage/types@1.2.0
+  - @backstage/plugin-permission-common@0.8.3
+
+## 0.6.1-next.2
+
+### Patch Changes
+
+- dfc8b41: Updated dependency `@opentelemetry/api` to `^1.9.0`.
+- d42ecb0: Remove backend-common package from incremental-ingestion plugin and update related code
+- Updated dependencies
+  - @backstage/backend-defaults@0.6.0-next.2
+  - @backstage/plugin-catalog-backend@1.29.0-next.2
+  - @backstage/backend-plugin-api@1.1.0-next.2
+  - @backstage/errors@1.2.6-next.0
+  - @backstage/plugin-catalog-node@1.15.0-next.2
+  - @backstage/plugin-events-node@0.4.6-next.2
+  - @backstage/catalog-model@1.7.2-next.0
+  - @backstage/config@1.3.1-next.0
+  - @backstage/types@1.2.0
+  - @backstage/plugin-permission-common@0.8.3-next.0
+
+## 0.6.1-next.1
+
+### Patch Changes
+
+- fe87fbf: Add task metrics as two gauges that track the last start and end timestamps as epoch seconds.
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.29.0-next.1
+  - @backstage/plugin-catalog-node@1.15.0-next.1
+  - @backstage/backend-plugin-api@1.1.0-next.1
+  - @backstage/catalog-model@1.7.1
+  - @backstage/config@1.3.0
+  - @backstage/errors@1.2.5
+  - @backstage/types@1.2.0
+  - @backstage/plugin-events-node@0.4.6-next.1
+  - @backstage/plugin-permission-common@0.8.2
+
+## 0.6.1-next.0
+
+### Patch Changes
+
+- cce9cae: Deprecate old-backend-system `IncrementalCatalogBuilder`
+- 5aa44d2: Wire up the events together in the new backend system
+- cbfc69e: Create a `dev/index.ts` entrypoint for `yarn start`
+- 3ca5f70: Ensure that the scheduled worker task doesn't run at an unreasonably high frequency
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.0.3-next.0
+  - @backstage/plugin-catalog-backend@1.28.1-next.0
+  - @backstage/plugin-events-node@0.4.6-next.0
+  - @backstage/catalog-model@1.7.1
+  - @backstage/config@1.3.0
+  - @backstage/errors@1.2.5
+  - @backstage/types@1.2.0
+  - @backstage/plugin-catalog-node@1.14.1-next.0
+  - @backstage/plugin-permission-common@0.8.2
+
+## 0.6.0
+
+### Minor Changes
+
+- 6cf91c5: Use `HumanDuration` for all duration needs in the public API, instead of `luxon` types. These are generally compatible, with a few caveats:
+
+  - If you scheduled things to run quarterly (`quarter` or `quarters`), you can use `{ months: 3 }` instead.
+  - If you used the singular nouns such as `year: 1`, use plurals instead (e.g. `years: 1`).
+
+### Patch Changes
+
+- c5e39e7: Internal refactor to use the deferred from the types package
+- 4e58bc7: Upgrade to uuid v11 internally
+- Updated dependencies
+  - @backstage/config@1.3.0
+  - @backstage/plugin-events-node@0.4.5
+  - @backstage/types@1.2.0
+  - @backstage/plugin-catalog-backend@1.28.0
+  - @backstage/plugin-catalog-node@1.14.0
+  - @backstage/backend-plugin-api@1.0.2
+  - @backstage/plugin-permission-common@0.8.2
+  - @backstage/catalog-model@1.7.1
+  - @backstage/errors@1.2.5
+
+## 0.6.0-next.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-events-node@0.4.5-next.3
+  - @backstage/plugin-catalog-backend@1.28.0-next.3
+  - @backstage/backend-plugin-api@1.0.2-next.2
+  - @backstage/catalog-model@1.7.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+  - @backstage/plugin-catalog-node@1.14.0-next.2
+  - @backstage/plugin-permission-common@0.8.1
+
+## 0.6.0-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.28.0-next.2
+  - @backstage/plugin-events-node@0.4.5-next.2
+  - @backstage/plugin-catalog-node@1.14.0-next.2
+  - @backstage/backend-plugin-api@1.0.2-next.2
+  - @backstage/catalog-model@1.7.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+  - @backstage/plugin-permission-common@0.8.1
+
+## 0.6.0-next.1
+
+### Minor Changes
+
+- 6cf91c5: Use `HumanDuration` for all duration needs in the public API, instead of `luxon` types. These are generally compatible, with a few caveats:
+
+  - If you scheduled things to run quarterly (`quarter` or `quarters`), you can use `{ months: 3 }` instead.
+  - If you used the singular nouns such as `year: 1`, use plurals instead (e.g. `years: 1`).
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.0.2-next.1
+  - @backstage/catalog-model@1.7.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/types@1.1.1
+  - @backstage/plugin-catalog-backend@1.27.2-next.1
+  - @backstage/plugin-catalog-node@1.14.0-next.1
+  - @backstage/plugin-events-node@0.4.4-next.1
+  - @backstage/plugin-permission-common@0.8.1
+
+## 0.5.7-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-events-node@0.4.3-next.0
+  - @backstage/plugin-catalog-node@1.14.0-next.0
+  - @backstage/backend-plugin-api@1.0.2-next.0
+  - @backstage/catalog-model@1.7.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-catalog-backend@1.27.2-next.0
+  - @backstage/plugin-permission-common@0.8.1
+
+## 0.5.5
+
+### Patch Changes
+
+- 4b60e0c: Remove extension points from `/alpha` export, they're available from the main package already
+- 094eaa3: Remove references to in-repo backend-common
+- 3109c24: The export for the new backend system at the `/alpha` export is now also available via the main entry point, which means that you can remove the `/alpha` suffix from the import.
+- 2107965: Turn down the logging level on most "all is well" type log messages
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.27.0
+  - @backstage/plugin-events-node@0.4.1
+  - @backstage/plugin-catalog-node@1.13.1
+  - @backstage/backend-plugin-api@1.0.1
+  - @backstage/catalog-model@1.7.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-permission-common@0.8.1
+
+## 0.5.5-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-node@1.13.1-next.1
+  - @backstage/plugin-catalog-backend@1.26.2-next.2
+  - @backstage/backend-plugin-api@1.0.1-next.1
+  - @backstage/catalog-model@1.7.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-events-node@0.4.1-next.1
+  - @backstage/plugin-permission-common@0.8.1
+
+## 0.5.5-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.26.2-next.1
+  - @backstage/backend-plugin-api@1.0.1-next.0
+  - @backstage/catalog-model@1.7.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-catalog-node@1.13.1-next.0
+  - @backstage/plugin-events-node@0.4.1-next.0
+  - @backstage/plugin-permission-common@0.8.1
+
+## 0.5.4-next.0
+
+### Patch Changes
+
+- 094eaa3: Remove references to in-repo backend-common
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.26.1-next.0
+  - @backstage/plugin-events-node@0.4.1-next.0
+  - @backstage/backend-plugin-api@1.0.1-next.0
+  - @backstage/catalog-model@1.7.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-catalog-node@1.13.1-next.0
+  - @backstage/plugin-permission-common@0.8.1
+
+## 0.5.3
+
+### Patch Changes
+
+- d425fc4: Modules, plugins, and services are now `BackendFeature`, not a function that returns a feature.
+- 4b28e39: Updated the README to include documentation for the new backend support
+- Updated dependencies
+  - @backstage/backend-common@0.25.0
+  - @backstage/backend-plugin-api@1.0.0
+  - @backstage/catalog-model@1.7.0
+  - @backstage/plugin-catalog-backend@1.26.0
+  - @backstage/plugin-catalog-node@1.13.0
+  - @backstage/plugin-events-node@0.4.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-permission-common@0.8.1
+
+## 0.5.3-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.25.0-next.2
+  - @backstage/backend-plugin-api@1.0.0-next.2
+  - @backstage/plugin-catalog-backend@1.26.0-next.2
+  - @backstage/catalog-model@1.6.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-catalog-node@1.12.7-next.2
+  - @backstage/plugin-events-node@0.4.0-next.2
+  - @backstage/plugin-permission-common@0.8.1
+
+## 0.5.3-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.25.0-next.1
+  - @backstage/plugin-catalog-backend@1.25.3-next.1
+  - @backstage/backend-plugin-api@0.9.0-next.1
+  - @backstage/catalog-model@1.6.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-catalog-node@1.12.7-next.1
+  - @backstage/plugin-events-node@0.4.0-next.1
+  - @backstage/plugin-permission-common@0.8.1
+
+## 0.5.3-next.0
+
+### Patch Changes
+
+- d425fc4: Modules, plugins, and services are now `BackendFeature`, not a function that returns a feature.
+- 4b28e39: Updated the README to include documentation for the new backend support
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.9.0-next.0
+  - @backstage/backend-common@0.25.0-next.0
+  - @backstage/plugin-catalog-backend@1.25.3-next.0
+  - @backstage/plugin-events-node@0.4.0-next.0
+  - @backstage/plugin-catalog-node@1.12.7-next.0
+  - @backstage/catalog-model@1.6.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-permission-common@0.8.1
+
+## 0.5.0
+
+### Minor Changes
+
+- fc24d9e: Stop using `@backstage/backend-tasks` as it will be deleted in near future.
+
+### Patch Changes
+
+- 389f5a4: Update deprecated url-reader-related imports.
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.8.0
+  - @backstage/backend-common@0.24.0
+  - @backstage/plugin-catalog-backend@1.25.0
+  - @backstage/plugin-permission-common@0.8.1
+  - @backstage/plugin-catalog-node@1.12.5
+  - @backstage/catalog-model@1.6.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-events-node@0.3.9
+
+## 0.4.28-next.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.8.0-next.3
+  - @backstage/backend-common@0.23.4-next.3
+  - @backstage/catalog-model@1.6.0-next.0
+  - @backstage/backend-tasks@0.5.28-next.3
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-catalog-backend@1.24.1-next.3
+  - @backstage/plugin-catalog-node@1.12.5-next.3
+  - @backstage/plugin-events-node@0.3.9-next.3
+  - @backstage/plugin-permission-common@0.8.1-next.1
+
+## 0.4.28-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.8.0-next.2
+  - @backstage/plugin-permission-common@0.8.1-next.1
+  - @backstage/backend-common@0.23.4-next.2
+  - @backstage/plugin-catalog-backend@1.24.1-next.2
+  - @backstage/backend-tasks@0.5.28-next.2
+  - @backstage/plugin-catalog-node@1.12.5-next.2
+  - @backstage/plugin-events-node@0.3.9-next.2
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+
+## 0.4.28-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-permission-common@0.8.1-next.0
+  - @backstage/plugin-catalog-backend@1.24.1-next.1
+  - @backstage/backend-plugin-api@0.7.1-next.1
+  - @backstage/backend-common@0.23.4-next.1
+  - @backstage/plugin-catalog-node@1.12.5-next.1
+  - @backstage/backend-tasks@0.5.28-next.1
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-events-node@0.3.9-next.1
+
+## 0.4.28-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.23.4-next.0
+  - @backstage/plugin-catalog-backend@1.24.1-next.0
+  - @backstage/plugin-catalog-node@1.12.5-next.0
+  - @backstage/backend-plugin-api@0.7.1-next.0
+  - @backstage/backend-tasks@0.5.28-next.0
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-events-node@0.3.9-next.0
+  - @backstage/plugin-permission-common@0.8.0
+
+## 0.4.27
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.7.0
+  - @backstage/backend-common@0.23.3
+  - @backstage/backend-tasks@0.5.27
+  - @backstage/plugin-permission-common@0.8.0
+  - @backstage/plugin-events-node@0.3.8
+  - @backstage/plugin-catalog-backend@1.24.0
+  - @backstage/plugin-catalog-node@1.12.4
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+
+## 0.4.27-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.24.0-next.1
+  - @backstage/backend-common@0.23.3-next.1
+  - @backstage/backend-plugin-api@0.6.22-next.1
+  - @backstage/backend-tasks@0.5.27-next.1
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-catalog-node@1.12.4-next.1
+  - @backstage/plugin-events-node@0.3.8-next.1
+  - @backstage/plugin-permission-common@0.7.14
+
+## 0.4.26-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.6.21-next.0
+  - @backstage/backend-common@0.23.2-next.0
+  - @backstage/backend-tasks@0.5.26-next.0
+  - @backstage/plugin-catalog-backend@1.23.2-next.0
+  - @backstage/plugin-catalog-node@1.12.3-next.0
+  - @backstage/plugin-events-node@0.3.7-next.0
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-permission-common@0.7.14
+
+## 0.4.24
+
+### Patch Changes
+
+- 78a0b08: Internal refactor to handle `BackendFeature` contract change.
+- d44a20a: Added additional plugin metadata to `package.json`.
+- Updated dependencies
+  - @backstage/backend-common@0.23.0
+  - @backstage/backend-plugin-api@0.6.19
+  - @backstage/backend-tasks@0.5.24
+  - @backstage/plugin-catalog-backend@1.23.0
+  - @backstage/plugin-catalog-node@1.12.1
+  - @backstage/plugin-events-node@0.3.5
+  - @backstage/plugin-permission-common@0.7.14
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+
+## 0.4.24-next.3
+
+### Patch Changes
+
+- d44a20a: Added additional plugin metadata to `package.json`.
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.6.19-next.3
+  - @backstage/plugin-permission-common@0.7.14-next.0
+  - @backstage/plugin-catalog-backend@1.23.0-next.3
+  - @backstage/plugin-catalog-node@1.12.1-next.2
+  - @backstage/plugin-events-node@0.3.5-next.2
+  - @backstage/backend-tasks@0.5.24-next.3
+  - @backstage/backend-common@0.23.0-next.3
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+
+## 0.4.24-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.6.19-next.2
+  - @backstage/backend-common@0.23.0-next.2
+  - @backstage/backend-tasks@0.5.24-next.2
+  - @backstage/plugin-catalog-backend@1.23.0-next.2
+  - @backstage/plugin-catalog-node@1.12.1-next.1
+  - @backstage/plugin-events-node@0.3.5-next.1
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-permission-common@0.7.13
+
+## 0.4.24-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-tasks@0.5.24-next.1
+  - @backstage/backend-plugin-api@0.6.19-next.1
+  - @backstage/backend-common@0.23.0-next.1
+  - @backstage/plugin-catalog-backend@1.23.0-next.1
+  - @backstage/plugin-catalog-node@1.12.1-next.0
+  - @backstage/plugin-events-node@0.3.5-next.0
+
+## 0.4.24-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-tasks@0.5.24-next.0
+  - @backstage/backend-common@0.22.1-next.0
+  - @backstage/plugin-catalog-backend@1.23.0-next.0
+  - @backstage/plugin-events-node@0.3.5-next.0
+  - @backstage/backend-plugin-api@0.6.19-next.0
+  - @backstage/plugin-catalog-node@1.12.1-next.0
+  - @backstage/catalog-model@1.5.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-permission-common@0.7.13
+
+## 0.4.23
+
+### Patch Changes
+
+- 8c1ab9e: Fix plugin/incremental-ingestion 'Maximum call stack size exceeded' error when ingest large entities.
+- d229dc4: Move path utilities from `backend-common` to the `backend-plugin-api` package.
+- Updated dependencies
+  - @backstage/plugin-catalog-node@1.12.0
+  - @backstage/plugin-catalog-backend@1.22.0
+  - @backstage/catalog-model@1.5.0
+  - @backstage/backend-common@0.22.0
+  - @backstage/backend-plugin-api@0.6.18
+  - @backstage/backend-tasks@0.5.23
+  - @backstage/plugin-events-node@0.3.4
+
+## 0.4.23-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-node@1.12.0-next.2
+  - @backstage/plugin-catalog-backend@1.22.0-next.2
+  - @backstage/backend-common@0.22.0-next.2
+  - @backstage/plugin-events-node@0.3.4-next.2
+
+## 0.4.23-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.22.0-next.1
+  - @backstage/plugin-catalog-backend@1.22.0-next.1
+  - @backstage/backend-tasks@0.5.23-next.1
+  - @backstage/plugin-events-node@0.3.4-next.1
+  - @backstage/plugin-catalog-node@1.11.2-next.1
+  - @backstage/backend-plugin-api@0.6.18-next.1
+
+## 0.4.23-next.0
+
+### Patch Changes
+
+- 8c1ab9e: Fix plugin/incremental-ingestion 'Maximum call stack size exceeded' error when ingest large entities.
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.22.0-next.0
+  - @backstage/catalog-model@1.5.0-next.0
+  - @backstage/backend-common@0.21.8-next.0
+  - @backstage/backend-plugin-api@0.6.18-next.0
+  - @backstage/plugin-catalog-node@1.11.2-next.0
+  - @backstage/backend-tasks@0.5.23-next.0
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-events-node@0.3.4-next.0
+  - @backstage/plugin-permission-common@0.7.13
+
+## 0.4.22
+
+### Patch Changes
+
+- d5a1fe1: Replaced winston logger with `LoggerService`
+- Updated dependencies
+  - @backstage/backend-common@0.21.7
+  - @backstage/plugin-catalog-backend@1.21.1
+  - @backstage/backend-plugin-api@0.6.17
+  - @backstage/backend-tasks@0.5.22
+  - @backstage/plugin-events-node@0.3.3
+  - @backstage/plugin-catalog-node@1.11.1
+  - @backstage/catalog-model@1.4.5
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-permission-common@0.7.13
+
+## 0.4.22-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.21.7-next.1
+  - @backstage/backend-plugin-api@0.6.17-next.1
+  - @backstage/plugin-catalog-backend@1.21.1-next.1
+  - @backstage/backend-tasks@0.5.22-next.1
+  - @backstage/plugin-events-node@0.3.3-next.1
+  - @backstage/catalog-model@1.4.5
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-catalog-node@1.11.1-next.1
+  - @backstage/plugin-permission-common@0.7.13
+
+## 0.4.22-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.21.1-next.0
+  - @backstage/backend-common@0.21.7-next.0
+  - @backstage/backend-plugin-api@0.6.17-next.0
+  - @backstage/backend-tasks@0.5.22-next.0
+  - @backstage/catalog-model@1.4.5
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-catalog-node@1.11.1-next.0
+  - @backstage/plugin-events-node@0.3.3-next.0
+  - @backstage/plugin-permission-common@0.7.13
+
+## 0.4.21
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.21.0
+  - @backstage/plugin-catalog-node@1.11.0
+  - @backstage/backend-common@0.21.6
+  - @backstage/backend-plugin-api@0.6.16
+  - @backstage/backend-tasks@0.5.21
+  - @backstage/plugin-events-node@0.3.2
+  - @backstage/catalog-model@1.4.5
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-permission-common@0.7.13
+
+## 0.4.20
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.20.0
+  - @backstage/plugin-catalog-node@1.10.0
+  - @backstage/backend-common@0.21.5
+  - @backstage/backend-tasks@0.5.20
+  - @backstage/plugin-events-node@0.3.1
+  - @backstage/backend-plugin-api@0.6.15
+  - @backstage/catalog-model@1.4.5
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/plugin-permission-common@0.7.13
+
+## 0.4.19
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.19.0
+  - @backstage/plugin-catalog-node@1.9.0
+
+## 0.4.18
+
+### Patch Changes
+
+- 0fb419b: Updated dependency `uuid` to `^9.0.0`.
+  Updated dependency `@types/uuid` to `^9.0.0`.
+- Updated dependencies
+  - @backstage/plugin-events-node@0.3.0
+  - @backstage/plugin-catalog-backend@1.18.0
+  - @backstage/backend-common@0.21.4
+  - @backstage/config@1.2.0
+  - @backstage/errors@1.2.4
+  - @backstage/backend-plugin-api@0.6.14
+  - @backstage/plugin-permission-common@0.7.13
+  - @backstage/plugin-catalog-node@1.8.0
+  - @backstage/backend-tasks@0.5.19
+  - @backstage/catalog-model@1.4.5
+
+## 0.4.18-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.18.0-next.2
+  - @backstage/backend-common@0.21.4-next.2
+  - @backstage/plugin-catalog-node@1.8.0-next.2
+  - @backstage/backend-plugin-api@0.6.14-next.2
+  - @backstage/backend-tasks@0.5.19-next.2
+  - @backstage/catalog-model@1.4.5-next.0
+  - @backstage/config@1.2.0-next.1
+  - @backstage/errors@1.2.4-next.0
+  - @backstage/plugin-events-node@0.3.0-next.2
+  - @backstage/plugin-permission-common@0.7.13-next.1
+
+## 0.4.18-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@1.2.0-next.1
+  - @backstage/backend-common@0.21.4-next.1
+  - @backstage/backend-plugin-api@0.6.14-next.1
+  - @backstage/backend-tasks@0.5.19-next.1
+  - @backstage/plugin-catalog-backend@1.18.0-next.1
+  - @backstage/plugin-permission-common@0.7.13-next.1
+  - @backstage/catalog-model@1.4.5-next.0
+  - @backstage/errors@1.2.4-next.0
+  - @backstage/plugin-catalog-node@1.8.0-next.1
+  - @backstage/plugin-events-node@0.3.0-next.1
+
+## 0.4.17-next.0
+
+### Patch Changes
+
+- 0fb419b: Updated dependency `uuid` to `^9.0.0`.
+  Updated dependency `@types/uuid` to `^9.0.0`.
+- Updated dependencies
+  - @backstage/plugin-events-node@0.3.0-next.0
+  - @backstage/backend-common@0.21.3-next.0
+  - @backstage/errors@1.2.4-next.0
+  - @backstage/backend-plugin-api@0.6.13-next.0
+  - @backstage/plugin-catalog-backend@1.18.0-next.0
+  - @backstage/plugin-permission-common@0.7.13-next.0
+  - @backstage/plugin-catalog-node@1.8.0-next.0
+  - @backstage/backend-tasks@0.5.18-next.0
+  - @backstage/catalog-model@1.4.5-next.0
+  - @backstage/config@1.1.2-next.0
+
+## 0.4.14
+
+### Patch Changes
+
+- 9aac2b0: Use `--cwd` as the first `yarn` argument
+- Updated dependencies
+  - @backstage/backend-common@0.21.0
+  - @backstage/backend-plugin-api@0.6.10
+  - @backstage/plugin-catalog-backend@1.17.0
+  - @backstage/backend-tasks@0.5.15
+  - @backstage/catalog-model@1.4.4
+  - @backstage/plugin-catalog-node@1.7.0
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-events-node@0.2.19
+  - @backstage/plugin-permission-common@0.7.12
+
+## 0.4.14-next.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.21.0-next.3
+  - @backstage/backend-tasks@0.5.15-next.3
+  - @backstage/plugin-catalog-backend@1.17.0-next.3
+  - @backstage/plugin-catalog-node@1.6.2-next.3
+  - @backstage/backend-plugin-api@0.6.10-next.3
+  - @backstage/catalog-model@1.4.4-next.0
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-events-node@0.2.19-next.3
+  - @backstage/plugin-permission-common@0.7.12
+
+## 0.4.14-next.2
+
+### Patch Changes
+
+- 9aac2b0: Use `--cwd` as the first `yarn` argument
+- Updated dependencies
+  - @backstage/backend-common@0.21.0-next.2
+  - @backstage/backend-plugin-api@0.6.10-next.2
+  - @backstage/plugin-catalog-backend@1.17.0-next.2
+  - @backstage/backend-tasks@0.5.15-next.2
+  - @backstage/plugin-catalog-node@1.6.2-next.2
+  - @backstage/plugin-events-node@0.2.19-next.2
+  - @backstage/config@1.1.1
+  - @backstage/catalog-model@1.4.4-next.0
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-permission-common@0.7.12
+
+## 0.4.14-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-model@1.4.4-next.0
+  - @backstage/plugin-catalog-backend@1.17.0-next.1
+  - @backstage/backend-plugin-api@0.6.10-next.1
+  - @backstage/backend-common@0.21.0-next.1
+  - @backstage/backend-tasks@0.5.15-next.1
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-catalog-node@1.6.2-next.1
+  - @backstage/plugin-events-node@0.2.19-next.1
+  - @backstage/plugin-permission-common@0.7.12
+
+## 0.4.14-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.21.0-next.0
+  - @backstage/plugin-catalog-backend@1.17.0-next.0
+  - @backstage/backend-tasks@0.5.15-next.0
+  - @backstage/plugin-catalog-node@1.6.2-next.0
+  - @backstage/backend-plugin-api@0.6.10-next.0
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-events-node@0.2.19-next.0
+  - @backstage/plugin-permission-common@0.7.12
+
+## 0.4.13
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.20.1
+  - @backstage/backend-plugin-api@0.6.9
+  - @backstage/plugin-catalog-node@1.6.1
+  - @backstage/plugin-permission-common@0.7.12
+  - @backstage/plugin-catalog-backend@1.16.1
+  - @backstage/backend-tasks@0.5.14
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-events-node@0.2.18
+
+## 0.4.13-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.6.9-next.2
+  - @backstage/backend-common@0.20.1-next.2
+  - @backstage/plugin-catalog-backend@1.16.1-next.2
+  - @backstage/plugin-catalog-node@1.6.1-next.2
+  - @backstage/plugin-events-node@0.2.18-next.2
+  - @backstage/backend-tasks@0.5.14-next.2
+
+## 0.4.13-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.20.1-next.1
+  - @backstage/config@1.1.1
+  - @backstage/backend-tasks@0.5.14-next.1
+  - @backstage/plugin-catalog-backend@1.16.1-next.1
+  - @backstage/backend-plugin-api@0.6.9-next.1
+  - @backstage/catalog-model@1.4.3
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-catalog-node@1.6.1-next.1
+  - @backstage/plugin-events-node@0.2.18-next.1
+  - @backstage/plugin-permission-common@0.7.11
+
+## 0.4.13-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.20.1-next.0
+  - @backstage/plugin-catalog-node@1.6.1-next.0
+  - @backstage/backend-plugin-api@0.6.9-next.0
+  - @backstage/backend-tasks@0.5.14-next.0
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-catalog-backend@1.16.1-next.0
+  - @backstage/plugin-events-node@0.2.18-next.0
+  - @backstage/plugin-permission-common@0.7.11
+
+## 0.4.12
+
+### Patch Changes
+
+- 43b2eb8: Ensure that cursors always come back as JSON on sqlite too
+- cc4228e: Switched module ID to use kebab-case.
+- Updated dependencies
+  - @backstage/backend-common@0.20.0
+  - @backstage/plugin-catalog-node@1.6.0
+  - @backstage/plugin-catalog-backend@1.16.0
+  - @backstage/backend-tasks@0.5.13
+  - @backstage/plugin-permission-common@0.7.11
+  - @backstage/backend-plugin-api@0.6.8
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-events-node@0.2.17
+
+## 0.4.12-next.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.20.0-next.3
+  - @backstage/backend-plugin-api@0.6.8-next.3
+  - @backstage/backend-tasks@0.5.13-next.3
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-catalog-backend@1.16.0-next.3
+  - @backstage/plugin-catalog-node@1.6.0-next.3
+  - @backstage/plugin-events-node@0.2.17-next.3
+  - @backstage/plugin-permission-common@0.7.10
+
+## 0.4.12-next.2
+
+### Patch Changes
+
+- cc4228e: Switched module ID to use kebab-case.
+- Updated dependencies
+  - @backstage/plugin-catalog-node@1.6.0-next.2
+  - @backstage/plugin-catalog-backend@1.16.0-next.2
+  - @backstage/backend-common@0.20.0-next.2
+  - @backstage/backend-plugin-api@0.6.8-next.2
+  - @backstage/backend-tasks@0.5.13-next.2
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-events-node@0.2.17-next.2
+  - @backstage/plugin-permission-common@0.7.10
+
+## 0.4.12-next.1
+
+### Patch Changes
+
+- 43b2eb8f70: Ensure that cursors always come back as JSON on sqlite too
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.15.1-next.1
+  - @backstage/backend-common@0.20.0-next.1
+  - @backstage/backend-plugin-api@0.6.8-next.1
+  - @backstage/backend-tasks@0.5.13-next.1
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-catalog-node@1.5.1-next.1
+  - @backstage/plugin-events-node@0.2.17-next.1
+  - @backstage/plugin-permission-common@0.7.10
+
+## 0.4.12-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-common@0.20.0-next.0
+  - @backstage/backend-tasks@0.5.13-next.0
+  - @backstage/plugin-catalog-backend@1.15.1-next.0
+  - @backstage/plugin-catalog-node@1.5.1-next.0
+  - @backstage/backend-plugin-api@0.6.8-next.0
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-events-node@0.2.17-next.0
+  - @backstage/plugin-permission-common@0.7.10
+
+## 0.4.11
+
+### Patch Changes
+
+- 013611b42e: `knex` has been bumped to major version 3 and `better-sqlite3` to major version 9, which deprecate node 16 support.
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.15.0
+  - @backstage/plugin-catalog-node@1.5.0
+  - @backstage/backend-common@0.19.9
+  - @backstage/backend-plugin-api@0.6.7
+  - @backstage/backend-tasks@0.5.12
+  - @backstage/plugin-permission-common@0.7.10
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-events-node@0.2.16
+
+## 0.4.11-next.2
+
+### Patch Changes
+
+- [#20570](https://github.com/backstage/backstage/pull/20570) [`013611b42e`](https://github.com/backstage/backstage/commit/013611b42ed457fefa9bb85fddf416cf5e0c1f76) Thanks [@freben](https://github.com/freben)! - `knex` has been bumped to major version 3 and `better-sqlite3` to major version 9, which deprecate node 16 support.
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@0.6.7-next.2
+  - @backstage/backend-common@0.19.9-next.2
+  - @backstage/plugin-catalog-backend@1.15.0-next.2
+  - @backstage/backend-tasks@0.5.12-next.2
+  - @backstage/plugin-catalog-node@1.5.0-next.2
+  - @backstage/plugin-events-node@0.2.16-next.2
+
+## 0.4.11-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.15.0-next.1
+  - @backstage/plugin-catalog-node@1.5.0-next.1
+  - @backstage/backend-common@0.19.9-next.1
+  - @backstage/backend-tasks@0.5.12-next.1
+  - @backstage/backend-plugin-api@0.6.7-next.1
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-events-node@0.2.16-next.1
+  - @backstage/plugin-permission-common@0.7.9
+
+## 0.4.11-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.15.0-next.0
+  - @backstage/backend-common@0.19.9-next.0
+  - @backstage/backend-plugin-api@0.6.7-next.0
+  - @backstage/backend-tasks@0.5.12-next.0
+  - @backstage/catalog-model@1.4.3
+  - @backstage/config@1.1.1
+  - @backstage/errors@1.2.3
+  - @backstage/plugin-catalog-node@1.4.8-next.0
+  - @backstage/plugin-events-node@0.2.16-next.0
+  - @backstage/plugin-permission-common@0.7.9
+
+## 0.4.10
+
+### Patch Changes
+
+- 0b55f773a7: Removed some unused dependencies
+- Updated dependencies
+  - @backstage/backend-tasks@0.5.11
+  - @backstage/backend-common@0.19.8
+  - @backstage/plugin-catalog-backend@1.14.0
+  - @backstage/plugin-catalog-node@1.4.7
+  - @backstage/catalog-model@1.4.3
+  - @backstage/errors@1.2.3
+  - @backstage/backend-plugin-api@0.6.6
+  - @backstage/config@1.1.1
+  - @backstage/plugin-events-node@0.2.15
+  - @backstage/plugin-permission-common@0.7.9
+
+## 0.4.10-next.2
+
+### Patch Changes
+
+- 0b55f773a7: Removed some unused dependencies
+- Updated dependencies
+  - @backstage/backend-common@0.19.8-next.2
+  - @backstage/plugin-catalog-backend@1.14.0-next.2
+  - @backstage/catalog-model@1.4.3-next.0
+  - @backstage/errors@1.2.3-next.0
+  - @backstage/backend-tasks@0.5.11-next.2
+  - @backstage/plugin-catalog-node@1.4.7-next.2
+  - @backstage/backend-plugin-api@0.6.6-next.2
+  - @backstage/config@1.1.1-next.0
+  - @backstage/plugin-events-node@0.2.15-next.2
+  - @backstage/plugin-permission-common@0.7.9-next.0
+
+## 0.4.9-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-tasks@0.5.10-next.1
+  - @backstage/plugin-catalog-backend@1.14.0-next.1
+  - @backstage/plugin-catalog-node@1.4.6-next.1
+  - @backstage/backend-common@0.19.7-next.1
+  - @backstage/backend-plugin-api@0.6.5-next.1
+  - @backstage/config@1.1.0
+  - @backstage/catalog-model@1.4.2
+  - @backstage/errors@1.2.2
+  - @backstage/plugin-events-node@0.2.14-next.1
+  - @backstage/plugin-permission-common@0.7.8
+
+## 0.4.9-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.14.0-next.0
+  - @backstage/backend-common@0.19.7-next.0
+  - @backstage/config@1.1.0
+  - @backstage/backend-plugin-api@0.6.5-next.0
+  - @backstage/backend-tasks@0.5.10-next.0
+  - @backstage/catalog-model@1.4.2
+  - @backstage/errors@1.2.2
+  - @backstage/plugin-catalog-node@1.4.6-next.0
+  - @backstage/plugin-events-node@0.2.14-next.0
+  - @backstage/plugin-permission-common@0.7.8
+
+## 0.4.6
+
+### Patch Changes
+
+- 71114ac50e02: The export for the new backend system has been moved to be the `default` export.
+
+  For example, if you are currently importing the plugin using the following pattern:
+
+  ```ts
+  import { examplePlugin } from '@backstage/plugin-example-backend';
+
+  backend.add(examplePlugin);
+  ```
+
+  It should be migrated to this:
+
+  ```ts
+  backend.add(import('@backstage/plugin-example-backend'));
+  ```
+
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.13.0
+  - @backstage/backend-tasks@0.5.8
+  - @backstage/backend-common@0.19.5
+  - @backstage/config@1.1.0
+  - @backstage/catalog-model@1.4.2
+  - @backstage/errors@1.2.2
+  - @backstage/plugin-permission-common@0.7.8
+  - @backstage/backend-plugin-api@0.6.3
+  - @backstage/plugin-catalog-node@1.4.4
+  - @backstage/plugin-events-node@0.2.12
+
+## 0.4.6-next.3
+
+### Patch Changes
+
+- 71114ac50e02: The export for the new backend system has been moved to be the `default` export.
+
+  For example, if you are currently importing the plugin using the following pattern:
+
+  ```ts
+  import { examplePlugin } from '@backstage/plugin-example-backend';
+
+  backend.add(examplePlugin);
+  ```
+
+  It should be migrated to this:
+
+  ```ts
+  backend.add(import('@backstage/plugin-example-backend'));
+  ```
+
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.13.0-next.3
+  - @backstage/catalog-model@1.4.2-next.2
+  - @backstage/config@1.1.0-next.2
+  - @backstage/errors@1.2.2-next.0
+  - @backstage/plugin-permission-common@0.7.8-next.2
+  - @backstage/backend-plugin-api@0.6.3-next.3
+  - @backstage/backend-common@0.19.5-next.3
+  - @backstage/backend-tasks@0.5.8-next.3
+  - @backstage/plugin-catalog-node@1.4.4-next.3
+  - @backstage/plugin-events-node@0.2.12-next.3
+
+## 0.4.6-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-backend@1.13.0-next.2
+  - @backstage/config@1.1.0-next.1
+  - @backstage/backend-tasks@0.5.8-next.2
+  - @backstage/backend-common@0.19.5-next.2
+  - @backstage/plugin-catalog-node@1.4.4-next.2
+  - @backstage/backend-plugin-api@0.6.3-next.2
+  - @backstage/catalog-model@1.4.2-next.1
+  - @backstage/plugin-permission-common@0.7.8-next.1
+  - @backstage/errors@1.2.1
+  - @backstage/plugin-events-node@0.2.12-next.2
+
 ## 0.4.6-next.1
 
 ### Patch Changes

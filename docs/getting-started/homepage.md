@@ -19,7 +19,7 @@ At the end of this tutorial, you can expect:
 
 Before we begin, make sure
 
-- You have created your own standalone Backstage app using [`@backstage/create-app`](index.md#create-your-backstage-app) and not using a fork of the [backstage](https://github.com/backstage/backstage) repository.
+- You have created your own standalone Backstage app using [`@backstage/create-app`](./index.md#1-create-your-backstage-app) and not using a fork of the [backstage](https://github.com/backstage/backstage) repository.
 - You do not have an existing homepage, and by default you are redirected to Software Catalog when you open Backstage.
 
 Now, let's get started by installing the home plugin and creating a simple homepage for your Backstage app.
@@ -28,9 +28,8 @@ Now, let's get started by installing the home plugin and creating a simple homep
 
 #### 1. Install the plugin
 
-```bash
-# From your Backstage root directory
-yarn add --cwd packages/app @backstage/plugin-home
+```bash title="From your Backstage root directory"
+yarn --cwd packages/app add @backstage/plugin-home
 ```
 
 #### 2. Create a new HomePage component
@@ -161,7 +160,7 @@ import React from 'react';
 import Grid from '@material-ui/core/Grid';
 import { HomePageCompanyLogo } from '@backstage/plugin-home';
 
-export const homePage = (
+export const HomePage = () => (
   <Grid container spacing={3}>
     <Grid item xs={12} md={4}>
       <HomePageCompanyLogo />

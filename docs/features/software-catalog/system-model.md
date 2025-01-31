@@ -50,7 +50,7 @@ components need to be in a known machine-readable format so we can build further
 tooling and analysis on top.
 
 APIs have a visibility: they are either public (making them available for any
-other component to consume), restricted (only available to an allowlisted set of
+other component to consume), restricted (only available to an allowed set of
 consumers), or private (only available within their system). As public APIs are
 going to be the primary way interaction between components, Backstage supports
 documenting, indexing and searching all APIs so we can browse them as
@@ -119,6 +119,9 @@ domain would come with some documentation on how to accept payments for a new
 product or use-case, share the same entity types in their APIs, and integrate
 well with each other. Other domains could be “Content Ingestion”, “Ads” or
 “Search”.
+
+In case of a large organization, it might make sense to further group domains
+in a hierarchy, where a domain can be a subdomain of another domain.
 
 ## Other
 

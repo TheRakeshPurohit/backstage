@@ -1,5 +1,49 @@
 # @backstage/release-manifests
 
+## 0.0.12
+
+### Patch Changes
+
+- 2e140dc: Switch to native fetch for loading release manifests
+- b29eaea: Allow overriding the fetch function used inside getManifestByVersion
+
+## 0.0.12-next.1
+
+### Patch Changes
+
+- b29eaea: Allow overriding the fetch function used inside getManifestByVersion
+
+## 0.0.12-next.0
+
+### Patch Changes
+
+- 2e140dc: Switch to native fetch for loading release manifests
+
+## 0.0.11
+
+### Patch Changes
+
+- 4aa43f62aa: Updated dependency `cross-fetch` to `^4.0.0`.
+
+## 0.0.10
+
+### Patch Changes
+
+- 406b786a2a2c: Mark package as being free of side effects, allowing more optimized Webpack builds.
+- 8cec7664e146: Removed `@types/node` dependency
+
+## 0.0.10-next.1
+
+### Patch Changes
+
+- 406b786a2a2c: Mark package as being free of side effects, allowing more optimized Webpack builds.
+
+## 0.0.10-next.0
+
+### Patch Changes
+
+- 8cec7664e146: Removed `@types/node` dependency
+
 ## 0.0.9
 
 ### Patch Changes

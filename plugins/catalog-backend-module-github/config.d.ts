@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { TaskScheduleDefinitionConfig } from '@backstage/backend-tasks';
+import { SchedulerServiceTaskScheduleDefinitionConfig } from '@backstage/backend-plugin-api';
 
 export interface Config {
   catalog?: {
@@ -116,7 +116,7 @@ export interface Config {
             /**
              * (Optional) TaskScheduleDefinition for the refresh.
              */
-            schedule?: TaskScheduleDefinitionConfig;
+            schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
           }
         | {
             [name: string]: {
@@ -135,6 +135,11 @@ export interface Config {
                * Default: `/catalog-info.yaml`.
                */
               catalogPath?: string;
+              /**
+               * (Optional) Whether to validate locations that exist before emitting them.
+               * Default: `false`.
+               */
+              validateLocationsExist?: boolean;
               /**
                * (Optional) Filter configuration.
                */
@@ -180,9 +185,72 @@ export interface Config {
               /**
                * (Optional) TaskScheduleDefinition for the refresh.
                */
-              schedule?: TaskScheduleDefinitionConfig;
+              schedule?: SchedulerServiceTaskScheduleDefinitionConfig;
             };
           };
+
+      /**
+       * Configuration for catalogModuleGithubOrgEntityProvider
+       */
+      githubOrg?:
+        | {
+            /**
+             * A stable id for this provider. Entities from this provider will
+             * be associated with this ID, so you should take care not to change
+             * it over time since that may lead to orphaned entities and/or
+             * conflicts.
+             *
+             * @example "ghe"
+             */
+            id: string;
+
+            /**
+             * The target that this provider should consume.
+             *
+             * @example "https://mycompany.github.com"
+             */
+            githubUrl: string;
+
+            /**
+             * The list of the GitHub orgs to consume. By default will consume all accessible
+             * orgs on the given GitHub instance (support for GitHub App integration only).
+             */
+            orgs?: string[];
+
+            /**
+             * The refresh schedule to use.
+             */
+            schedule: SchedulerServiceTaskScheduleDefinitionConfig;
+          }
+        | Array<{
+            /**
+             * A stable id for this provider. Entities from this provider will
+             * be associated with this ID, so you should take care not to change
+             * it over time since that may lead to orphaned entities and/or
+             * conflicts.
+             *
+             * @example "ghe"
+             */
+            id: string;
+
+            /**
+             * The target that this provider should consume.
+             *
+             * @example "https://mycompany.github.com"
+             */
+            githubUrl: string;
+
+            /**
+             * The list of the GitHub orgs to consume. By default will consume all accessible
+             * orgs on the given GitHub instance (support for GitHub App integration only).
+             */
+            orgs?: string[];
+
+            /**
+             * The refresh schedule to use.
+             */
+            schedule: SchedulerServiceTaskScheduleDefinitionConfig;
+          }>;
     };
   };
 }

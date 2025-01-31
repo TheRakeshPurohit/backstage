@@ -14,28 +14,32 @@
  * limitations under the License.
  */
 
-import {
-  Backend,
-  createSpecializedBackend,
-  MiddlewareFactory,
-  createHttpServer,
-  ExtendedHttpServer,
-  DefaultRootHttpRouter,
-} from '@backstage/backend-app-api';
-import { HostDiscovery } from '@backstage/backend-common';
+import { Backend, createSpecializedBackend } from '@backstage/backend-app-api';
 import {
   createServiceFactory,
   BackendFeature,
   ExtensionPoint,
   coreServices,
   createBackendModule,
+  createBackendPlugin,
 } from '@backstage/backend-plugin-api';
 import { mockServices } from '../services';
 import { ConfigReader } from '@backstage/config';
 import express from 'express';
 // Direct internal import to avoid duplication
-// eslint-disable-next-line @backstage/no-forbidden-package-imports
-import { InternalBackendFeature } from '@backstage/backend-plugin-api/src/wiring/types';
+// eslint-disable-next-line @backstage/no-relative-monorepo-imports
+import {
+  InternalBackendFeature,
+  InternalBackendRegistrations,
+} from '../../../../backend-plugin-api/src/wiring/types';
+import {
+  DefaultRootHttpRouter,
+  ExtendedHttpServer,
+  MiddlewareFactory,
+  createHealthRouter,
+  createHttpServer,
+} from '@backstage/backend-defaults/rootHttpRouter';
+import { HostDiscovery } from '@backstage/backend-defaults/discovery';
 
 /** @public */
 export interface TestBackendOptions<TExtensionPoints extends any[]> {
@@ -47,7 +51,7 @@ export interface TestBackendOptions<TExtensionPoints extends any[]> {
       ];
     },
   ];
-  features?: Array<BackendFeature | (() => BackendFeature)>;
+  features?: Array<BackendFeature | Promise<{ default: BackendFeature }>>;
 }
 
 /** @public */
@@ -61,55 +65,81 @@ export interface TestBackend extends Backend {
   readonly server: ExtendedHttpServer;
 }
 
-const defaultServiceFactories = [
+export const defaultServiceFactories = [
+  mockServices.auth.factory(),
+  mockServices.auditor.factory(),
   mockServices.cache.factory(),
   mockServices.rootConfig.factory(),
   mockServices.database.factory(),
+  mockServices.httpAuth.factory(),
   mockServices.httpRouter.factory(),
-  mockServices.identity.factory(),
   mockServices.lifecycle.factory(),
   mockServices.logger.factory(),
   mockServices.permissions.factory(),
+  mockServices.permissionsRegistry.factory(),
+  mockServices.rootHealth.factory(),
   mockServices.rootLifecycle.factory(),
   mockServices.rootLogger.factory(),
   mockServices.scheduler.factory(),
-  mockServices.tokenManager.factory(),
+  mockServices.userInfo.factory(),
   mockServices.urlReader.factory(),
+  mockServices.events.factory(),
 ];
 
 /**
- * Given a set of extension points and plugins, find
+ * Given a set of features, return an array of plugins that ensures that each
+ * module in the provided set of features has a corresponding plugin.
+ * @internal
+ */
+function createPluginsForOrphanModules(features: Array<BackendFeature>) {
+  const pluginIds = new Set<string>();
+  const modulePluginIds = new Set<string>();
+
+  for (const feature of features) {
+    if (isInternalBackendRegistrations(feature)) {
+      const registrations = feature.getRegistrations();
+      for (const registration of registrations) {
+        if (registration.type === 'plugin') {
+          pluginIds.add(registration.pluginId);
+        } else if (registration.type === 'module') {
+          modulePluginIds.add(registration.pluginId);
+        }
+      }
+    }
+  }
+
+  for (const pluginId of pluginIds) {
+    modulePluginIds.delete(pluginId);
+  }
+
+  return Array.from(modulePluginIds).map(pluginId =>
+    createBackendPlugin({
+      pluginId,
+      register(reg) {
+        reg.registerInit({ deps: {}, async init() {} });
+      },
+    }),
+  );
+}
+
+/**
+ * Given a set of extension points and features, find the extension
+ * points that we mock and tie them to the correct plugin ID.
  * @returns
  */
 function createExtensionPointTestModules(
-  features: Array<BackendFeature | (() => BackendFeature)>,
+  features: Array<BackendFeature>,
   extensionPointTuples?: readonly [
     ref: ExtensionPoint<unknown>,
     impl: unknown,
   ][],
-): Array<() => BackendFeature> {
+): Array<BackendFeature> {
   if (!extensionPointTuples) {
     return [];
   }
 
-  const registrations = features.flatMap(featureOrFunction => {
-    const feature =
-      typeof featureOrFunction === 'function'
-        ? featureOrFunction()
-        : featureOrFunction;
-
-    if (feature.$$type !== '@backstage/BackendFeature') {
-      throw new Error(
-        `Failed to add feature, invalid type '${feature.$$type}'`,
-      );
-    }
-
-    if (isInternalBackendFeature(feature)) {
-      if (feature.version !== 'v1') {
-        throw new Error(
-          `Failed to add feature, invalid version '${feature.version}'`,
-        );
-      }
+  const registrations = features.flatMap(feature => {
+    if (isInternalBackendRegistrations(feature)) {
       return feature.getRegistrations();
     }
     return [];
@@ -156,7 +186,7 @@ function createExtensionPointTestModules(
     modules.push(
       createBackendModule({
         pluginId,
-        moduleId: 'testExtensionPointRegistration',
+        moduleId: 'test-extension-point-registration',
         register(reg) {
           for (const id of pluginExtensionPointIds) {
             const tuple = extensionPointMap.get(id)!;
@@ -172,13 +202,48 @@ function createExtensionPointTestModules(
   return modules;
 }
 
+function isPromise<T>(value: unknown | Promise<T>): value is Promise<T> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'then' in value &&
+    typeof value.then === 'function'
+  );
+}
+
+// Same as in the backend-app-api, handles double defaults from dynamic imports
+function unwrapFeature(
+  feature: BackendFeature | { default: BackendFeature },
+): BackendFeature {
+  if ('$$type' in feature) {
+    return feature;
+  }
+
+  if ('default' in feature) {
+    return feature.default;
+  }
+
+  return feature;
+}
+
 const backendInstancesToCleanUp = new Array<Backend>();
 
 /** @public */
 export async function startTestBackend<TExtensionPoints extends any[]>(
   options: TestBackendOptions<TExtensionPoints>,
 ): Promise<TestBackend> {
-  const { extensionPoints, features = [], ...otherOptions } = options;
+  const { extensionPoints, ...otherOptions } = options;
+
+  // Unpack input into awaited plain BackendFeatures
+  const features: BackendFeature[] = await Promise.all(
+    options.features?.map(async val => {
+      if (isPromise(val)) {
+        const { default: feature } = await val;
+        return unwrapFeature(feature);
+      }
+      return unwrapFeature(val);
+    }) ?? [],
+  );
 
   let server: ExtendedHttpServer;
 
@@ -188,15 +253,18 @@ export async function startTestBackend<TExtensionPoints extends any[]>(
       config: coreServices.rootConfig,
       lifecycle: coreServices.rootLifecycle,
       rootLogger: coreServices.rootLogger,
+      health: coreServices.rootHealth,
     },
-    async factory({ config, lifecycle, rootLogger }) {
+    async factory({ config, lifecycle, rootLogger, health }) {
       const router = DefaultRootHttpRouter.create();
       const logger = rootLogger.child({ service: 'rootHttpRouter' });
 
       const app = express();
 
       const middleware = MiddlewareFactory.create({ config, logger });
+      const healthRouter = createHealthRouter({ config, health });
 
+      app.use(healthRouter);
       app.use(router.handler());
       app.use(middleware.notFound());
       app.use(middleware.error());
@@ -248,7 +316,9 @@ export async function startTestBackend<TExtensionPoints extends any[]>(
   for (const m of createExtensionPointTestModules(features, extensionPoints)) {
     backend.add(m);
   }
-
+  for (const p of createPluginsForOrphanModules(features)) {
+    backend.add(p);
+  }
   for (const feature of features) {
     backend.add(feature);
   }
@@ -291,10 +361,28 @@ function registerTestHooks() {
 
 registerTestHooks();
 
-function isInternalBackendFeature(
+function toInternalBackendFeature(
   feature: BackendFeature,
-): feature is InternalBackendFeature {
-  return (
-    typeof (feature as InternalBackendFeature).getRegistrations === 'function'
-  );
+): InternalBackendFeature {
+  if (feature.$$type !== '@backstage/BackendFeature') {
+    throw new Error(`Invalid BackendFeature, bad type '${feature.$$type}'`);
+  }
+  const internal = feature as InternalBackendFeature;
+  if (internal.version !== 'v1') {
+    throw new Error(
+      `Invalid BackendFeature, bad version '${internal.version}'`,
+    );
+  }
+  return internal;
+}
+
+function isInternalBackendRegistrations(
+  feature: BackendFeature,
+): feature is InternalBackendRegistrations {
+  const internal = toInternalBackendFeature(feature);
+  if (internal.featureType === 'registrations') {
+    return true;
+  }
+  // Backwards compatibility for v1 registrations that use duck typing
+  return 'getRegistrations' in internal;
 }

@@ -20,6 +20,7 @@
  * @packageDocumentation
  */
 
-export * from './kubernetes-auth-translator';
+export { kubernetesPlugin as default } from './plugin';
+export * from './auth';
 export * from './service';
 export * from './types';

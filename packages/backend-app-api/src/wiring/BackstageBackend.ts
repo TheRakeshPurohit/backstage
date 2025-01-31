@@ -16,6 +16,7 @@
 
 import { BackendFeature, ServiceFactory } from '@backstage/backend-plugin-api';
 import { BackendInitializer } from './BackendInitializer';
+import { unwrapFeature } from './helpers';
 import { Backend } from './types';
 
 export class BackstageBackend implements Backend {
@@ -25,8 +26,12 @@ export class BackstageBackend implements Backend {
     this.#initializer = new BackendInitializer(defaultServiceFactories);
   }
 
-  add(feature: BackendFeature | (() => BackendFeature)): void {
-    this.#initializer.add(typeof feature === 'function' ? feature() : feature);
+  add(feature: BackendFeature | Promise<{ default: BackendFeature }>): void {
+    if (isPromise(feature)) {
+      this.#initializer.add(feature.then(f => unwrapFeature(f.default)));
+    } else {
+      this.#initializer.add(unwrapFeature(feature));
+    }
   }
 
   async start(): Promise<void> {
@@ -36,4 +41,13 @@ export class BackstageBackend implements Backend {
   async stop(): Promise<void> {
     await this.#initializer.stop();
   }
+}
+
+function isPromise<T>(value: unknown | Promise<T>): value is Promise<T> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'then' in value &&
+    typeof value.then === 'function'
+  );
 }

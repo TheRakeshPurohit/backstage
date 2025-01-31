@@ -25,15 +25,15 @@ import {
 } from '@backstage/core-plugin-api';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
+import Dialog from '@material-ui/core/Dialog';
 import {
   createStyles,
-  Dialog,
   makeStyles,
   Theme,
   useTheme,
-} from '@material-ui/core';
+} from '@material-ui/core/styles';
 import { compact } from 'lodash';
-import useObservable from 'react-use/lib/useObservable';
+import useObservable from 'react-use/esm/useObservable';
 import { ContentHeader, ErrorBoundary } from '@backstage/core-components';
 import Typography from '@material-ui/core/Typography';
 import { WidgetSettingsOverlay } from './WidgetSettingsOverlay';
@@ -69,7 +69,6 @@ const useStyles = makeStyles((theme: Theme) =>
       marginLeft: theme.spacing(2),
     },
     widgetWrapper: {
-      overflow: 'hidden',
       '& > div[class*="MuiCard-root"]': {
         width: '100%',
         height: '100%',
@@ -207,10 +206,11 @@ export const CustomHomepageGrid = (props: CustomHomepageGridProps) => {
     availableWidgetsFilter,
     [props],
   );
-
-  const defaultLayout = props.config
-    ? convertConfigToDefaultWidgets(props.config, availableWidgets)
-    : [];
+  const defaultLayout = useMemo(() => {
+    return props.config
+      ? convertConfigToDefaultWidgets(props.config, availableWidgets)
+      : [];
+  }, [props.config, availableWidgets]);
   const [widgets, setWidgets] = useHomeStorage(defaultLayout);
   const [addWidgetDialogOpen, setAddWidgetDialogOpen] = React.useState(false);
   const editModeOn = widgets.find(w => w.layout.isResizable) !== undefined;
@@ -349,7 +349,7 @@ export const CustomHomepageGrid = (props: CustomHomepageGridProps) => {
         compactType={props.compactType}
         style={props.style}
         allowOverlap={props.allowOverlap}
-        preventCollision={props.preventCollision}
+        preventCollision={props.preventCollision ?? true}
         draggableCancel=".overlayGridItem,.widgetSettingsDialog,.disabled"
         containerPadding={props.containerPadding}
         margin={props.containerMargin}

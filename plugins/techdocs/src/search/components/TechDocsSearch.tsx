@@ -34,6 +34,7 @@ export type TechDocsSearchProps = {
   entityId: CompoundEntityRef;
   entityTitle?: string;
   debounceTime?: number;
+  searchResultUrlMapper?: (url: string) => string;
 };
 
 type TechDocsDoc = {
@@ -58,11 +59,17 @@ const isTechDocsSearchResult = (
 };
 
 const TechDocsSearchBar = (props: TechDocsSearchProps) => {
-  const { entityId, entityTitle, debounceTime = 150 } = props;
+  const {
+    entityId,
+    entityTitle,
+    debounceTime = 150,
+    searchResultUrlMapper,
+  } = props;
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const {
     setFilters,
+    term,
     result: { loading, value: searchVal },
   } = useSearch();
   const [options, setOptions] = useState<any[]>([]);
@@ -101,7 +108,9 @@ const TechDocsSearchBar = (props: TechDocsSearchProps) => {
   ) => {
     if (isTechDocsSearchResult(selection)) {
       const { location } = selection.document;
-      navigate(location);
+      navigate(
+        searchResultUrlMapper ? searchResultUrlMapper(location) : location,
+      );
     }
   };
 
@@ -109,7 +118,7 @@ const TechDocsSearchBar = (props: TechDocsSearchProps) => {
     <SearchAutocomplete
       data-testid="techdocs-search-bar"
       size="small"
-      open={open}
+      open={open && Boolean(term)}
       getOptionLabel={() => ''}
       filterOptions={x => {
         return x; // This is needed to get renderOption to be called after options change. Bug in material-ui?
@@ -117,7 +126,7 @@ const TechDocsSearchBar = (props: TechDocsSearchProps) => {
       onClose={() => {
         setOpen(false);
       }}
-      onFocus={() => {
+      onOpen={() => {
         setOpen(true);
       }}
       onChange={handleSelection}

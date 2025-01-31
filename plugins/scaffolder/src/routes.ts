@@ -22,12 +22,14 @@ import {
 export const registerComponentRouteRef = createExternalRouteRef({
   id: 'register-component',
   optional: true,
+  defaultTarget: 'catalog-import.importPage',
 });
 
 export const viewTechDocRouteRef = createExternalRouteRef({
   id: 'view-techdoc',
   optional: true,
   params: ['namespace', 'kind', 'name'],
+  defaultTarget: 'techdocs.docRoot',
 });
 
 /**
@@ -75,4 +77,22 @@ export const editRouteRef = createSubRouteRef({
   id: 'scaffolder/edit',
   parent: rootRouteRef,
   path: '/edit',
+});
+
+export const editorRouteRef = createSubRouteRef({
+  id: 'scaffolder/editor',
+  parent: rootRouteRef,
+  path: '/template',
+});
+
+export const customFieldsRouteRef = createSubRouteRef({
+  id: 'scaffolder/customFields',
+  parent: rootRouteRef,
+  path: '/custom-fields',
+});
+
+export const templateFormRouteRef = createSubRouteRef({
+  id: 'scaffolder/editorForm',
+  parent: rootRouteRef,
+  path: '/template-form',
 });
